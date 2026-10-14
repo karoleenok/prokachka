@@ -18,7 +18,7 @@ img{max-width:100%}
   --panel:#3373CF; --panel-2:#2A64BD; --panel-ink:#FFFFFF; --panel-soft:rgba(255,255,255,.18); --panel-line:rgba(255,255,255,.28);
   --card:#FFFFFF; --ink:#14315F; --muted:#5B7298; --muted-bg:#2F4A78; --line:#D7E4F6; --chip:#E9F1FC;
   --navy:#1C3F7E; --navy-ink:#FFFFFF; --accent:#3373CF; --accent-ink:#FFFFFF;
-  --good:#1E8F62; --warn:#C9741F; --coin:#E9A522; --shade:rgba(20,49,95,.5); --dash:rgba(51,115,207,.45);
+  --good:#1E8F62; --warn:#C9741F; --coin:#FFFFFF; --shade:rgba(20,49,95,.5); --dash:rgba(51,115,207,.45);
   --f-display:"Oswald","Arial Narrow",Impact,sans-serif;
   --f-body:"Onest",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
 }
@@ -27,7 +27,7 @@ img{max-width:100%}
   --panel:#1F56B5; --panel-2:#1A4A9D; --panel-ink:#FFFFFF; --panel-soft:rgba(255,255,255,.14); --panel-line:rgba(255,255,255,.22);
   --card:#122546; --ink:#E5EEFC; --muted:#93A9CE; --muted-bg:#A9BDDD; --line:#223A63; --chip:#1A3259;
   --navy:#0D1D3B; --navy-ink:#E5EEFC; --accent:#6EA3F6; --accent-ink:#0B1830;
-  --good:#45C08E; --warn:#F0A256; --coin:#F4C04E; --shade:rgba(0,0,0,.62); --dash:rgba(110,163,246,.5);
+  --good:#45C08E; --warn:#F0A256; --coin:#EEF3FB; --shade:rgba(0,0,0,.62); --dash:rgba(110,163,246,.5);
   color-scheme:dark;
 }}
 :root[data-theme="dark"]{
@@ -35,7 +35,7 @@ img{max-width:100%}
   --panel:#1F56B5; --panel-2:#1A4A9D; --panel-ink:#FFFFFF; --panel-soft:rgba(255,255,255,.14); --panel-line:rgba(255,255,255,.22);
   --card:#122546; --ink:#E5EEFC; --muted:#93A9CE; --muted-bg:#A9BDDD; --line:#223A63; --chip:#1A3259;
   --navy:#0D1D3B; --navy-ink:#E5EEFC; --accent:#6EA3F6; --accent-ink:#0B1830;
-  --good:#45C08E; --warn:#F0A256; --coin:#F4C04E; --shade:rgba(0,0,0,.62); --dash:rgba(110,163,246,.5);
+  --good:#45C08E; --warn:#F0A256; --coin:#EEF3FB; --shade:rgba(0,0,0,.62); --dash:rgba(110,163,246,.5);
   color-scheme:dark;
 }
 *{box-sizing:border-box}
@@ -179,7 +179,7 @@ button{cursor:pointer;border:0;background:none;-webkit-tap-highlight-color:trans
 .check svg{width:15px;height:15px}
 
 /* wishlist */
-.coin{width:16px;height:16px;border-radius:50%;background:var(--coin);display:inline-block;flex:none;box-shadow:inset 0 0 0 2.5px rgba(0,0,0,.12)}
+.coin{width:16px;height:16px;border-radius:50%;background:var(--coin);display:inline-block;flex:none;box-shadow:inset 0 0 0 1.5px rgba(51,115,207,.45),inset 0 0 0 4px var(--coin),inset 0 0 0 5px rgba(51,115,207,.2)}
 .price{display:inline-flex;align-items:center;gap:5px;font-weight:700}
 .wish-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
 .wish{background:var(--card);border-radius:18px;overflow:hidden;display:flex;flex-direction:column}
@@ -194,7 +194,7 @@ button{cursor:pointer;border:0;background:none;-webkit-tap-highlight-color:trans
 .wish .bd{padding:10px 11px 12px;display:flex;flex-direction:column;gap:6px;flex:1}
 .wish .ti{font-weight:600;font-size:14px;line-height:1.25}
 .prog{height:6px;border-radius:9px;background:var(--chip);overflow:hidden}
-.prog i{display:block;height:100%;background:var(--coin)}
+.prog i{display:block;height:100%;background:var(--panel)}
 .wish .btn{margin-top:auto}
 .ach-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px;margin-top:12px}
 .ach{background:var(--card);border-radius:16px;padding:12px 8px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px}
@@ -265,6 +265,13 @@ details summary{cursor:pointer;font-weight:600;font-size:14px;margin-top:16px}
 .xptable{display:grid;grid-template-columns:1fr auto;gap:6px 12px;font-size:14px;margin-top:8px}
 .xptable b{text-align:right;font-variant-numeric:tabular-nums}
 .empty{text-align:center;padding:26px 16px}
+.ghost-v{opacity:.38;pointer-events:none;user-select:none;margin-top:12px;display:grid;gap:8px;-webkit-mask-image:linear-gradient(#000 78%,transparent);mask-image:linear-gradient(#000 78%,transparent)}
+.ghost-v .g{background:var(--card,#fff);border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px}
+.ghost-v .g b{font-family:Oswald,sans-serif;font-size:30px;color:var(--panel);min-width:30px}
+.ghost-v .g i{display:block;height:8px;border-radius:5px;background:var(--chip)}
+.ghost-v .g .bar{height:6px;border-radius:9px;background:var(--chip);overflow:hidden;margin-top:8px}
+.ghost-v .g .bar u{display:block;height:100%;background:var(--panel);border-radius:9px}
+.ghost-v .gd{font-size:13px;color:var(--muted);padding:2px 4px}
 .empty .big{font-size:26px}
 .spin{display:inline-block;width:14px;height:14px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;animation:sp .8s linear infinite;vertical-align:-2px}
 @keyframes sp{to{transform:rotate(360deg)}}
@@ -1018,7 +1025,7 @@ function pathFeed(){
   const f=S.pathFilter;
   const list=live().filter(e=>!e.planned&&(!f||e.primary===f||(e.secondary||[]).includes(f))).sort((a,b)=>a.date===b.date?(b.ts||0)-(a.ts||0):(a.date<b.date?1:-1));
   const chips=`<div class="chips" style="margin-top:12px"><button class="chip" data-act="pfilter" data-id="" aria-pressed="${!f}">все</button>${activeSkills().map(s=>`<button class="chip" data-act="pfilter" data-id="${s.id}" aria-pressed="${f===s.id}">${esc(s.name)}</button>`).join("")}</div>`;
-  if(!list.length)return chips+`<div class="card empty" style="margin-top:12px"><div class="big">путь начинается здесь</div><p class="muted">тут будут все твои записи по дням. можно загрузить и то, что было раньше.</p><div class="row" style="justify-content:center"><button class="btn accent" data-act="add">${IC.plus} действие</button><button class="btn ghost" data-act="importPast">загрузить прошлое</button></div></div>`;
+  if(!list.length)return chips+`<div class="card empty" style="margin-top:12px"><div class="big">путь начинается здесь</div><p class="muted">тут будут все твои записи по дням. можно загрузить и то, что было раньше.</p><div class="row" style="justify-content:center"><button class="btn accent" data-act="add">${IC.plus} действие</button><button class="btn ghost" data-act="importPast">загрузить прошлое</button></div></div><div class="ghost-v" aria-hidden="true"><div class="gd">пн, 12 окт</div>${[["записал рилс про процесс","+20"],["разобрал референсы","+10"]].map(x=>`<div class="g"><div style="flex:1"><div style="font-weight:600;font-size:14px">${x[0]}</div><i style="width:40%;margin-top:8px"></i></div><b style="font-size:16px">${x[1]}</b></div>`).join("")}<div class="gd" style="text-align:center">так будет выглядеть твой путь</div></div>`;
   let h="",last="";
   list.forEach(e=>{if(e.date!==last){const st=S.profile.states[e.date];h+=`<div class="day">${fmtDay(e.date)}${st&&(st.health||st.mood||st.bright)?` <span class="small muted" style="text-transform:none;letter-spacing:0;font-family:var(--f-body)">· ${STATES.map(s=>st[s.k]?s.n+": "+s.labels[st[s.k]-1]:"").filter(Boolean).join(" · ")}</span>`:""}</div>`;last=e.date}h+=`<div style="margin-top:8px">${entryCard(e)}</div>`});
   return chips+h;
@@ -1071,7 +1078,7 @@ function vSkills(d){
   const act=activeSkills();
   return`${secTitle("мои навыки","skills")}
   <div class="row" style="margin-top:12px" id="skillBtns"><button class="btn accent" data-act="skillCat" id="skillCatBtn">выбрать навыки</button><button class="btn ghost" data-act="startLevels" id="startLvlBtn">стартовые уровни</button></div>
-  ${!act.length?`<div class="card empty" style="margin-top:12px"><div class="big">пока пусто</div><p class="muted">выбери 5–12 навыков, которые хочешь качать в этом сезоне.</p></div>`:""}
+  ${!act.length?`<div class="card empty" style="margin-top:12px"><div class="big">пока пусто</div><p class="muted">выбери 5–12 навыков, которые хочешь качать в этом сезоне.</p></div><div class="ghost-v" aria-hidden="true">${[["дизайн",3,60],["нейросети",5,35],["съёмка",2,80]].map(x=>`<div class="g"><b>${x[1]}</b><div style="flex:1"><div style="font-weight:600;font-size:14px">${x[0]}</div><div class="bar"><u style="width:${x[2]}%"></u></div></div></div>`).join("")}<div class="gd" style="text-align:center">так будет выглядеть, когда выберешь навыки</div></div>`:""}
   <div class="stack">${groupedSkills(s=>{const k=d.skills[s.id];const n=d.done.filter(e=>e.primary===s.id).length;const last=d.done.filter(e=>e.primary===s.id||(e.secondary||[]).includes(s.id)).sort((a,b)=>a.date<b.date?1:-1)[0];
     return`<div class="card"><div class="row" style="justify-content:space-between;flex-wrap:nowrap"><div style="min-width:0"><div style="font-weight:700">${esc(s.name)}</div><div class="small muted">${esc(s.d)}</div></div><div class="big num" style="font-size:38px">${k.level}</div></div>
     ${segs(k.frac,k.level)}
@@ -1204,12 +1211,12 @@ function openEntry(e,opts){
   <div class="seg" role="group" aria-label="статус"><button type="button" data-f="plannedNo" aria-pressed="${!F.planned}">сделал{а|}</button><button type="button" data-f="plannedYes" aria-pressed="${F.planned}">планирую</button></div>
   ${REC.length?`<div class="field"><span class="lbl">повторить недавнее в одно касание</span><div class="chips">${REC.map((r,i)=>`<button type="button" class="chip" data-f="rep" data-i="${i}">↺ ${esc(r.title)}</button>`).join("")}</div></div>`:""}
   ${sampleNs?`<div class="field"><label for="fAi">или расскажи словами, claude разложит</label><div class="row" style="flex-wrap:nowrap"><input class="in-text" id="fAi" placeholder="например: впервые собрал{а|} бота для заявок"><button class="btn sm" type="button" data-f="ai" aria-label="разобрать">${IC.spark}</button></div></div>`:""}
-  <div class="field" id="fSkillField"><span class="lbl">${isEdit?"":"1. "}какой навык качаешь</span><div class="chips" id="fPrim"></div></div>
-  <div class="field" id="fTplField"><span class="lbl">${isEdit?"":"2. "}что именно сделал{а|}</span><div class="chips" id="fTpls"></div></div>
   <div id="fCore">
-  <div class="field"><label for="fTitle">${isEdit?"":"3. "}как назовём запись</label><input class="in-text" id="fTitle" value="${esc(F.title)}" placeholder="коротко, своими словами"></div>
-  <div class="field"><span class="lbl">тип действия (от него зависит опыт)</span><div class="chips" id="fTypes"></div></div>
+  <div class="field"><label for="fTitle">${isEdit?"":"1. "}напиши своё или выбери ниже</label><input class="in-text" id="fTitle" value="${esc(F.title)}" placeholder="например: записал{а|} рилс про свой процесс"></div>
+  <div class="field"><span class="lbl">${isEdit?"":"2. "}категория (от неё зависит опыт)</span><div class="chips" id="fTypes"></div></div>
   </div>
+  <div class="field" id="fSkillField"><span class="lbl">${isEdit?"":"3. "}какой навык качаешь</span><div class="chips" id="fPrim"></div></div>
+  <div class="field" id="fTplField"><span class="lbl">${isEdit?"":"4. "}или выбери готовое</span><div class="chips" id="fTpls"></div></div>
   <details id="fMore" ${isEdit&&(F.secondary.length||F.first||F.fear||F.date!==today())?"open":""}><summary>ещё: доп. навыки, впервые, шаг в страх, дата</summary>
   <div class="field"><span class="lbl">ещё качает (до двух, получат 40%)</span><div class="chips" id="fSec"></div></div>
   <label class="toggle"><input type="checkbox" id="fFirst" ${F.first?"checked":""}> делаю впервые (опыт ×1.5)</label>
@@ -1463,7 +1470,7 @@ function openStartLevels(){
   sheet(`<div class="sheet-h"><h2>стартовые уровни</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
   <p class="small muted" style="margin:0">на каком уровне ты был{а|} до начала сезона. 1 значит только начинаю, 5 уверенно, 8–9 эксперт.</p>
   <p class="small" style="font-weight:600">сохраняется, как только нажмёшь цифру.</p>
-  <div class="stack" id="slList">${act.length?act.map(s=>`<div class="card"><div style="font-weight:600">${esc(s.name)}</div><div class="chips" style="margin-top:8px" role="group" aria-label="уровень: ${esc(s.name)}">${[1,2,3,4,5,6,7,8,9].map(n=>`<button type="button" class="chip num" data-sl="${s.id}" data-n="${n}" aria-pressed="${(P.startLevels[s.id]||1)===n}" style="min-width:38px">${n}</button>`).join("")}</div></div>`).join(""):`<div class="card small muted">сначала выбери навыки.</div>`}</div>
+  <div class="stack" id="slList">${act.length?act.map(s=>`<div class="card"><div style="font-weight:600">${esc(s.name)}</div><div class="chips" style="margin-top:8px" role="group" aria-label="уровень: ${esc(s.name)}">${[1,2,3,4,5,6,7,8,9].map(n=>`<button type="button" class="chip num" data-sl="${s.id}" data-n="${n}" aria-pressed="${(P.startLevels[s.id]||1)===n}" style="min-width:38px">${n}</button>`).join("")}</div></div>`).join(""):`<div class="card small muted">сначала выбери навыки.</div><div class="ghost-v" aria-hidden="true">${[["дизайн",3],["нейросети",5]].map(x=>`<div class="g"><div style="flex:1;font-weight:600;font-size:14px">${x[0]}</div><div class="chips" style="gap:4px">${[1,2,3,4,5,6].map(n=>`<span class="chip num" style="min-width:30px;${n===x[1]?"background:var(--panel);color:#fff":""}">${n}</span>`).join("")}</div></div>`).join("")}<div class="gd" style="text-align:center">так будет выглядеть, когда выберешь навыки</div></div>`}</div>
   <button class="btn accent wide" style="margin-top:16px" data-act="close">готово</button>`,el=>{
     el.addEventListener("click",ev=>{const b=ev.target.closest("[data-sl]");if(!b)return;const id=b.dataset.sl,n=+b.dataset.n;
       P.startLevels[id]=n;P.seenSkills=null;Store.saveProfile();
@@ -1634,9 +1641,9 @@ const TOUR=[
   {id:"stats",v:"home",t:"#statsRow",h:"монеты и серия",p:"монеты копятся вместе с опытом, на них можно взять хотелку. серия считает дни подряд, а заморозки спасают её, если пропустишь день."},
   {id:"q",v:"home",t:".sec .sel-b",h:"названия блоков",p:"нажми на название блока, если что-то непонятно: там короткое объяснение."},
   {id:"add",v:"home",t:"#addBtn",h:"первое действие",p:"вспомни, что ты сегодня сделал{а|} для себя: посмотрел{а|} урок, написал{а|} пост, что угодно.",tap:"нажми «записать действие»",until:()=>!!$(".sheet #fCore")},
+  {id:"core",t:"#fCore",h:"напиши своё",p:"можно написать своими словами и выбрать категорию. от неё зависит, сколько дадут опыта: за «создал{а|}» и «выпустил{а|}» больше, чем за «изучил{а|}».",back:"add"},
   {id:"skill",t:"#fSkillField",h:"навык",p:"сначала выбери, какой навык качает это действие.",tap:"нажми на навык",until:()=>!!(F&&F.primary),back:"add"},
   {id:"tpl",t:"#fTplField",h:"что именно",p:"здесь варианты для этого навыка. выбери подходящий, а если такого нет, впиши своё ниже.",tap:"нажми на вариант",until:()=>!!(F&&F.type&&F.title),back:"add"},
-  {id:"core",t:"#fCore",h:"проверь",p:"текст можно переписать своими словами. от типа зависит, сколько дадут опыта: за «создал{а|}» и «выпустил{а|}» больше, чем за «изучил{а|}».",back:"add"},
   {id:"save",t:"#fSave",h:"сохрани",p:"слева написано, сколько опыта и монет ты получишь.",tap:"нажми «сохранить»",until:()=>!$(".sheet")&&live().length>T.base,back:"add",done:"сохранено, запись уже в «сегодня»"},
   {id:"today",v:"home",t:"#todaySec",h:"первая запись",p:"через «изменить» можно дописать, чему научил{ась|ся}, добавить ссылку, результат или фото."},
   {id:"needs",v:"home",t:"#needsCard",h:"состояние",p:"раз в день отмечай, как ты. нажми на здоровье, настроение или яркость жизни и выбери значок: слева слабее, справа лучше. нажмёшь ещё раз, и отметка снимется.",free:true},
