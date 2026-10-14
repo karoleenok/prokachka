@@ -917,9 +917,11 @@ function pushSync(now,cfg){
   const go=()=>{try{
     const t=today();
     const last=S.entries.filter(e=>!e.del&&!e.planned).reduce((m,e)=>e.date>m?e.date:m,"");
-    const todo=S.entries.filter(e=>!e.del&&e.planned&&e.date===t).map(e=>e.title).filter(Boolean).slice(0,3);
-    const q=(S.profile.challenges||[]).find(c=>c.status==="active"&&c.period==="day");
-    const body={initData:TG.initData,tz:-new Date().getTimezoneOffset(),last,todo,quest:q?q.title:""};
+    const pl=S.entries.filter(e=>!e.del&&e.planned&&e.title&&e.date>=t).sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
+    const todo=pl.slice(0,3).map(e=>(e.date===t?"":(e.date===addDays(t,1)?"завтра: ":fmtD(e.date)+": "))+e.title);
+    const ord={day:0,week:1,month:2};
+    const q=(S.profile.challenges||[]).filter(c=>c.status==="active").sort((a,b)=>(ord[a.period]??3)-(ord[b.period]??3))[0];
+    const body={initData:TG.initData,tz:-new Date().getTimezoneOffset(),last,todo,quest:q?(q.title+(q.period==="day"?"":q.period==="week"?" (на неделе)":" (в этом месяце)")):""};
     if(cfg){const R=S.profile.remind||{};body.cfg={on:!!R.on,hour:R.hour||20,count:R.count||1}}
     fetch(BOT_API+"/sync",{method:"POST",headers:{"content-type":"text/plain"},body:JSON.stringify(body)}).then(r=>r.json()).then(j=>{
       const c=j&&j.cfg;if(c&&!cfg){const R=S.profile.remind||(S.profile.remind={on:false,hour:20,count:1});
