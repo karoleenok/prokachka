@@ -1,0 +1,1775 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>прокачка</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Onest:wght@400;500;600;700&display=swap">
+<style>
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html,body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+/* layout: одна мобильная колонка, синяя "обложка" сверху как в рабочей тетради, белые листы-карточки, нижняя навигация */
+:root{
+  --bg:#A9CDF5; --bg-deep:#93BEF0;
+  --panel:#3373CF; --panel-2:#2A64BD; --panel-ink:#FFFFFF; --panel-soft:rgba(255,255,255,.18); --panel-line:rgba(255,255,255,.28);
+  --card:#FFFFFF; --ink:#14315F; --muted:#5B7298; --line:#D7E4F6; --chip:#E9F1FC;
+  --navy:#1C3F7E; --navy-ink:#FFFFFF; --accent:#3373CF; --accent-ink:#FFFFFF;
+  --good:#1E8F62; --warn:#C9741F; --coin:#E9A522; --shade:rgba(20,49,95,.5); --dash:rgba(51,115,207,.45);
+  --f-display:"Oswald","Arial Narrow",Impact,sans-serif;
+  --f-body:"Onest",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0B1830; --bg-deep:#091327;
+  --panel:#1F56B5; --panel-2:#1A4A9D; --panel-ink:#FFFFFF; --panel-soft:rgba(255,255,255,.14); --panel-line:rgba(255,255,255,.22);
+  --card:#122546; --ink:#E5EEFC; --muted:#93A9CE; --line:#223A63; --chip:#1A3259;
+  --navy:#0D1D3B; --navy-ink:#E5EEFC; --accent:#6EA3F6; --accent-ink:#0B1830;
+  --good:#45C08E; --warn:#F0A256; --coin:#F4C04E; --shade:rgba(0,0,0,.62); --dash:rgba(110,163,246,.5);
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0B1830; --bg-deep:#091327;
+  --panel:#1F56B5; --panel-2:#1A4A9D; --panel-ink:#FFFFFF; --panel-soft:rgba(255,255,255,.14); --panel-line:rgba(255,255,255,.22);
+  --card:#122546; --ink:#E5EEFC; --muted:#93A9CE; --line:#223A63; --chip:#1A3259;
+  --navy:#0D1D3B; --navy-ink:#E5EEFC; --accent:#6EA3F6; --accent-ink:#0B1830;
+  --good:#45C08E; --warn:#F0A256; --coin:#F4C04E; --shade:rgba(0,0,0,.62); --dash:rgba(110,163,246,.5);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{background:var(--bg)}
+body{color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px}
+.wrap{max-width:560px;margin:0 auto;padding-bottom:110px}
+.num{font-variant-numeric:tabular-nums}
+
+/* header */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);display:flex;align-items:center;justify-content:space-between;gap:8px;padding-block:12px 10px}
+.brand{font-family:var(--f-display);font-weight:700;font-size:22px;letter-spacing:.02em;text-transform:uppercase;color:var(--ink);line-height:1}
+.brand small{display:block;font-family:var(--f-body);font-weight:500;font-size:12px;letter-spacing:0;text-transform:none;color:var(--muted);margin-top:3px}
+.iconbtn{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--card);color:var(--ink);flex:none}
+.iconbtn svg{width:20px;height:20px}
+.sync{display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 11px;border-radius:12px;background:var(--card);font-size:12.5px;font-weight:600;white-space:nowrap}
+.sync i{width:9px;height:9px;border-radius:50%;background:var(--muted)}
+.sync.cloud i{background:var(--good)}.sync.local i{background:var(--warn)}.sync.error i{background:#D64545}.sync.syncing i{background:var(--accent);animation:blink 1s infinite}
+@keyframes blink{50%{opacity:.3}}
+
+/* hero panel */
+.hero{background:var(--panel);color:var(--panel-ink);border-radius:22px;padding:18px 18px 16px;position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;right:-60px;top:-50px;width:220px;height:220px;border-radius:50%;background:var(--panel-2);opacity:.7;pointer-events:none}
+.hero>*{position:relative;z-index:1}
+.pill{display:inline-flex;align-items:center;gap:6px;background:var(--navy);color:var(--navy-ink);border-radius:999px;padding:4px 11px;font-size:12px;font-weight:600}
+.pill.soft{background:var(--panel-soft);color:var(--panel-ink)}
+.big{font-family:var(--f-display);font-weight:700;text-transform:uppercase;line-height:.95;letter-spacing:.01em}
+.hero .big{font-size:clamp(46px,14vw,58px);margin-top:10px}
+.rank{font-size:15px;font-weight:600;margin-top:6px;opacity:.95}
+.xpbar{height:16px;border-radius:999px;background:var(--panel-soft);margin-top:14px;overflow:hidden}
+.xpbar i{display:block;height:100%;border-radius:999px;background:var(--panel-ink);transition:width .9s cubic-bezier(.2,.8,.2,1)}
+.xpmeta{display:flex;justify-content:space-between;font-size:12.5px;margin-top:6px;opacity:.9}
+.stats{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.stat{display:inline-flex;align-items:center;gap:6px;background:var(--panel-soft);border-radius:12px;padding:7px 10px;font-size:13px;font-weight:600}
+.stat svg{width:16px;height:16px}
+.hero .q{background:var(--panel-soft);color:var(--panel-ink)}
+.hero-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+
+/* section title — рамка выделения, как в тетради */
+.sec{margin-top:22px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.sec-l{display:flex;align-items:center;gap:8px;min-width:0}
+.sel{position:relative;display:inline-block;font-weight:700;font-size:15px;background:var(--card);color:var(--ink);padding:3px 9px;border:1.5px solid var(--accent);border-radius:2px}
+.sel::before,.sel::after{content:"";position:absolute;width:6px;height:6px;background:var(--card);border:1.5px solid var(--accent)}
+.sel::before{left:-4px;top:-4px}.sel::after{right:-4px;bottom:-4px}
+.q{flex:none;width:24px;height:24px;border-radius:50%;display:inline-grid;place-items:center;background:var(--card);color:var(--accent);font-weight:700;font-size:13px;line-height:1;border:1.5px solid var(--line)}
+.link{font-size:13px;font-weight:600;color:var(--ink);opacity:.85;text-decoration:underline;text-underline-offset:3px}
+.stack{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+.card{background:var(--card);border-radius:18px;padding:14px 15px}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.warnbox{background:var(--warn);color:#fff;border-radius:16px;padding:12px 14px;font-size:14px;margin-top:12px}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:14px;padding:12px 16px;font-weight:600;font-size:15px;background:var(--navy);color:var(--navy-ink);text-align:center}
+.btn.accent{background:var(--accent);color:var(--accent-ink)}
+.btn.ghost{background:var(--chip);color:var(--ink)}
+.btn.sm{padding:8px 12px;font-size:13px;border-radius:11px}
+.btn.wide{width:100%}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn svg{width:18px;height:18px;flex:none}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.addrow{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:14px}
+
+/* chips */
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border-radius:999px;padding:7px 12px;font-size:13px;font-weight:500;background:var(--chip);color:var(--ink);border:1.5px solid transparent}
+.chip[aria-pressed="true"]{background:var(--navy);color:var(--navy-ink)}
+.chip.sec2[aria-pressed="true"]{background:var(--card);border-color:var(--accent);color:var(--ink)}
+.tag{display:inline-block;border-radius:999px;padding:2px 8px;font-size:11.5px;font-weight:600;background:var(--chip);color:var(--ink)}
+.tag.navy{background:var(--navy);color:var(--navy-ink)}
+.tag.good{background:var(--good);color:#fff}
+.tag.warn{background:var(--warn);color:#fff}
+
+/* skills */
+.grp{font-family:var(--f-display);font-weight:500;text-transform:uppercase;font-size:13px;letter-spacing:.05em;color:var(--muted);margin-top:4px}
+.skill{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:center}
+.skill .nm{font-weight:600;font-size:14px;min-width:0}
+.skill .lv{font-family:var(--f-display);font-weight:700;font-size:20px;line-height:1}
+.segs{grid-column:1/-1;display:grid;grid-template-columns:repeat(10,1fr);gap:3px;margin-top:5px}
+.segs i{height:8px;border-radius:3px;background:var(--chip)}
+.segs i.on{background:var(--accent)}
+.segs i.part{background:linear-gradient(90deg,var(--accent) var(--p),var(--chip) var(--p))}
+
+/* state icons */
+.need{display:flex;flex-direction:column;gap:8px}
+.need-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.need-h b{font-size:14px}
+.need-h span{font-size:13px;color:var(--muted)}
+.icons5{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.icons5 button{height:52px;border-radius:14px;background:var(--chip);color:var(--muted);display:grid;place-items:center;border:1.5px solid transparent}
+.icons5 button svg{width:30px;height:30px}
+.icons5 button.on{background:var(--accent);color:var(--accent-ink)}
+.icons5 button.past{color:var(--accent)}
+
+/* entries */
+.entry{display:flex;flex-direction:column;gap:6px}
+.entry .t{font-weight:600}
+.entry .meta{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.entry .xp{margin-left:auto;font-weight:700;font-size:13px;color:var(--accent);white-space:nowrap}
+.entry img{border-radius:12px;max-height:220px;object-fit:cover;width:100%}
+.note{font-size:13.5px;color:var(--muted);border-left:3px solid var(--line);padding-left:9px}
+.day{font-family:var(--f-display);font-weight:500;text-transform:uppercase;font-size:14px;letter-spacing:.04em;color:var(--ink);opacity:.8;margin-top:14px}
+
+.remind{background:var(--navy);color:var(--navy-ink);border-radius:18px;padding:14px 15px;display:flex;gap:12px;align-items:flex-start}
+.remind svg{flex:none;width:22px;height:22px;margin-top:2px}
+
+/* quest */
+.quest{display:flex;flex-direction:column;gap:8px}
+.quest.boss{background:var(--panel);color:var(--panel-ink)}
+.quest.boss .muted{color:var(--panel-ink);opacity:.8}
+.quest.boss .tag{background:var(--panel-soft);color:var(--panel-ink)}
+.quest .qt{font-weight:600;font-size:15.5px}
+.goal-step{display:flex;gap:10px;align-items:flex-start;padding:6px 0}
+.check{flex:none;width:26px;height:26px;border-radius:8px;border:2px solid var(--accent);display:grid;place-items:center}
+.check.on{background:var(--accent);color:var(--accent-ink)}
+.check svg{width:15px;height:15px}
+
+/* wishlist */
+.coin{width:16px;height:16px;border-radius:50%;background:var(--coin);display:inline-block;flex:none;box-shadow:inset 0 0 0 2.5px rgba(0,0,0,.12)}
+.price{display:inline-flex;align-items:center;gap:5px;font-weight:700}
+.wish-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
+.wish{background:var(--card);border-radius:18px;overflow:hidden;display:flex;flex-direction:column}
+.wish .ph{aspect-ratio:4/5;max-width:100%;background:var(--chip);position:relative;display:grid;place-items:center;color:var(--muted)}
+.wish .ph{background-repeat:no-repeat}
+.wish .ph .ini{font-family:var(--f-display);font-weight:700;font-size:44px;color:var(--accent);text-transform:uppercase}
+.wish .ph .edit{position:absolute;right:8px;top:8px;width:32px;height:32px;border-radius:10px;background:var(--card);color:var(--ink);display:grid;place-items:center;font-size:14px}
+.wish .bd{padding:10px 11px 12px;display:flex;flex-direction:column;gap:6px;flex:1}
+.wish .ti{font-weight:600;font-size:14px;line-height:1.25}
+.prog{height:6px;border-radius:9px;background:var(--chip);overflow:hidden}
+.prog i{display:block;height:100%;background:var(--coin)}
+.wish .btn{margin-top:auto}
+.ach-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px;margin-top:12px}
+.ach{background:var(--card);border-radius:16px;padding:12px 8px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px}
+.ach .ic{width:52px;height:52px;border-radius:16px;display:grid;place-items:center;background:var(--chip);color:var(--muted);font-family:var(--f-display);font-weight:700;font-size:19px}
+.ach.on .ic{background:var(--accent);color:var(--accent-ink)}
+.ach .an{font-size:12.5px;font-weight:600;line-height:1.2}
+.ach .ad{font-size:11px;color:var(--muted);line-height:1.25}
+.ach:not(.on){opacity:.7}
+
+/* segmented */
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--card);border-radius:14px;padding:4px;gap:4px;margin-top:4px}
+.seg button{border-radius:10px;padding:9px 6px;font-weight:600;font-size:13.5px}
+.seg button[aria-pressed="true"]{background:var(--navy);color:var(--navy-ink)}
+
+/* chart */
+.chart svg{width:100%;height:auto;display:block}
+.chart text{fill:var(--muted);font-size:11px;font-family:var(--f-body)}
+.ratio{display:flex;height:14px;border-radius:999px;overflow:hidden;background:var(--chip);margin-top:8px}
+.ratio i{display:block;height:100%}
+table.cmp{width:100%;border-collapse:collapse;font-size:14px}
+table.cmp td,table.cmp th{padding:7px 4px;border-bottom:1px solid var(--line);text-align:left}
+table.cmp th{font-size:12px;color:var(--muted);font-weight:600}
+table.cmp td.n{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.delta{color:var(--good)}
+
+/* nav */
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--card);border-top:1px solid var(--line);
+  padding:6px max(10px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(10px,env(safe-area-inset-left,0px))}
+.nav .in{max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr)}
+.nav button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px;font-size:11.5px;font-weight:600;color:var(--muted);border-radius:12px}
+.nav button svg{width:22px;height:22px}
+.nav button[aria-current="page"]{color:var(--ink)}
+.nav button[aria-current="page"] svg{color:var(--accent)}
+
+/* sheet */
+.shade{position:fixed;inset:0;background:var(--shade);z-index:40;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--bg);width:100%;max-width:600px;max-height:92%;overflow:auto;border-radius:24px 24px 0 0;
+  padding:16px max(16px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));
+  animation:up .28s cubic-bezier(.2,.8,.2,1)}
+@keyframes up{from{transform:translateY(40px);opacity:.4}to{transform:none;opacity:1}}
+.sheet h2{font-family:var(--f-display);font-weight:700;text-transform:uppercase;font-size:28px;margin:4px 0 12px;line-height:1}
+.sheet-h{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.field{display:flex;flex-direction:column;gap:6px;margin-top:14px}
+.field>label,.lbl{font-size:13px;font-weight:600;color:var(--muted)}
+.in-text{width:100%;background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:11px 12px;outline:none}
+.in-text:focus{border-color:var(--accent)}
+textarea.in-text{min-height:84px;resize:vertical}
+.xpprev{position:sticky;bottom:0;margin-top:16px;background:var(--bg);padding-top:10px;display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}
+.xpprev b{font-family:var(--f-display);font-size:24px}
+details summary{cursor:pointer;font-weight:600;font-size:14px;margin-top:16px}
+.toggle{display:flex;gap:10px;align-items:center;padding:8px 0;font-weight:500}
+.toggle input{width:20px;height:20px;accent-color:var(--accent)}
+.imgpick{display:grid;place-items:center;aspect-ratio:4/3;max-width:100%;border-radius:16px;background:var(--card);border:1.5px dashed var(--line);overflow:hidden;position:relative;cursor:pointer;color:var(--muted);font-weight:600}
+.imgpick img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+
+/* toast + levelup */
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:95;background:var(--navy);color:var(--navy-ink);
+  padding:10px 16px;border-radius:14px;font-weight:600;font-size:14px;max-width:calc(100% - 32px);box-shadow:0 8px 24px rgba(0,0,0,.18);animation:up .25s}
+.lvlup{position:fixed;inset:0;z-index:90;background:var(--panel);color:var(--panel-ink);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+  padding:24px max(24px,env(safe-area-inset-right,0px)) 24px max(24px,env(safe-area-inset-left,0px))}
+.lvlup .big{font-size:clamp(64px,22vw,120px)}
+.lvlup .burst{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.lvlup .burst i{position:absolute;width:10px;height:18px;border-radius:3px;background:var(--panel-ink);opacity:.8;animation:fall 2.2s linear forwards}
+@keyframes fall{from{transform:translateY(-10vh) rotate(0)}to{transform:translateY(110vh) rotate(540deg)}}
+.lvlup .pop{animation:pop .6s cubic-bezier(.2,1.6,.4,1)}
+@keyframes pop{from{transform:scale(.4);opacity:0}to{transform:none;opacity:1}}
+
+.xptable{display:grid;grid-template-columns:1fr auto;gap:6px 12px;font-size:14px;margin-top:8px}
+.xptable b{text-align:right;font-variant-numeric:tabular-nums}
+.empty{text-align:center;padding:26px 16px}
+.empty .big{font-size:26px}
+.spin{display:inline-block;width:14px;height:14px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;animation:sp .8s linear infinite;vertical-align:-2px}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* обучение: подсветка живого интерфейса */
+.tour{position:fixed;inset:0;z-index:80;pointer-events:none}
+.tour .blk{position:fixed;background:transparent;pointer-events:auto}
+.tour .hole{position:fixed;border-radius:16px;box-shadow:0 0 0 9999px var(--shade);outline:3px solid var(--panel-ink);outline-offset:3px;transition:all .25s ease;pointer-events:none}
+.tour .hole.tap{animation:pulse 1.4s ease-in-out infinite}
+.tour .hole.none{width:0!important;height:0!important;outline:0}
+@keyframes pulse{0%,100%{outline-color:var(--panel-ink)}50%{outline-color:var(--accent)}}
+.tour .tip{position:fixed;pointer-events:auto;background:var(--card);color:var(--ink);border-radius:18px;padding:14px 15px;box-shadow:0 12px 32px rgba(0,0,0,.25);width:min(360px,calc(100vw - 32px));transition:top .25s ease,left .25s ease}
+.tour .tip h3{font-family:var(--f-display);font-weight:700;text-transform:uppercase;font-size:20px;margin:6px 0 6px;line-height:1.05}
+.tour .tip p{margin:0;font-size:14.5px}
+.tour .tip .do{margin-top:10px;font-weight:700;color:var(--accent);font-size:14px}
+.tour .tip .ok{margin-top:10px;font-weight:700;color:var(--good);font-size:14px}
+.cropbox{width:100%;max-width:100%;border-radius:16px;background-color:var(--chip);touch-action:none;cursor:grab;outline:2px solid var(--accent);outline-offset:2px}
+.gal{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.gi .th{aspect-ratio:4/5;max-width:100%;border-radius:12px;background-color:var(--chip);position:relative}
+.gi .cov{position:absolute;left:6px;top:6px}
+.gi-b{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
+.gi-b .btn{padding:5px 8px;font-size:11.5px;border-radius:9px}
+.wish .ph[data-act]{cursor:zoom-in}
+.wish .ph .cnt{position:absolute;left:8px;bottom:8px;background:var(--card)}
+button.ach{border:0;font:inherit;color:inherit;cursor:pointer}
+.wish>svg,.ach .ic svg{width:26px;height:26px;flex:none}
+.ach .ic{background-color:var(--chip);background-repeat:no-repeat}
+/* сделано / в планах: один цвет, разная плотность */
+.entry-row{display:flex;gap:12px;align-items:flex-start}
+.entry-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.st-mark{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;margin-top:-2px}
+.st-mark svg{width:16px;height:16px}
+.is-done .st-mark{background:var(--accent);color:var(--accent-ink)}
+.is-plan{background:transparent;border:2px dashed var(--dash);box-shadow:none}
+.is-plan .st-mark{border:2px dashed var(--accent);background:transparent;cursor:pointer}
+.is-plan .st-mark:hover{background:var(--chip)}
+.is-plan .t{opacity:.85}
+.is-plan .tag{background:transparent;border:1.5px solid var(--dash)}
+.is-plan .tag.good,.is-plan .tag.warn{border:0}
+
+/* игровая карточка квеста: все оттенки одного синего */
+.qcard{position:relative;border-radius:20px;padding:16px 16px 14px;display:flex;flex-direction:column;gap:10px;overflow:hidden;
+  background:var(--panel);color:var(--panel-ink)}
+.qcard::before,.qcard::after{content:"";position:absolute;width:16px;height:16px;border:3px solid var(--panel-ink);opacity:.55}
+.qcard::before{left:8px;top:8px;border-right:0;border-bottom:0;border-radius:6px 0 0 0}
+.qcard::after{right:8px;bottom:8px;border-left:0;border-top:0;border-radius:0 0 6px 0}
+.qcard.q-day{background:var(--card);color:var(--ink);border:2px solid var(--accent)}
+.qcard.q-day::before,.qcard.q-day::after{border-color:var(--accent)}
+.qcard.q-month{background:var(--navy);color:var(--navy-ink)}
+.qcard.q-closed{opacity:.6}
+.q-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.q-badge{font-family:var(--f-display);font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-size:13px;padding:4px 10px;border-radius:8px;background:var(--panel-soft)}
+.q-day .q-badge{background:var(--chip)}
+.q-stars{display:flex;gap:2px}
+.q-stars span{width:18px;height:18px;opacity:.3}
+.q-stars span.on{opacity:1}
+.q-stars svg{width:100%;height:100%}
+.q-title{font-family:var(--f-display);font-weight:700;text-transform:uppercase;font-size:24px;line-height:1.05;letter-spacing:.01em;text-wrap:balance}
+.q-skill{font-size:13px;opacity:.8;margin-top:-4px}
+.hp{display:flex;flex-direction:column;gap:5px}
+.hp-l{display:flex;justify-content:space-between;font-size:12.5px;font-weight:600;opacity:.9}
+.hp-bar{display:flex;gap:4px;height:8px}
+.hp-bar i{flex:1;border-radius:4px;background:currentColor;opacity:.2}
+.hp-bar i.on{background:currentColor;opacity:1}
+.q-steps{display:flex;flex-direction:column;gap:6px}
+.q-step{display:flex;gap:10px;align-items:center;text-align:left;padding:8px 10px;border-radius:12px;background:var(--panel-soft);color:inherit;font-size:14px}
+.q-day .q-step{background:var(--chip)}
+.q-step.done span:last-child{text-decoration:line-through;opacity:.6}
+.q-box{flex:none;width:22px;height:22px;border-radius:7px;border:2px solid currentColor;display:grid;place-items:center}
+.q-step.done .q-box{background:currentColor}
+.q-step.done .q-box svg{color:var(--panel)}
+.q-day .q-step.done .q-box svg{color:var(--card)}
+.q-month .q-step.done .q-box svg{color:var(--navy)}
+.q-box svg{width:14px;height:14px}
+.q-time{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px;font-weight:600}
+.pips{display:flex;gap:4px}
+.pips i{width:12px;height:12px;border-radius:3px;border:1.5px solid currentColor;opacity:.9}
+.pips i.gone{opacity:.25;background:currentColor}
+.pips i.now{background:currentColor;opacity:1}
+.tbar{flex:1;max-width:160px;height:8px;border-radius:9px;background:var(--panel-soft);overflow:hidden}
+.tbar i{display:block;height:100%;background:currentColor;opacity:.6}
+.q-loot{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13.5px;padding:8px 10px;border-radius:12px;border:1.5px dashed currentColor}
+.q-loot .q-chest{width:22px;height:22px}
+.q-loot .q-chest svg{width:100%;height:100%}
+.q-moved{opacity:.75;margin-left:auto}
+.q-btns{gap:6px}
+.q-main{background:var(--panel-ink);color:var(--panel)}
+.q-day .q-main{background:var(--accent);color:var(--accent-ink)}
+.q-month .q-main{background:var(--navy-ink);color:var(--navy)}
+.q-sec{background:var(--panel-soft);color:inherit}
+.q-day .q-sec{background:var(--chip)}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+</head>
+<body>
+<div class="wrap" id="app">
+  <header class="top">
+    <div class="brand">прокачка<small id="seasonLbl">сезон 1</small></div>
+    <div class="row" style="flex-wrap:nowrap;gap:6px">
+      <button class="sync local" id="syncBtn" data-act="sync" aria-label="где сохраняются данные"><i></i><span id="syncTxt">устройство</span></button>
+      <button class="iconbtn" id="helpBtn" data-act="help" aria-label="помощь" style="font-weight:700;font-size:18px">?</button>
+      <button class="iconbtn" data-act="settings" aria-label="настройки"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg></button>
+    </div>
+  </header>
+  <main id="view"></main>
+</div>
+<nav class="nav" aria-label="разделы"><div class="in" id="nav"></div></nav>
+<div id="layer"></div>
+
+<script>
+(function(){
+"use strict";
+/* ================= каталог навыков ================= */
+/* сферы собраны по популярным направлениям онлайн-обучения (маркетинг и продажи, дизайн, ии, видео, красота и здоровье,
+   бухгалтерия, психология, разработка, маркетплейсы) и по «колесу жизни» для личных сфер.
+   у навыка: d — пояснение, t — шаблоны действий "тип|текст", c — идея квеста.
+   {а|} в текстах — род: слева для женского, справа для мужского. */
+const GROUPS=[
+  {id:"ai",name:"ии и нейросети"},
+  {id:"it",name:"it и разработка"},
+  {id:"design",name:"дизайн и визуал"},
+  {id:"media",name:"видео, фото, звук"},
+  {id:"mkt",name:"маркетинг и продвижение"},
+  {id:"sales",name:"продажи и клиенты"},
+  {id:"biz",name:"бизнес и деньги"},
+  {id:"work",name:"профессия и экспертиза"},
+  {id:"mind",name:"учёба и мышление"},
+  {id:"body",name:"тело и энергия"},
+  {id:"life",name:"люди и жизнь"},
+  {id:"craft",name:"творчество"}
+];
+const CATALOG=[
+  {id:"ai",g:"ai",name:"нейросети: визуал",d:"генерации, ретушь, мокапы",t:["create|сгенерировал{а|} серию картинок","practice|отработал{а|} промпт на ретушь","ship|добавил{а|} нейро-работу в портфолио"],c:"сделать один кадр в трёх разных нейросетях и сравнить"},
+  {id:"aitext",g:"ai",name:"нейросети: тексты и промпты",d:"ассистенты, промпты, ии в работе",t:["practice|сделал{а|} задачу с помощью ии","create|написал{а|} свой мастер-промпт","practice|сэкономил{а|} время на рутине через ии"],c:"неделю делать одну рабочую задачу в день через ии"},
+  {id:"agents",g:"ai",name:"ии-агенты и ассистенты",d:"свои gpt, агенты, проекты",t:["create|собрал{а|} своего ассистента","practice|настроил{а|} агента под задачу","ship|дал{а|} ассистента другим людям"],c:"собрать ассистента, который заберёт одну рутинную задачу"},
+  {id:"auto",g:"ai",name:"автоматизация и боты",d:"боты, связки, интеграции",t:["create|собрал{а|} бота","create|связал{а|} два сервиса в автоматизацию","ship|запустил{а|} автоматизацию в работу"],c:"найти рутину, которая съедает час в неделю, и автоматизировать её"},
+  {id:"nocode",g:"ai",name:"вайбкодинг и no-code",d:"сайты и приложения без кода",t:["create|сделал{а|} прототип через ии","ship|выложил{а|} проект в интернет","practice|починил{а|} ошибку в своём проекте"],c:"за выходные собрать маленькое приложение и дать попробовать троим"},
+  {id:"aivideo",g:"ai",name:"нейровидео",d:"генерация видео, анимация, озвучка",t:["create|сгенерировал{а|} ролик","practice|разобрал{а|} новую модель для видео","ship|опубликовал{а|} нейро-ролик"],c:"сделать 15-секундный ролик целиком в нейросетях"},
+
+  {id:"code",g:"it",name:"программирование",d:"языки, алгоритмы, скрипты",t:["practice|решил{а|} задачу","create|написал{а|} скрипт","practice|разобрал{а|} чужой код"],c:"каждый день неделю решать по одной задаче"},
+  {id:"web",g:"it",name:"сайты и веб-разработка",d:"фронтенд, бэкенд",t:["create|сверстал{а|} страницу","ship|выложил{а|} сайт","practice|разобрал{а|} новую технологию на примере"],c:"сделать и выложить одностраничник для себя или друга"},
+  {id:"mobile",g:"it",name:"мобильные приложения",d:"ios, android, кроссплатформа",t:["create|сделал{а|} экран приложения","practice|разобрал{а|} пример приложения","ship|выпустил{а|} сборку"],c:"собрать приложение с одной полезной функцией"},
+  {id:"gamedev",g:"it",name:"создание игр",d:"механики, движки, свои игры",t:["create|сделал{а|} механику","create|собрал{а|} уровень","ship|дал{а|} поиграть другим"],c:"сделать играбельный прототип за 7 дней"},
+  {id:"qa",g:"it",name:"тестирование",d:"ручное и автотесты",t:["practice|написал{а|} тест-кейсы","practice|{нашла|нашёл} баг","create|написал{а|} автотест"],c:"найти и описать 10 багов в любимом приложении"},
+  {id:"sys",g:"it",name:"системы и безопасность",d:"серверы, сети, защита",t:["practice|настроил{а|} сервер или окружение","learn|разобрал{а|} тему безопасности","create|написал{а|} себе инструкцию"],c:"настроить резервные копии и двухфакторную защиту везде"},
+  {id:"data",g:"it",name:"аналитика и данные",d:"таблицы, sql, отчёты",t:["practice|построил{а|} отчёт","create|сделал{а|} дашборд","practice|{нашла|нашёл} вывод в цифрах"],c:"собрать свои цифры за месяц и найти в них что-то неожиданное"},
+
+  {id:"design",g:"design",name:"графический дизайн",d:"композиция, типографика, айдентика",t:["create|сделал{а|} макет","practice|сделал{а|} упражнение на композицию","ship|отдал{а|} работу клиенту"],c:"сделать 5 вариантов одного макета и выбрать лучший вместе с кем-то"},
+  {id:"uiux",g:"design",name:"ui/ux дизайн",d:"интерфейсы, сценарии, прототипы",t:["create|нарисовал{а|} экран","practice|{провела|провёл} интервью с пользователем","ship|показал{а|} прототип"],c:"перерисовать неудобный экран любимого приложения"},
+  {id:"webdesign",g:"design",name:"веб-дизайн и вёрстка",d:"тильда, figma, лендинги",t:["create|собрал{а|} лендинг","practice|разобрал{а|} чужой сайт","ship|сдал{а|} сайт"],c:"собрать себе сайт за неделю"},
+  {id:"motion",g:"design",name:"моушн и 3d",d:"анимация, 3d-графика",t:["create|сделал{а|} анимацию","practice|повторил{а|} урок по 3d","ship|выложил{а|} работу"],c:"сделать 3 коротких анимации за неделю"},
+  {id:"illus",g:"design",name:"иллюстрация и рисование",d:"скетчи, диджитал, традиционка",t:["practice|сделал{а|} скетч","create|закончил{а|} иллюстрацию","ship|показал{а|} рисунок"],c:"рисовать по скетчу каждый день неделю"},
+  {id:"interior",g:"design",name:"интерьер и ландшафт",d:"планировки, мудборды, проекты",t:["create|сделал{а|} планировку","practice|собрал{а|} мудборд","ship|сдал{а|} проект"],c:"сделать проект одной комнаты от начала до конца"},
+  {id:"style",g:"design",name:"стиль и мода",d:"образы, капсулы, тренды",t:["practice|собрал{а|} образ","create|сделал{а|} капсулу","learn|разобрал{а|} тренды сезона"],c:"собрать капсулу из 10 вещей и неделю носить только её"},
+
+  {id:"video",g:"media",name:"видеомонтаж",d:"монтаж, цвет, звук",t:["create|смонтировал{а|} ролик","practice|отработал{а|} приём монтажа","ship|сдал{а|} видео"],c:"смонтировать один ролик в трёх разных ритмах"},
+  {id:"photo",g:"media",name:"фото и съёмка",d:"свет, кадр, обработка",t:["practice|{провела|провёл} съёмку","create|обработал{а|} серию","ship|выложил{а|} фото"],c:"неделю снимать по одному кадру в день на одну тему"},
+  {id:"content",g:"media",name:"ютуб и видеоблог",d:"ролики, сценарий, подача",t:["create|написал{а|} сценарий","create|записал{а|} видео","ship|опубликовал{а|} ролик"],c:"выпустить первое видео, даже если оно неидеальное"},
+  {id:"reels",g:"media",name:"рилс и короткие видео",d:"вертикальные ролики, тренды",t:["create|снял{а|} рилс","ship|выложил{а|} рилс","practice|разобрал{а|} залетевшие ролики"],c:"выложить 7 рилс за 7 дней"},
+  {id:"music",g:"media",name:"музыка и звук",d:"инструменты, вокал, сведение",t:["practice|позанимал{ась|ся} на инструменте","create|записал{а|} трек","ship|показал{а|} трек людям"],c:"записать один трек от начала до конца"},
+
+  {id:"market",g:"mkt",name:"маркетинг",d:"воронки, оффер, позиционирование",t:["practice|разобрал{а|} конкурентов","create|придумал{а|} оффер","ship|запустил{а|} акцию"],c:"переписать оффер и показать его пяти людям из своей аудитории"},
+  {id:"social",g:"mkt",name:"smm и соцсети",d:"посты, сторис, контент-план",t:["ship|опубликовал{а|} пост","ship|выложил{а|} сторис","practice|составил{а|} контент-план"],c:"публиковаться каждый день неделю"},
+  {id:"ads",g:"mkt",name:"таргет и реклама",d:"креативы, кабинеты, статистика",t:["ship|запустил{а|} рекламу","create|сделал{а|} креативы","practice|разобрал{а|} статистику"],c:"запустить тест из трёх креативов и найти лучший"},
+  {id:"copy",g:"mkt",name:"тексты и копирайтинг",d:"посты, лендинги, рассылки",t:["create|написал{а|} текст","practice|отредактировал{а|} старый текст","ship|опубликовал{а|} статью"],c:"писать по 300 слов каждый день неделю"},
+  {id:"brand",g:"mkt",name:"личный бренд и популярность",d:"охваты, узнаваемость, аудитория",t:["ship|рассказал{а|} о себе публично","practice|ответил{а|} подписчикам","ship|сделал{а|} коллаборацию"],c:"договориться о коллаборации с тем, кто больше тебя"},
+  {id:"story",g:"mkt",name:"сторителлинг",d:"истории, подача, драматургия",t:["create|написал{а|} историю","practice|рассказал{а|} историю вслух","ship|опубликовал{а|} историю"],c:"рассказать личную историю публично"},
+  {id:"pr",g:"mkt",name:"pr и медиа",d:"интервью, статьи, подкасты",t:["ship|дал{а|} интервью","practice|написал{а|} в медиа","ship|выступил{а|} на чужой площадке"],c:"предложить себя гостем в три подкаста или блога"},
+
+  {id:"sales",g:"sales",name:"продажи",d:"созвоны, офферы, сделки",t:["practice|{провела|провёл} продающий созвон","sell|закрыл{а|} сделку","practice|разобрал{а|} запись своего созвона"],c:"провести 5 продающих созвонов за неделю"},
+  {id:"leads",g:"sales",name:"поиск клиентов",d:"холодные касания, лидогенерация",t:["practice|написал{а|} 10 потенциальным клиентам","practice|сделал{а|} холодные звонки","practice|собрал{а|} базу контактов"],c:"сделать 50 касаний за неделю"},
+  {id:"nego",g:"sales",name:"переговоры",d:"условия, возражения, цена",t:["practice|{провела|провёл} переговоры","practice|отработал{а|} возражение","sell|договорил{ась|ся} о лучших условиях"],c:"попросить цену выше обычной хотя бы у одного клиента"},
+  {id:"service",g:"sales",name:"работа с клиентами",d:"сервис, удержание, отзывы",t:["practice|помог{ла|} клиенту","practice|собрал{а|} отзыв","sell|продал{а|} повторно"],c:"собрать 5 отзывов за неделю"},
+  {id:"marketplace",g:"sales",name:"маркетплейсы",d:"карточки, аналитика, поставки",t:["create|оформил{а|} карточку товара","practice|разобрал{а|} аналитику продаж","ship|запустил{а|} новый товар"],c:"переделать карточку самого слабого товара и сравнить продажи"},
+
+  {id:"product",g:"biz",name:"свои продукты",d:"идеи, запуски, пассивный доход",t:["create|описал{а|} идею продукта","practice|поговорил{а|} с потенциальным клиентом","ship|запустил{а|} продукт"],c:"продать первую версию продукта до того, как она идеальна"},
+  {id:"pm",g:"biz",name:"управление проектами",d:"планы, сроки, процессы",t:["practice|составил{а|} план","practice|{провела|провёл} встречу","ship|сдал{а|} проект в срок"],c:"неделю планировать каждый день с вечера"},
+  {id:"lead",g:"biz",name:"лидерство и команда",d:"делегирование, обратная связь",t:["practice|дал{а|} обратную связь","practice|делегировал{а|} задачу","practice|{провела|провёл} встречу один на один"],c:"отдать другому задачу, которую привык{ла|} делать сам{а|}"},
+  {id:"hr",g:"biz",name:"найм и hr",d:"вакансии, собеседования, адаптация",t:["practice|{провела|провёл} собеседование","create|написал{а|} вакансию","practice|помог{ла|} новичку освоиться"],c:"переписать вакансию так, чтобы её хотелось прочитать"},
+  {id:"account",g:"biz",name:"бухгалтерия и учёт",d:"отчёты, налоги, документы",t:["practice|{свела|свёл} отчёт","learn|разобрал{а|} изменения в правилах","practice|закрыл{а|} период"],c:"навести порядок в документах за квартал"},
+  {id:"money",g:"biz",name:"личные финансы",d:"бюджет, долги, накопления",t:["practice|записал{а|} траты","practice|отложил{а|} деньги","practice|закрыл{а|} часть долга"],c:"месяц записывать все траты"},
+  {id:"invest",g:"biz",name:"инвестиции",d:"инструменты, портфель",t:["learn|разобрал{а|} инструмент","practice|пополнил{а|} счёт","practice|пересмотрел{а|} портфель"],c:"разобраться в одном инструменте и объяснить его другу"},
+
+  {id:"job",g:"work",name:"основная работа",d:"навыки текущей должности",t:["practice|сделал{а|} рабочую задачу на отлично","create|улучшил{а|} процесс на работе","ship|получил{а|} результат, которым горжусь"],c:"сделать на работе одну вещь, которую никто не просил, но всем станет легче"},
+  {id:"career",g:"work",name:"карьера",d:"резюме, собеседования, рост",t:["create|обновил{а|} резюме","practice|откликнул{ась|ся} на вакансию","practice|{прошла|прошёл} собеседование"],c:"откликнуться на 10 вакансий, которые кажутся «не по зубам»"},
+  {id:"teach",g:"work",name:"преподавание и методика",d:"уроки, программы, проверка",t:["teach|{провела|провёл} урок","create|сделал{а|} материал для урока","teach|проверил{а|} домашки"],c:"собрать мини-урок и провести его для 3 человек"},
+  {id:"mentor",g:"work",name:"наставничество",d:"помощь другим расти",t:["teach|помог{ла|} кому-то разобраться","teach|{провела|провёл} консультацию","teach|ответил{а|} на вопросы учеников"],c:"взять одного человека на месяц и помочь ему с одной целью"},
+  {id:"speak",g:"work",name:"публичные выступления",d:"эфиры, сцена, камера",t:["ship|выступил{а|} перед людьми","ship|{провела|провёл} эфир","practice|отрепетировал{а|} речь"],c:"провести эфир или выступить хотя бы перед 10 людьми"},
+  {id:"psych",g:"work",name:"психология и помощь людям",d:"консультации, практика, супервизии",t:["teach|{провела|провёл} сессию","learn|разобрал{а|} случай","practice|сходил{а|} на супервизию"],c:"провести 3 бесплатные сессии для практики и собрать обратную связь"},
+  {id:"beauty",g:"work",name:"бьюти-услуги",d:"маникюр, визаж, массаж, волосы",t:["sell|принял{а|} клиента","practice|отработал{а|} технику","ship|выложил{а|} работу в портфолио"],c:"освоить одну новую технику и сделать 3 модели"},
+  {id:"coach",g:"work",name:"тренер и коуч",d:"фитнес, коучинг, сопровождение",t:["teach|{провела|провёл} тренировку","create|составил{а|} программу","sell|взял{а|} нового клиента"],c:"запустить мини-марафон для 5 человек"},
+
+  {id:"lang",g:"mind",name:"иностранные языки",d:"английский и другие",t:["practice|позанимал{ась|ся} языком","practice|поговорил{а|} с носителем","learn|посмотрел{а|} фильм в оригинале"],c:"30 дней заниматься языком по 15 минут"},
+  {id:"read",g:"mind",name:"чтение и насмотренность",d:"книги, кейсы, референсы",t:["learn|прочитал{а|} главу","learn|посмотрел{а|} 20 референсов","create|записал{а|} мысли из книги"],c:"дочитать одну книгу за месяц и пересказать главное"},
+  {id:"study",g:"mind",name:"учёба и экзамены",d:"вуз, школа, курсы",t:["learn|{прошла|прошёл} тему","practice|решил{а|} вариант","ship|сдал{а|} экзамен или зачёт"],c:"закрыть все долги по учёбе за неделю"},
+  {id:"think",g:"mind",name:"мышление и решения",d:"анализ, критическое мышление",t:["practice|разложил{а|} проблему на части","practice|принял{а|} решение по списку за и против","create|записал{а|} выводы недели"],c:"неделю каждый вечер записывать одно решение дня и почему оно такое"},
+  {id:"focus",g:"mind",name:"дисциплина и фокус",d:"доводить до конца, без прокрастинации",t:["practice|сделал{а|} главное дело дня первым","practice|поработал{а|} 2 часа без отвлечений","practice|{довела|довёл} дело до конца"],c:"неделю начинать день с самого важного дела"},
+
+  {id:"sport",g:"body",name:"спорт и движение",d:"тренировки, шаги, активность",t:["practice|потренировал{ась|ся}","practice|{прошла|прошёл} 10 000 шагов","try|попробовал{а|} новый вид спорта"],c:"3 тренировки в неделю, 4 недели подряд"},
+  {id:"yoga",g:"body",name:"йога и растяжка",d:"практики, гибкость",t:["practice|сделал{а|} практику","practice|потянул{ась|ся} 15 минут","try|сходил{а|} на новое занятие"],c:"растягиваться по 10 минут каждый день 2 недели"},
+  {id:"sleep",g:"body",name:"сон и режим",d:"ложиться вовремя, ритм дня",t:["practice|{легла|лёг} вовремя","practice|убрал{а|} телефон за час до сна","practice|встал{а|} без будильника"],c:"неделю ложиться до полуночи"},
+  {id:"food",g:"body",name:"еда и готовка",d:"домашняя еда, новые рецепты",t:["practice|приготовил{а|} дома","try|попробовал{а|} новый рецепт","practice|выпил{а|} достаточно воды"],c:"неделю готовить дома хотя бы раз в день"},
+  {id:"calm",g:"body",name:"отдых и восстановление",d:"паузы, прогулки, без выгорания",t:["practice|отдохнул{а|} без телефона","practice|погулял{а|} на воздухе","practice|написал{а|} в дневник"],c:"устроить себе один полностью свободный день"},
+  {id:"care",g:"body",name:"забота о себе",d:"уход, врачи, самочувствие",t:["practice|сделал{а|} уход","practice|сходил{а|} к врачу","practice|устроил{а|} себе день заботы"],c:"записаться ко всем врачам, к которым давно собирал{ась|ся}"},
+
+  {id:"relations",g:"life",name:"отношения и близкие",d:"время вместе, разговоры",t:["practice|{провела|провёл} вечер с близкими","practice|позвонил{а|} родным","practice|поговорил{а|} по душам"],c:"устроить свидание или вечер, который запомнится"},
+  {id:"friends",g:"life",name:"друзья и окружение",d:"встречи, новые знакомства",t:["practice|встретил{ась|ся} с друзьями","try|познакомил{ась|ся} с новым человеком","practice|написал{а|} старому другу"],c:"сходить на мероприятие, где никого не знаешь"},
+  {id:"parent",g:"life",name:"родительство",d:"время с детьми, развитие",t:["practice|{провела|провёл} время с ребёнком","create|придумал{а|} занятие для ребёнка","learn|прочитал{а|} про развитие детей"],c:"неделю каждый день 20 минут только с ребёнком, без телефона"},
+  {id:"home",g:"life",name:"быт и порядок",d:"дом, дела, системы",t:["practice|разобрал{а|} одну зону","practice|закрыл{а|} бытовые дела","create|наладил{а|} систему хранения"],c:"разобрать один шкаф или комнату полностью"},
+  {id:"explore",g:"life",name:"новый опыт и путешествия",d:"места, поездки, впечатления",t:["try|сходил{а|} в новое место","try|съездил{а|} куда-то","try|попробовал{а|} что-то впервые"],c:"съездить на выходные туда, где ни разу не был{а|}"},
+  {id:"courage",g:"life",name:"смелость",d:"делать то, что страшно",t:["try|сделал{а|} то, что страшно","try|попросил{а|} о помощи","try|сказал{а|} «нет»"],c:"сделать одну вещь, которую давно боишься"},
+  {id:"help",g:"life",name:"помощь другим",d:"волонтёрство, добрые дела",t:["teach|помог{ла|} кому-то","practice|сделал{а|} доброе дело","practice|поучаствовал{а|} в волонтёрстве"],c:"месяц делать по одному доброму делу в неделю"},
+
+  {id:"hobby",g:"craft",name:"хобби для души",d:"то, что просто нравится",t:["create|сделал{а|} что-то для души","practice|позанимал{ась|ся} хобби","try|попробовал{а|} новое хобби"],c:"выделить на хобби 3 вечера за неделю"},
+  {id:"handmade",g:"craft",name:"рукоделие и хендмейд",d:"изделия руками, мастерская",t:["create|сделал{а|} изделие","practice|отработал{а|} технику","sell|продал{а|} изделие"],c:"сделать мини-коллекцию из 5 изделий"},
+  {id:"writing",g:"craft",name:"писательство",d:"рассказы, книга, эссе",t:["create|написал{а|} страницу","practice|писал{а|} 20 минут без остановки","ship|опубликовал{а|} текст"],c:"написать рассказ от начала до конца"}
+];
+const GEN_T=["learn|изучил{а|} урок или статью","try|попробовал{а|} новый приём или инструмент","teach|помог{ла|} кому-то разобраться"];
+const LEGACY_ACTIVE=["ai","auto","code","gamedev","product","sales","market","brand","teach","content","design","job"];
+const TYPES=[
+  {id:"learn",label:"изучил{а|}",hint:"урок, видео, статья, книга",xp:10},
+  {id:"practice",label:"потренировал{ась|ся}",hint:"повторение, отработка, привычка",xp:20},
+  {id:"try",label:"попробовал{а|} новое",hint:"новый инструмент, приём, опыт",xp:25},
+  {id:"create",label:"создал{а|}",hint:"проект, прототип, вещь",xp:40},
+  {id:"teach",label:"помог{ла|} или научил{а|}",hint:"урок, разбор, консультация",xp:50},
+  {id:"ship",label:"выпустил{а|} или показал{а|}",hint:"публикация, запуск, сдача",xp:60},
+  {id:"sell",label:"заработал{а|}",hint:"клиент, оплата, сделка",xp:80}
+];
+const TY=Object.fromEntries(TYPES.map(t=>[t.id,t]));
+const FEAR_XP=30, FIRST_MULT=1.5, SEC_SHARE=.4;
+const PERIODS={day:{label:"квест дня",xp:30,coins:5},week:{label:"квест недели",xp:80,coins:15},month:{label:"босс месяца",xp:250,coins:50}};
+/* идеи квестов: общие шаблоны под любой навык + идея самого навыка */
+const CH_GEN={
+  day:[
+    {t:"сделать в «{s}» одну вещь, которую давно откладываешь",e:"выбери одно дело по навыку «{s}», которое висит дольше недели, и закончи его сегодня.",b:"отложенные дела съедают силы, даже когда о них не думаешь. закрыв одно, освободишь голову и сдвинешь навык."},
+    {t:"20 минут чистой практики в «{s}» без отвлечений",e:"поставь таймер на 20 минут, убери телефон и занимайся только «{s}». готово, когда таймер прозвенит.",b:"короткая сосредоточенная практика даёт больше, чем час вперемешку с соцсетями."},
+    {t:"спросить совета по «{s}» у того, кто сильнее",e:"найди человека, который в «{s}» сильнее тебя, и задай ему один конкретный вопрос.",b:"один ответ опытного человека иногда экономит недели проб и ошибок, а ещё ты учишься просить о помощи."}
+  ],
+  week:[
+    {t:"закончить и показать одну работу по «{s}»",e:"доведи одну работу по «{s}» до конца и покажи хотя бы одному человеку или опубликуй.",b:"навык растёт быстрее всего, когда работа доходит до других людей и ты получаешь обратную связь."},
+    {t:"каждый день неделю уделять «{s}» хотя бы 20 минут",e:"семь дней подряд хотя бы по 20 минут на «{s}». отмечай каждый день записью в приложении.",b:"регулярность важнее рывков: за неделю появится привычка, а серия дней даст бонус."},
+    {t:"показать свою работу по «{s}» людям, чьё мнение пугает",e:"выбери работу по «{s}» и покажи её людям, от которых страшно услышать критику.",b:"это сразу и рост навыка, и шаг в страх. после такого показывать работы обычным людям становится легко."}
+  ],
+  month:[
+    {t:"получить первый внешний результат в «{s}»: деньги, отзыв или публикацию",e:"за месяц получи в «{s}» результат, который видно снаружи: оплату, отзыв или публикацию.",b:"внешний результат превращает навык из хобби в то, что работает на твои цели."},
+    {t:"пройти один курс или книгу по «{s}» до конца и применить",e:"выбери один курс или книгу по «{s}», пройди до конца и сделай по ним хотя бы одну практическую вещь.",b:"большинство курсов бросают на середине. закончить и применить значит обогнать многих."},
+    {t:"сделать в «{s}» проект, за который не стыдно взять деньги",e:"за месяц сделай в «{s}» проект такого уровня, чтобы за похожий можно было попросить оплату.",b:"появится работа для портфолио и уверенность, что ты уже можешь продавать этот навык."}
+  ]
+};
+const PER_REASON={day:"квест дня маленький: его реально закрыть сегодня и почувствовать движение.",week:"неделя: хватит времени сделать заметный шаг, но не так долго, чтобы остыть.",month:"босс месяца: большая цель, которая двигает тебя к результатам сезона."};
+function ideaFor(skill,per){
+  const s=skillById(skill);if(!s)return[];
+  const out=CH_GEN[per].map(x=>({t:x.t.replace("{s}",s.name),about:{essence:x.e.replace(/\{s\}/g,s.name),benefit:x.b.replace(/\{s\}/g,s.name),reason:"это идея из библиотеки квестов для навыка «"+s.name+"», который ты сейчас качаешь. "+PER_REASON[per],by:"app"}}));
+  if(s.c&&per!=="day")out.unshift({t:gx(s.c),about:{essence:gx(s.c)+". готово, когда сделаешь и отметишь в приложении.",benefit:"так навык «"+s.name+"» сдвинется на деле: тренировка в условиях, близких к настоящей работе.",reason:"это фирменный квест навыка «"+s.name+"» из библиотеки приложения. "+PER_REASON[per],by:"app"}});
+  return out.slice(0,4);
+}
+const RANKS=[[1,"стажёр"],[4,"оператор"],[8,"{изобретательница|изобретатель}"],[13,"архитектор"],[19,"{основательница|основатель}"],[25,"легенда"]];
+const STATES=[
+  {k:"health",n:"здоровье",labels:["очень плохо","слабо","нормально","хорошо","отлично"]},
+  {k:"mood",n:"настроение",labels:["тяжело","грустно","ровно","хорошо","кайф"]},
+  {k:"bright",n:"яркость жизни",labels:["серо","тускло","обычно","ярко","огонь"]}
+];
+/* идеи целей сезона с первыми шагами */
+const GOAL_LIB=[
+  {t:"доход ×2",s:["посчитать, сколько зарабатываю сейчас и откуда","поднять цену на одну услугу","найти ещё один источник дохода"]},
+  {t:"закрыть долги",s:["выписать все долги с суммами и ставками","закрыть самый маленький","настроить автоплатёж"]},
+  {t:"новая работа или оффер",s:["обновить резюме и портфолио","откликнуться на 10 вакансий","пройти 3 собеседования"]},
+  {t:"свой продукт",s:["описать идею в одном абзаце","спросить 5 человек, нужно ли им это","сделать первую версию и показать"]},
+  {t:"пассивный заработок",s:["выбрать формат: гайд, шаблоны, курс","сделать продукт за 2 недели","запустить продажи"]},
+  {t:"стать заметнее",s:["выбрать одну площадку","публиковаться 3 раза в неделю целый месяц","сделать коллаборацию"]},
+  {t:"новая профессия",s:["выбрать направление и курс","сделать первый учебный проект","взять первый реальный заказ"]},
+  {t:"здоровое тело",s:["выбрать вид спорта и записаться","неделю ложиться до полуночи","сходить к врачу на чекап"]},
+  {t:"выучить язык",s:["выбрать курс или репетитора","2 недели заниматься по 15 минут","поговорить с носителем"]},
+  {t:"больше времени с близкими",s:["договориться об одном вечере в неделю вместе","позвонить родителям","устроить совместную поездку"]},
+  {t:"меньше стресса",s:["выбрать один выходной без работы","убрать телефон из спальни","найти занятие, которое успокаивает"]}
+];
+const REMINDERS=[
+  "сегодня пока пусто. запиши хоть что-нибудь, и полоса сдвинется",
+  "десять минут урока тоже считаются, запиши их",
+  "давно не пробовал{а|} ничего нового? сегодня хороший день",
+  "одна запись, и день уже не пустой",
+  "если день тяжёлый, запиши одно маленькое дело и похвали себя"
+];
+const ACH=[
+  {id:"first",ic:"1",n:"первый шаг",d:"первое действие",f:d=>d.done.length>=1},
+  {id:"thirty",ic:"30",n:"в деле",d:"30 действий",f:d=>d.done.length>=30},
+  {id:"ship",ic:"В",n:"выпустил{а|}",d:"первый выпуск или показ",f:d=>d.byType.ship>=1},
+  {id:"client",ic:"К",n:"первый клиент",d:"первые заработанные деньги",f:d=>d.byType.sell>=1},
+  {id:"deal10",ic:"10К",n:"поток",d:"10 раз заработал{а|}",f:d=>d.byType.sell>=10},
+  {id:"mentor",ic:"Н",n:"{наставница|наставник}",d:"помог{ла|} другим 10 раз",f:d=>d.byType.teach>=10},
+  {id:"brave",ic:"С",n:"смелость",d:"первый шаг в страх",f:d=>d.fear>=1},
+  {id:"brave5",ic:"С5",n:"храбрость",d:"5 шагов в страх",f:d=>d.fear>=5},
+  {id:"explorer",ic:"И",n:"{исследовательница|исследователь}",d:"5 раз попробовал{а|} новое",f:d=>d.byType.try>=5},
+  {id:"week",ic:"7",n:"неделя огня",d:"серия 7 дней",f:d=>d.streak.best>=7},
+  {id:"month",ic:"30д",n:"месяц огня",d:"серия 30 дней",f:d=>d.streak.best>=30},
+  {id:"master",ic:"5",n:"мастер ветки",d:"любой навык до 5 уровня",f:d=>Object.values(d.skills).some(k=>k.xp>0&&k.level>=5)},
+  {id:"wide",ic:"✳",n:"разносторонность",d:"опыт в 5 разных навыках",f:d=>Object.values(d.skills).filter(k=>k.xp>0).length>=5},
+  {id:"boss",ic:"Б!",n:"победа над боссом",d:"закрыт босс месяца",f:d=>d.bossDone>=1},
+  {id:"treat",ic:"♥",n:"заслужил{а|}",d:"первая награда себе",f:d=>d.purchases>=1},
+  {id:"back",ic:"↺",n:"возвращение",d:"вернул{ась|ся} после паузы",f:d=>d.byType.bonus>=1},
+  {id:"lvl10",ic:"10",n:"десятка",d:"уровень сезона 10",f:d=>d.level>=10}
+];
+/* условия для своих ачивок */
+const ACH_RULES=[
+  {k:"manual",n:"отмечу сам{а|}, когда получится"},
+  {k:"count",n:"сделать N действий"},
+  {k:"type",n:"N раз определённый тип действия"},
+  {k:"skill",n:"N действий в навыке"},
+  {k:"skillLvl",n:"дойти в навыке до уровня N"},
+  {k:"streak",n:"серия N дней подряд"},
+  {k:"fear",n:"N шагов в страх"},
+  {k:"quests",n:"закрыть N квестов"},
+  {k:"level",n:"уровень сезона N"}
+];
+
+const HELP={
+  level:["уровень сезона","сезон длится 90 дней. за каждое действие ты получаешь опыт, и полоса понемногу заполняется. когда она заполнится, откроется новый уровень. на некоторых уровнях дают новое звание."],
+  stats:["монеты, серия, заморозки","монеты. за каждые 10 xp дают одну монету, их можно потратить на хотелки в «наградах».\n\nсерия. столько дней подряд ты что-то записываешь.\n\nзаморозки. за каждую неделю без пропусков дают одну, максимум три. если пропустишь день, сгорит заморозка, а серия останется."],
+  add:["записать или запланировать","если ты уже что-то сделал{а|}, жми «записать действие», опыт начислится сразу.\n\nесли только собираешься, жми «запланировать». опыт придёт, когда отметишь, что сделал{а|}."],
+  today:["сегодня","всё, что ты записал{а|} за сегодня. в «изменить» можно дописать заметку, ссылку, результат или фото, а можно и удалить запись."],
+  planned:["в планах","то, что ты собирал{ась|ся} сделать. как сделаешь, нажми «сделал{а|}», и опыт засчитается сегодняшним днём."],
+  quest:["квесты","квест посложнее обычного дела. лучше всего брать то, чего немного боишься. бывают на день, на неделю и на месяц, месячный называется боссом.\n\nсправил{ась|ся}, жми «выполнил{а|}» и получай опыт и монеты.\nне успеваешь, жми «перенести».\nне получилось, жми «разбор» и напиши, что помешало. за это тоже дадут 10 xp."],
+  state:["состояние","раз в день отмечай, как ты. слева слабее, справа лучше. если нажать ещё раз, отметка снимется. потом в «пути» будет видно, в какие дни ты был{а|} на подъёме."],
+  skills:["навыки","это то, что ты качаешь. у каждого навыка 10 уровней. основной навык действия получает весь опыт, дополнительные получают по 40%. набор навыков меняется в разделе «навыки», кнопка «выбрать навыки»."],
+  feed:["лента","все твои действия по дням, свежие сверху. если нажать на навык сверху, останутся только его записи."],
+  chart:["график","линия показывает, сколько опыта ты набрал{а|} с начала сезона. ниже видно, сколько ты делаешь {сама|сам}, а сколько смотришь и читаешь."],
+  compare:["до и после","выбери день в прошлом и посмотри, какие уровни были тогда и какие сейчас. ниже появятся записи той недели."],
+  goals:["цели сезона","то большое, к чему ты идёшь. раздели цель на маленькие шаги и отмечай их галочкой. за каждый шаг дают 40 xp и 4 монеты."],
+  wish:["хотелки","то, что хочешь себе позволить. добавь фото и цену в монетах, полоска покажет, сколько осталось накопить. когда хватит, жми «взять»."],
+  ach:["ачивки","значки за особые моменты: первый выпуск, первая продажа, шаги в страх, долгие серии. открываются сами."],
+  skillcat:["выбор навыков","отметь то, что хочешь качать сейчас. лучше 5–12, иначе силы распылятся. если чего-то нет в списке, добавь свой навык, например «вокал» или «холодные звонки»."],
+  start:["стартовые уровни","на каком уровне ты был{а|} до начала сезона. 1 значит только начинаю, 5 уверенно, 8–9 эксперт. сохраняется сразу."]
+};
+
+/* ================= утилиты ================= */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pad=n=>String(n).padStart(2,"0");
+const ymd=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+const today=()=>ymd(new Date());
+const parseD=s=>{const[a,b,c]=String(s).split("-").map(Number);return new Date(a,(b||1)-1,c||1)};
+const addDays=(s,n)=>{const d=parseD(s);d.setDate(d.getDate()+n);return ymd(d)};
+const diffDays=(a,b)=>Math.round((parseD(b)-parseD(a))/864e5);
+const MON=["янв","фев","мар","апр","мая","июн","июл","авг","сен","окт","ноя","дек"];
+const WD=["вс","пн","вт","ср","чт","пт","сб"];
+const fmtD=s=>{const d=parseD(s);return d.getDate()+" "+MON[d.getMonth()]};
+const fmtDay=s=>{if(s===today())return"сегодня";if(s===addDays(today(),-1))return"вчера";const d=parseD(s);return WD[d.getDay()]+", "+fmtD(s)};
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const endOfWeek=s=>{const d=parseD(s);const k=(7-d.getDay())%7;return addDays(s,k)};
+const endOfMonth=s=>{const d=parseD(s);return ymd(new Date(d.getFullYear(),d.getMonth()+1,0))};
+const plural=(n,a,b,c)=>{n=Math.abs(n)%100;const m=n%10;if(n>10&&n<20)return c;if(m>1&&m<5)return b;if(m===1)return a;return c};
+const coinsW=n=>n+" "+plural(n,"монета","монеты","монет");
+const clone=o=>JSON.parse(JSON.stringify(o));
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const isM=()=>!!(S&&S.profile&&S.profile.gender==="m");
+const gx=s=>String(s).replace(/\{([^{}|]*)\|([^{}|]*)\}/g,(m,a,b)=>isM()?b:a);
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const qb=k=>`<button class="q" data-act="hint" data-k="${k}" aria-label="что это: ${esc(HELP[k][0])}">?</button>`;
+
+const IC={
+  plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+  flame:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c1 3.5 5 5.5 5 11a5 5 0 0 1-10 0c0-2.4 1.2-4 2.5-5.2.3 1.6 1 2.6 2 3.2C11 8 11 5 12 2z"/></svg>',
+  snow:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v20M3.3 7l17.4 10M3.3 17L20.7 7M9 4l3 2 3-2M9 20l3-2 3 2"/></svg>',
+  coin:'<span class="coin" aria-hidden="true"></span>',
+  bell:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/></svg>',
+  spark:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.2 6.3L20.5 10l-6.3 2.2L12 18.5l-2.2-6.3L3.5 10l6.3-1.7z"/><path d="M19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9z"/></svg>',
+  home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 11l8-7 8 7v9H4z"/><path d="M10 20v-5h4v5"/></svg>',
+  path:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="6" cy="18" r="2.2"/><circle cx="18" cy="6" r="2.2"/><path d="M8 18h6a3 3 0 0 0 0-6h-4a3 3 0 0 1 0-6h6"/></svg>',
+  skills:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 20V12M12 20V5M19 20v-9"/></svg>',
+  quest:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M5 21V4h11l-2 4 2 4H5"/></svg>',
+  gift:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3.5" y="8" width="17" height="5" rx="1"/><path d="M5 13v8h14v-8M12 8v13M12 8c-2-4-6-4-6-1.5S9 8 12 8c3 0 6-.5 6-1.5S14 4 12 8z"/></svg>',
+  camera:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" width="28" height="28"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>'
+};
+/* иконки состояния: 1 — слабее, 5 — ярче */
+function stateIcon(k,n){
+  if(k==="health"){ // батарейка
+    let bars="";for(let i=0;i<n;i++)bars+=`<rect x="${5.2+i*2.9}" y="9.2" width="2.1" height="5.6" rx=".5" fill="currentColor"/>`;
+    return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="7.5" width="16" height="9" rx="2"/><path d="M21 10.5v3" stroke-linecap="round"/>${bars}</svg>`;
+  }
+  if(k==="mood"){ // лицо: от грусти к улыбке
+    const c=[11.5,13.2,15,16.8,18.6][n-1];const ey=n===1?"M8.3 9.6l2 .8M15.7 9.6l-2 .8":"";
+    return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="9" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="10" r="1" fill="currentColor" stroke="none"/>${ey?`<path d="${ey}"/>`:""}<path d="M8 15.5Q12 ${c} 16 15.5"/></svg>`;
+  }
+  // яркость: солнце растёт
+  const r=[3,3.6,4.2,4.8,5.2][n-1];const rays=[0,2,4,6,8][n-1];let ray="";
+  for(let i=0;i<rays;i++){const a=(Math.PI*2/rays)*i-Math.PI/2;const x1=12+Math.cos(a)*(r+2.2),y1=12+Math.sin(a)*(r+2.2),x2=12+Math.cos(a)*(r+4.4),y2=12+Math.sin(a)*(r+4.4);ray+=`<path d="M${x1.toFixed(1)} ${y1.toFixed(1)}L${x2.toFixed(1)} ${y2.toFixed(1)}"/>`}
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="${r}" ${n>=3?'fill="currentColor"':""}/>${ray}</svg>`;
+}
+
+/* ================= профиль ================= */
+const S={profile:null,entries:[],view:"home",pathMode:"feed",pathFilter:null,thenDate:null,lastW:null};
+function defaultProfile(){
+  const t=today();
+  return {v:2,fresh:true,upd:0,seasonStart:t,seasonDays:90,active:[],custom:[],startLevels:{},fears:"",
+    goals:[],
+    challenges:[{id:uid(),title:"попробовать одну новую вещь в главном навыке",about:{essence:"выбери навык, который для тебя сейчас главный, и попробуй в нём одну вещь, которую раньше не делал{а|}: инструмент, приём или формат.",benefit:"новое расширяет навык и даёт бонус «впервые» к опыту. а ещё так проще понять, что тебе по-настоящему интересно.",reason:"это стартовый квест: он помогает разогнаться в первую неделю, пока ещё не набралось истории действий.",by:"app"},steps:[],period:"week",skill:"",xp:80,coins:15,status:"active",due:endOfWeek(t),moved:0,created:t}],
+    rewards:[
+      {id:uid(),title:"кофе в любимом месте",price:30,example:true},
+      {id:uid(),title:"вечер без дел и чувства вины",price:60,example:true},
+      {id:uid(),title:"кино или выставка",price:150,example:true}
+    ],
+    purchases:[],states:{},achEdit:{},achCustom:[],name:"",gender:"",tourDone:false,seenLevel:null,seenSkills:null,seenAch:null,lastBackup:null};
+}
+function normalize(p){
+  const o=Object.assign(defaultProfile(),p||{});
+  if(p&&p.v!==2){ // переезд со старой версии
+    o.active=LEGACY_ACTIVE.slice();o.v=2;
+    o.goals=(o.goals||[]);(o.challenges||[]).forEach(c=>{if(!c.skill)c.skill="auto"});
+  }
+  ["custom","goals","challenges","rewards","purchases"].forEach(k=>{if(!Array.isArray(o[k]))o[k]=[]});
+  if(!Array.isArray(o.active))o.active=[];
+  if(!o.startLevels||typeof o.startLevels!=="object")o.startLevels={};
+  if(!o.states||typeof o.states!=="object")o.states={};
+  if(!o.achEdit||typeof o.achEdit!=="object")o.achEdit={};if(!Array.isArray(o.achCustom))o.achCustom=[];
+  o.challenges.forEach(c=>{if(!c.about&&c.title==="попробовать одну новую вещь в главном навыке")c.about={essence:"выбери навык, который для тебя сейчас главный, и попробуй в нём одну вещь, которую раньше не делал{а|}: инструмент, приём или формат.",benefit:"новое расширяет навык и даёт бонус «впервые» к опыту. а ещё так проще понять, что тебе по-настоящему интересно.",reason:"это стартовый квест: он помогает разогнаться в первую неделю, пока ещё не набралось истории действий.",by:"app"}});
+  o.rewards.forEach(r=>{if(!Array.isArray(r.imgs))r.imgs=r.img?[r.img]:[];delete r.img});
+  return o;
+}
+const allSkills=()=>CATALOG.concat((S.profile&&S.profile.custom||[]).map(c=>({id:c.id,g:c.g||"craft",name:c.name,d:c.d||"свой навык",custom:true})));
+const skillById=id=>allSkills().find(s=>s.id===id);
+const activeSkills=()=>{const all=allSkills();return S.profile.active.map(id=>all.find(s=>s.id===id)).filter(Boolean)};
+const live=()=>S.entries.filter(e=>!e.del);
+
+/* ================= хранилище телеграма =================
+   у каждого человека своё облачное хранилище внутри бота (1024 ключа по 4096 символов).
+   раскладка: профиль в ключах p_0..p_n, действия по месяцам e202610_0.., фото отдельно i<id>_0..
+   сначала всё сохраняется на телефоне, потом досылается в облако телеграма. побеждает более свежая версия. */
+const TG=window.Telegram&&window.Telegram.WebApp&&window.Telegram.WebApp.initData?window.Telegram.WebApp:null;
+const CS=TG&&TG.CloudStorage&&TG.isVersionAtLeast&&TG.isVersionAtLeast("6.9")?TG.CloudStorage:null;
+const cs={
+  keys:()=>new Promise((res,rej)=>CS.getKeys((e,k)=>e?rej(e):res(k||[]))),
+  get:async keys=>{const out={};for(let i=0;i<keys.length;i+=40){const part=keys.slice(i,i+40);const v=await new Promise((res,rej)=>CS.getItems(part,(e,r)=>e?rej(e):res(r||{})));Object.assign(out,v)}return out},
+  set:(k,v)=>new Promise((res,rej)=>CS.setItem(k,v,(e,ok)=>e?rej(e):res(ok))),
+  del:keys=>new Promise((res,rej)=>{if(!keys.length)return res();CS.removeItems(keys,e=>e?rej(e):res())})
+};
+const CH=4000;
+const IMG={};const imgSaved=new Set();
+const bucketOf=date=>"e"+String(date||"0000-00").slice(0,7).replace("-","");
+function packImgs(o){ // фото выносим в отдельные ключи, в данных остаётся ссылка
+  if(Array.isArray(o))return o.map(packImgs);
+  if(o&&typeof o==="object"){
+    if(typeof o.url==="string"&&o.url.startsWith("data:")){if(!o.rid)o.rid=uid();IMG[o.rid]=o.url;const c=Object.assign({},o);delete c.url;return c}
+    const r={};for(const k in o)r[k]=packImgs(o[k]);return r;
+  }
+  return o;
+}
+function unpackImgs(o){
+  if(Array.isArray(o)){o.forEach(unpackImgs);return o}
+  if(o&&typeof o==="object"){if(o.rid&&!o.url&&IMG[o.rid])o.url=IMG[o.rid];for(const k in o)if(k!=="url")unpackImgs(o[k])}
+  return o;
+}
+const LS_P="prk-profile",LS_E="prk-entries";
+const Store={
+  lsOk:true,status:"local",err:"",lastSync:0,dirty:new Set(),flushing:false,counts:{},retryT:0,qT:0,ready:false,
+  loadLocal(){
+    let p=null,e=[];
+    try{p=JSON.parse(localStorage.getItem(LS_P)||"null");e=JSON.parse(localStorage.getItem(LS_E)||"[]");localStorage.setItem("prk-test","1")}catch(x){this.lsOk=false}
+    return{p,e:Array.isArray(e)?e:[]};
+  },
+  cache(){try{localStorage.setItem(LS_P,JSON.stringify(S.profile));localStorage.setItem(LS_E,JSON.stringify(S.entries));this.lsOk=true}catch(x){this.lsOk=false}},
+  setStatus(st,err){this.status=st;this.err=err||"";paintSync()},
+  async connect(){
+    if(!CS){this.setStatus("local",TG?"телеграм у тебя устаревший, обнови приложение, чтобы данные хранились в облаке.":"это обычный браузер, данные хранятся только на этом устройстве. открой приложение через бота в телеграме.");return}
+    this.setStatus("syncing");
+    try{
+      const keys=await this.keysAll();
+      const nKeys=keys.filter(k=>k.endsWith("_n"));const meta=await cs.get(nKeys);
+      nKeys.forEach(k=>{this.counts[k.slice(0,-2)]=+meta[k]||0});
+      const want=[];Object.entries(this.counts).forEach(([pre,n])=>{for(let i=0;i<n;i++)want.push(pre+"_"+i)});
+      const vals=await cs.get(want);
+      const blob=pre=>{const n=this.counts[pre]||0;let s="";for(let i=0;i<n;i++)s+=vals[pre+"_"+i]||"";return s};
+      Object.keys(this.counts).filter(p=>p[0]==="i").forEach(p=>{const rid=p.slice(1);IMG[rid]=blob(p);imgSaved.add(rid)});
+      let rp=null;if(this.counts.p){try{rp=JSON.parse(blob("p"))}catch(x){}}
+      let re=[];Object.keys(this.counts).filter(p=>/^e\d{6}$/.test(p)).forEach(p=>{try{re=re.concat(JSON.parse(blob(p)))}catch(x){}});
+      unpackImgs(S.profile);S.entries.forEach(unpackImgs);
+      if(rp)this.mergeProfile(unpackImgs(rp));else this.mark("p");
+      this.mergeEntries(re.map(unpackImgs));
+      this.ready=true;refresh();
+      await this.flush();
+    }catch(x){this.setStatus("error","не получилось связаться с облаком телеграма. всё сохранено на телефоне, попробую ещё раз.");clearTimeout(this.retryT);this.retryT=setTimeout(()=>this.connect(),8000)}
+  },
+  async keysAll(){return cs.keys()},
+  mark(k){this.dirty.add(k);if(!this.ready&&CS)return;clearTimeout(this.qT);this.qT=setTimeout(()=>this.flush(),700)},
+  mergeProfile(r){
+    const L=S.profile;const ru=r.upd||0,lu=L.upd||0;
+    if(L.fresh||ru>lu){S.profile=normalize(r);S.profile.fresh=false;this.cache();return true}
+    if(lu>ru)this.mark("p");return false;
+  },
+  mergeEntries(arr){
+    let changed=false;const map=new Map(S.entries.map(e=>[e.id,e]));const seen=new Set();
+    arr.forEach(r=>{if(!r||!r.id)return;seen.add(r.id);const l=map.get(r.id);const ru=r.upd||r.ts||0,lu=l?(l.upd||l.ts||0):-1;
+      if(!l||ru>lu){if(l&&bucketOf(l.date)!==bucketOf(r.date))this.mark(bucketOf(l.date));map.set(r.id,r);changed=true}else if(lu>ru){this.mark(bucketOf(l.date));this.mark(bucketOf(r.date))}});
+    map.forEach((e,id)=>{if(!seen.has(id))this.mark(bucketOf(e.date))});
+    if(changed){S.entries=[...map.values()];this.cache()}
+    return changed;
+  },
+  async writeBlob(pre,str){
+    const n=Math.max(1,Math.ceil(str.length/CH));const old=this.counts[pre]||0;
+    for(let i=0;i<n;i++)await cs.set(pre+"_"+i,str.slice(i*CH,(i+1)*CH));
+    await cs.set(pre+"_n",String(n));
+    const extra=[];for(let i=n;i<old;i++)extra.push(pre+"_"+i);if(extra.length)await cs.del(extra);
+    this.counts[pre]=n;
+  },
+  async flush(){
+    if(!CS||!this.ready||this.flushing)return;this.flushing=true;
+    if(this.dirty.size)this.setStatus("syncing");
+    try{
+      while(this.dirty.size){
+        const k=this.dirty.values().next().value;this.dirty.delete(k);
+        let str;
+        if(k==="p")str=JSON.stringify(packImgs(S.profile));
+        else str=JSON.stringify(packImgs(S.entries.filter(e=>bucketOf(e.date)===k)));
+        // новые фото
+        for(const rid of Object.keys(IMG))if(!imgSaved.has(rid)&&IMG[rid]){await this.writeBlob("i"+rid,IMG[rid]);imgSaved.add(rid)}
+        await this.writeBlob(k,str);
+      }
+      this.lastSync=Date.now();
+      const used=Object.values(this.counts).reduce((a,n)=>a+n+1,0);
+      this.setStatus("cloud",used>900?"облако телеграма почти заполнено ("+used+" из 1024 ячеек). удали старые фото или сделай резервную копию.":"");
+    }catch(x){this.setStatus("error","облако телеграма не ответило. всё сохранено на телефоне, отправлю позже.");clearTimeout(this.retryT);this.retryT=setTimeout(()=>{this.flushing=false;this.flush()},8000);this.flushing=false;return}
+    this.flushing=false;
+    if(this.dirty.size)this.flush();
+  },
+  saveProfile(){S.profile.upd=Date.now();S.profile.fresh=false;this.cache();this.mark("p")},
+  putEntry(e){e.upd=Date.now();if(!e.ts)e.ts=e.upd;const i=S.entries.findIndex(x=>x.id===e.id);if(i>=0){const old=S.entries[i];if(bucketOf(old.date)!==bucketOf(e.date))this.mark(bucketOf(old.date));S.entries[i]=e}else S.entries.push(e);this.cache();this.mark(bucketOf(e.date))},
+  delEntry(id){const e=S.entries.find(x=>x.id===id);if(!e)return;e.del=true;e.upd=Date.now();this.cache();this.mark(bucketOf(e.date))}
+};
+function paintSync(){
+  const b=$("#syncBtn");if(!b)return;const st=Store.status;b.className="sync "+st;
+  $("#syncTxt").textContent=st==="cloud"?"сохранено":st==="syncing"?"сохраняю":st==="error"?"ошибка":"устройство";
+}
+function syncSheet(){
+  const st=Store.status;
+  const txt={cloud:"всё сохранено в облаке телеграма. данные привязаны к твоему аккаунту и видны только тебе, на любом телефоне и компьютере, где ты откроешь этого бота.",
+    syncing:"сохраняю изменения в облако телеграма…",local:"пока данные лежат только на этом устройстве.",error:"на телефоне всё сохранено, а в облако телеграма пока не дошло."}[st];
+  sheet(`<div class="sheet-h"><h2>где мои данные</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
+  <div class="card"><p style="margin:0">${esc(txt)}</p>${Store.err?`<p class="small muted" style="margin:8px 0 0">${esc(Store.err)}</p>`:""}
+  ${Store.lastSync?`<p class="small muted" style="margin:8px 0 0">последнее сохранение: ${new Date(Store.lastSync).toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"})}</p>`:""}</div>
+  <div class="stack">${st==="error"?`<button class="btn accent wide" data-act="retrySync">попробовать ещё раз</button>`:""}
+  <button class="btn ghost wide" data-act="backup">скачать резервную копию</button></div>`);
+}
+async function allowCloud(){closeSheet();await Store.connect()}
+async function managePerms(){}
+
+/* ================= расчёты ================= */
+const xpOf=e=>{if(e.type==="bonus")return e.xp||25;const t=TY[e.type];if(!t)return 0;return Math.round(t.xp*(e.first?FIRST_MULT:1)+(e.fear?FEAR_XP:0))};
+const coinsOf=x=>Math.round(x/10);
+const skillCum=L=>30*L*(L-1);
+function skillLevel(total){let L=1;while(L<10&&skillCum(L+1)<=total)L++;const cur=skillCum(L),nxt=L<10?skillCum(L+1):cur;return{level:L,into:total-cur,need:nxt-cur,frac:L<10?(total-cur)/(nxt-cur):1}}
+const seasonCum=n=>{let s=0;for(let k=1;k<n;k++)s+=100+40*(k-1);return s};
+function seasonLevel(xp){let L=1;while(seasonCum(L+1)<=xp)L++;const cur=seasonCum(L),nxt=seasonCum(L+1);return{level:L,into:xp-cur,need:nxt-cur,frac:(xp-cur)/(nxt-cur)}}
+const rankOf=L=>{let r=RANKS[0][1];RANKS.forEach(([l,n])=>{if(L>=l)r=n});return r};
+function streakOf(done){
+  const days=new Set(done.map(e=>e.date));const t=today();
+  if(!days.size)return{cur:0,best:0,freezes:0,activeToday:false};
+  const first=[...days].sort()[0];let cur=0,best=0,fr=0,run=0;
+  for(let d=first;d<=t;d=addDays(d,1)){
+    if(days.has(d)){cur++;run++;if(run===7){fr=Math.min(3,fr+1);run=0}}
+    else if(d===t){}
+    else if(cur>0&&fr>0){fr--}
+    else{cur=0;run=0}
+    best=Math.max(best,cur);
+  }
+  return{cur,best,freezes:fr,activeToday:days.has(t)};
+}
+function derive(upTo){
+  const P=S.profile;const lim=upTo||"9999";
+  const done=live().filter(e=>!e.planned&&e.date<=lim);
+  const sx={};allSkills().forEach(s=>sx[s.id]=0);
+  let season=0,coins=0,fear=0;const byType={bonus:0};TYPES.forEach(t=>byType[t.id]=0);
+  const bySkill={};
+  done.forEach(e=>{const x=xpOf(e);byType[e.type]=(byType[e.type]||0)+1;if(e.fear)fear++;if(e.primary)bySkill[e.primary]=(bySkill[e.primary]||0)+1;
+    if(e.primary&&sx[e.primary]!=null)sx[e.primary]+=x;
+    (e.secondary||[]).forEach(id=>{if(sx[id]!=null)sx[id]+=Math.round(x*SEC_SHARE)});
+    if(e.date>=P.seasonStart){season+=x;coins+=coinsOf(x)}});
+  let bossDone=0;
+  P.challenges.forEach(c=>{const at=c.doneAt||"";if(at>lim)return;
+    if(c.status==="done"){season+=c.xp;coins+=c.coins;if(sx[c.skill]!=null)sx[c.skill]+=c.xp;if(c.period==="month")bossDone++}
+    if(c.status==="reviewed"){season+=10;coins+=1}});
+  P.goals.forEach(g=>(g.steps||[]).forEach(st=>{if(st.done&&(st.doneAt||"")<=lim){season+=40;coins+=4}}));
+  let spent=0;P.purchases.forEach(p=>{if(p.at<=lim)spent+=p.price});
+  const skills={};allSkills().forEach(s=>{const base=skillCum(P.startLevels[s.id]||1);skills[s.id]=Object.assign({xp:sx[s.id]},skillLevel(base+sx[s.id]))});
+  const lv=seasonLevel(season);
+  const d={done,skills,season,coins:coins-spent,earned:coins,byType,fear,bossDone,purchases:P.purchases.length,streak:streakOf(done),level:lv.level,lv};
+  d.bySkill=bySkill;d.questsDone=P.challenges.filter(c=>c.status==="done"&&(c.doneAt||"")<=lim).length;
+  d.ach=ACH.filter(a=>{try{return a.f(d)}catch(x){return false}}).map(a=>a.id);
+  (P.achCustom||[]).forEach(a=>{const r=a.rule||{k:"manual"};let ok=false;if(r.k==="manual")ok=!!a.got&&a.got<=lim;else{const pr=ruleProgress(r,d);ok=!!pr&&pr[0]>=pr[1]}
+    if(ok){d.ach.push(a.id);if(a.coins){d.coins+=a.coins;d.earned+=a.coins}}});
+  return d;
+}
+
+/* ================= изменения и празднования ================= */
+let celebrateQ=[];
+function refresh(){afterChange(true)}
+function afterChange(){
+  if(!S.profile)return;
+  const d=derive();const P=S.profile;let changed=false;
+  if(P.seenLevel==null||!P.seenSkills||!Array.isArray(P.seenAch)){P.seenLevel=d.level;P.seenSkills=Object.fromEntries(Object.entries(d.skills).map(([k,v])=>[k,v.level]));P.seenAch=d.ach.slice()} // тихая инициализация, не считается изменением
+  else{
+    if(d.level>P.seenLevel){celebrateQ.push({level:d.level,rank:rankOf(d.level),rankUp:rankOf(d.level)!==rankOf(P.seenLevel)});P.seenLevel=d.level;changed=true}
+    activeSkills().forEach(s=>{const L=d.skills[s.id].level;if(L>(P.seenSkills[s.id]||0)){toast(s.name+": уровень "+L);P.seenSkills[s.id]=L;changed=true}});
+    d.ach.forEach(a=>{if(!P.seenAch.includes(a)){const A=achAll().find(x=>x.id===a);if(A)setTimeout(()=>toast("ачивка: "+A.n),900);P.seenAch.push(a);changed=true}});
+  }
+  if(changed)Store.saveProfile();
+  render(d);
+  if(celebrateQ.length&&!document.querySelector(".lvlup"))showLevelUp(celebrateQ.shift());
+}
+
+/* ================= рендер ================= */
+function render(d){
+  d=d||derive();const P=S.profile;
+  const day=Math.max(1,Math.min(P.seasonDays,diffDays(P.seasonStart,today())+1));
+  $("#seasonLbl").textContent="сезон 1 · день "+day+" из "+P.seasonDays;
+  const tabs=[["home","главная",IC.home],["path","путь",IC.path],["skills","навыки",IC.skills],["quests","квесты",IC.quest],["rewards","награды",IC.gift]];
+  $("#nav").innerHTML=tabs.map(([id,l,ic])=>`<button data-act="tab" data-id="${id}" ${S.view===id?'aria-current="page"':""}>${ic}<span>${l}</span></button>`).join("");
+  $("#view").innerHTML=gx({home:vHome,path:vPath,skills:vSkills,quests:vQuests,rewards:vRewards}[S.view](d));
+  requestAnimationFrame(()=>document.querySelectorAll("[data-w]").forEach(el=>{el.style.width=el.dataset.w;S.lastW=el.dataset.w}));
+  paintSync();
+}
+const secTitle=(t,k,right)=>`<div class="sec"><div class="sec-l"><span class="sel">${t}</span>${k?qb(k):""}</div>${right||""}</div>`;
+function segs(frac,level){let h="";for(let i=1;i<=10;i++){if(i<level)h+='<i class="on"></i>';else if(i===level&&level<10)h+=`<i class="part" style="--p:${Math.round(frac*100)}%"></i>`;else if(i===level)h+='<i class="on"></i>';else h+="<i></i>"}return`<div class="segs" aria-hidden="true">${h}</div>`}
+function skillRow(s,k){return`<div class="skill"><div class="nm">${esc(s.name)}</div><div class="lv num" aria-label="уровень">${k.level}</div>${segs(k.frac,k.level)}</div>`}
+function groupedSkills(fn){
+  const act=activeSkills();let h="";
+  GROUPS.forEach(g=>{const list=act.filter(s=>s.g===g.id);if(!list.length)return;h+=`<div class="grp">${esc(g.name)}</div>`+list.map(fn).join("")});
+  return h;
+}
+function entryCard(e){
+  const x=xpOf(e);const t=e.type==="bonus"?{label:"бонус"}:TY[e.type]||{label:e.type};const plan=!!e.planned;
+  const tags=[`<span class="tag ${plan?"":"navy"}">${esc(t.label)}</span>`];
+  const ps=skillById(e.primary);if(ps)tags.push(`<span class="tag">${esc(ps.name)}</span>`);
+  (e.secondary||[]).forEach(id=>{const s=skillById(id);if(s)tags.push(`<span class="tag">+ ${esc(s.name)}</span>`)});
+  if(e.first)tags.push('<span class="tag good">впервые</span>');
+  if(e.fear)tags.push('<span class="tag warn">шаг в страх</span>');
+  const mark=plan?`<button class="st-mark" data-act="markDone" data-id="${e.id}" aria-label="отметить: сделал{а|}"></button>`:`<span class="st-mark" aria-hidden="true">${IC.check}</span>`;
+  return`<div class="card entry ${plan?"is-plan":"is-done"}"><div class="entry-row">${mark}<div class="entry-body">
+  <div class="row" style="justify-content:space-between;flex-wrap:nowrap;gap:10px"><div class="t" style="min-width:0">${esc(e.title)}</div>${plan?`<span class="small muted num" style="white-space:nowrap">${e.date>today()?fmtD(e.date):"можно сегодня"}</span>`:`<span class="xp num">+${x} xp</span>`}</div>
+  <div class="meta">${tags.join("")}</div>
+  ${e.note?`<div class="note">${esc(e.note)}</div>`:""}
+  ${e.money?`<div class="small"><b>результат:</b> ${esc(e.money)}</div>`:""}
+  ${e.link?`<div class="small" style="overflow-wrap:anywhere"><a href="${esc(/^https?:\/\//.test(e.link)?e.link:"https://"+e.link)}" target="_blank" rel="noopener" class="link">${esc(e.link)}</a></div>`:""}
+  ${e.img&&e.img.url?`<img src="${esc(e.img.url)}" alt="${esc(e.title)}" loading="lazy">`:""}
+  ${e.type!=="bonus"?`<div class="row">${plan?`<button class="btn sm accent" data-act="markDone" data-id="${e.id}">${IC.check} сделал{а|}, +${x} xp</button>`:""}<button class="btn sm ghost" data-act="editEntry" data-id="${e.id}">изменить</button></div>`:""}
+  </div></div></div>`;
+}
+function stateBlock(date){
+  const st=S.profile.states[date]||{};
+  return STATES.map(s=>{const v=st[s.k]||0;return`<div class="need"><div class="need-h"><b>${s.n}</b><span>${v?esc(s.labels[v-1]):"не отмечено"}</span></div>
+  <div class="icons5" role="group" aria-label="${s.n}">${[1,2,3,4,5].map(n=>`<button data-act="need" data-k="${s.k}" data-n="${n}" class="${v===n?"on":""}" aria-pressed="${v===n}" aria-label="${s.n}: ${esc(s.labels[n-1])}">${stateIcon(s.k,n)}</button>`).join("")}</div></div>`}).join("");
+}
+
+function vHome(d){
+  const P=S.profile;const t=today();const L=live();
+  const todays=L.filter(e=>e.date===t&&!e.planned).sort((a,b)=>(b.ts||0)-(a.ts||0));
+  const planned=L.filter(e=>e.planned).sort((a,b)=>a.date<b.date?-1:1);
+  const order={day:0,week:1,month:2};
+  const q=P.challenges.filter(c=>c.status==="active").sort((a,b)=>order[a.period]-order[b.period])[0];
+  const reminder=REMINDERS[Math.abs(diffDays("2026-01-01",t))%REMINDERS.length];
+  const noSkills=!P.active.length;
+  return`
+  ${!Store.lsOk&&Store.status!=="cloud"?`<div class="warnbox">сейчас данные не сохраняются. открой приложение через бота в телеграме.</div>`:""}
+  <section class="hero" aria-label="уровень сезона" style="margin-top:4px">
+    <div class="hero-top"><span class="pill">${P.name?esc(P.name)+", ":""}${d.streak.activeToday?"сегодня ты уже в игре":"сегодня ещё нет записей"}</span>${qb("level")}</div>
+    <div class="big num">уровень ${d.level}</div>
+    <div class="rank">${esc(rankOf(d.level))}</div>
+    <div class="xpbar" role="progressbar" aria-valuemin="0" aria-valuemax="${d.lv.need}" aria-valuenow="${d.lv.into}"><i style="width:${S.lastW||"0%"}" data-w="${Math.max(2,Math.round(d.lv.frac*100))}%"></i></div>
+    <div class="xpmeta num"><span>${d.lv.into} / ${d.lv.need} xp</span><span>до ${d.level+1} ур.: ${d.lv.need-d.lv.into}</span></div>
+    <div class="stats" id="statsRow">
+      <span class="stat num">${IC.coin} ${coinsW(d.coins)}</span>
+      <span class="stat num">${IC.flame} серия ${d.streak.cur} ${plural(d.streak.cur,"день","дня","дней")}</span>
+      <span class="stat num">${IC.snow} заморозки ${d.streak.freezes}</span>
+      ${qb("stats")}
+    </div>
+  </section>
+  ${noSkills?`<div class="card" style="margin-top:12px"><b>сначала выбери, что качаешь</b><p class="small muted" style="margin:6px 0 10px">пока навыки не выбраны, опыт некуда начислять.</p><button class="btn accent" data-act="skillCat">выбрать навыки</button></div>`:""}
+  <div class="addrow" id="addRow"><button class="btn accent" data-act="add" id="addBtn">${IC.plus} записать действие</button><button class="btn" data-act="add" data-plan="1">запланировать</button></div>
+  <div class="row" style="justify-content:flex-end;margin-top:6px"><span class="small muted">что выбрать?</span>${qb("add")}</div>
+
+  ${!todays.length?`<div class="remind" style="margin-top:8px">${IC.bell}<div>${esc(reminder)}</div></div>`:""}
+  ${todays.length?`<div id="todaySec">${secTitle("сделано сегодня","today",`<span class="small muted num">+${todays.reduce((a,e)=>a+xpOf(e),0)} xp</span>`)}<div class="stack">${todays.map(entryCard).join("")}</div></div>`:""}
+  ${planned.length?`${secTitle("в планах","planned",`<span class="small muted num">${planned.length}</span>`)}<div class="stack">${planned.slice(0,5).map(entryCard).join("")}</div>`:""}
+
+  ${q?`${secTitle("текущий квест","quest",`<button class="link" data-act="tab" data-id="quests">все квесты</button>`)}<div class="stack">${questCard(q)}</div>`:""}
+
+  ${secTitle("состояние","state",`<span class="small muted">${fmtDay(t)}</span>`)}
+  <div class="card stack" id="needsCard" style="margin-top:12px;gap:14px">${stateBlock(t)}</div>
+
+  ${P.active.length?`${secTitle("ветки навыков","skills",`<button class="link" data-act="tab" data-id="skills">подробнее</button>`)}
+  <div class="card stack" style="gap:12px">${groupedSkills(s=>skillRow(s,d.skills[s.id]))}</div>`:""}`;
+}
+
+const STAR='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.8l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2l-5.7 3.1 1.2-6.4L2.8 9.5l6.4-.8z"/></svg>';
+const CHEST='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 10.5h17v9h-17z"/><path d="M3.5 10.5V8a4 4 0 0 1 4-4h9a4 4 0 0 1 4 4v2.5"/><path d="M10 10.5v3h4v-3"/></svg>';
+const QNAME={day:"квест дня",week:"квест недели",month:"босс месяца"};
+function timeLeft(c){const n=diffDays(today(),c.due);if(n<0)return"просрочен на "+(-n)+" "+plural(-n,"день","дня","дней");if(n===0)return"последний день";return"осталось "+n+" "+plural(n,"день","дня","дней")}
+function questPips(c){
+  if(c.period==="day")return"";
+  const len=c.period==="week"?7:diffDays(addDays(c.due.slice(0,8)+"01",0),c.due)+1;const start=addDays(c.due,-(len-1));const passed=clamp(diffDays(start,today()),0,len);
+  if(c.period==="week")return`<div class="pips" aria-label="${timeLeft(c)}">${Array.from({length:7},(_,i)=>`<i class="${i<passed?"gone":i===passed?"now":""}"></i>`).join("")}</div>`;
+  return`<div class="tbar" aria-hidden="true"><i style="width:${Math.round(passed/len*100)}%"></i></div>`;
+}
+function questCard(c){
+  const Pd=PERIODS[c.period]||PERIODS.week;const st=c.status;const sk=skillById(c.skill);
+  const steps=c.steps||[];const left=steps.filter(x=>!x.done).length;const lvl={day:1,week:2,month:3}[c.period]||2;
+  const hp=steps.length?`<div class="hp"><div class="hp-l"><span>${c.period==="month"?"здоровье босса":"осталось этапов"}</span><b class="num">${left} / ${steps.length}</b></div><div class="hp-bar">${steps.map(x=>`<i class="${x.done?"":"on"}"></i>`).join("")}</div></div>`:"";
+  return`<div class="qcard q-${c.period} ${st!=="active"?"q-closed":""}">
+    <div class="q-top"><span class="q-badge">${QNAME[c.period]||Pd.label}</span><span class="q-stars" aria-label="сложность ${lvl} из 3">${[1,2,3].map(i=>`<span class="${i<=lvl?"on":""}">${STAR}</span>`).join("")}</span></div>
+    <div class="q-title">${esc(c.title)}</div>
+    ${sk?`<div class="q-skill">навык: ${esc(sk.name)}</div>`:""}
+    ${hp}
+    ${steps.length?`<div class="q-steps">${steps.map(x=>`<button class="q-step ${x.done?"done":""}" data-act="qStep" data-id="${c.id}" data-s="${x.id}" aria-pressed="${!!x.done}" ${st!=="active"?"disabled":""}><span class="q-box">${x.done?IC.check:""}</span><span>${esc(x.t)}</span></button>`).join("")}</div>`:""}
+    ${st==="active"?`<div class="q-time"><span>${timeLeft(c)}</span>${questPips(c)}</div>`:`<div class="q-time"><span>${st==="done"?"пройден "+fmtD(c.doneAt):"разобран "+fmtD(c.doneAt)}</span></div>`}
+    <div class="q-loot"><span class="q-chest">${CHEST}</span><span>награда</span><b class="num">+${c.xp} xp</b><span class="price num">${IC.coin} ${c.coins}</span>${c.moved?`<span class="q-moved">перенесён ×${c.moved}</span>`:""}</div>
+    ${c.note?`<div class="note">${esc(c.note)}</div>`:""}
+    <div class="row q-btns">${st==="active"?`<button class="btn sm q-main" data-act="qDone" data-id="${c.id}">${IC.check} пройден</button>`:""}<button class="btn sm q-sec" data-act="qInfo" data-id="${c.id}">в чём суть</button>${st==="active"?`<button class="btn sm q-sec" data-act="qMove" data-id="${c.id}">перенести</button><button class="btn sm q-sec" data-act="qReview" data-id="${c.id}">разбор</button>`:""}</div>
+  </div>`;
+}
+function questSheet(id){
+  const c=S.profile.challenges.find(x=>x.id===id);if(!c)return;const a=c.about||{};const sk=skillById(c.skill);
+  sheet(`<div class="sheet-h"><span class="pill">${QNAME[c.period]||"квест"}</span><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
+  <h2 style="margin-top:10px">${esc(c.title)}</h2>
+  ${c.about?aboutBlock(c.about):`<div class="card small">этот квест ты придумал{а|} сам{а|}. можно дописать пояснение для себя и разбить его на этапы.</div>`}
+  ${c.status==="active"?`<details style="margin-top:6px" ${c.about?"":"open"}><summary>${c.about?"изменить пояснение":"добавить пояснение"}</summary><form data-form="qabout" data-id="${c.id}">
+    <div class="field"><label for="qaE">в чём суть</label><textarea class="in-text" id="qaE" name="e" style="min-height:60px">${esc(c.about&&c.about.essence||"")}</textarea></div>
+    <div class="field"><label for="qaB">чем это полезно</label><textarea class="in-text" id="qaB" name="b" style="min-height:60px">${esc(c.about&&c.about.benefit||"")}</textarea></div>
+    <button class="btn sm" type="submit" style="margin-top:8px">сохранить пояснение</button></form></details>`:""}
+  <div class="sec"><div class="sec-l"><span class="sel">этапы</span></div><span class="small muted">${sk?esc(sk.name):""}</span></div>
+  <div class="card" style="margin-top:12px">${(c.steps||[]).length?(c.steps||[]).map(x=>`<div class="goal-step"><button class="check ${x.done?"on":""}" data-act="qStep" data-id="${c.id}" data-s="${x.id}" aria-pressed="${!!x.done}">${x.done?IC.check:""}</button><span style="flex:1;min-width:0;${x.done?"text-decoration:line-through;opacity:.6":""}">${esc(x.t)}</span><button class="link" data-act="qStepDel" data-id="${c.id}" data-s="${x.id}" aria-label="удалить этап">✕</button></div>`).join(""):`<p class="small muted" style="margin:0">этапов пока нет</p>`}
+  ${c.status==="active"?`<form class="row" data-form="qstep" data-id="${c.id}" style="margin-top:8px;flex-wrap:nowrap"><input class="in-text" name="t" placeholder="новый этап" style="padding:9px 10px" aria-label="новый этап"><button class="btn sm" type="submit">добавить</button></form>`:""}</div>
+  <div class="row" style="margin-top:14px"><span class="small"><b class="num">+${c.xp} xp</b> и ${coinsW(c.coins)} за прохождение</span></div>
+  <div class="row" style="margin-top:14px"><button class="btn ghost" data-act="qDel" data-id="${c.id}">удалить квест</button></div>`);
+}
+
+function vPath(d){
+  const modes=[["feed","лента"],["chart","график"],["compare","до и после"]];
+  const body=S.pathMode==="feed"?pathFeed(d):S.pathMode==="chart"?pathChart(d):pathCompare(d);
+  return`${secTitle("мой путь",S.pathMode,`<button class="link" data-act="recap">итог недели</button>`)}
+  <div class="seg" role="group" id="pathSeg" style="margin-top:12px">${modes.map(([id,l])=>`<button data-act="pmode" data-id="${id}" aria-pressed="${S.pathMode===id}">${l}</button>`).join("")}</div>${body}`;
+}
+function pathFeed(){
+  const f=S.pathFilter;
+  const list=live().filter(e=>!e.planned&&(!f||e.primary===f||(e.secondary||[]).includes(f))).sort((a,b)=>a.date===b.date?(b.ts||0)-(a.ts||0):(a.date<b.date?1:-1));
+  const chips=`<div class="chips" style="margin-top:12px"><button class="chip" data-act="pfilter" data-id="" aria-pressed="${!f}">все</button>${activeSkills().map(s=>`<button class="chip" data-act="pfilter" data-id="${s.id}" aria-pressed="${f===s.id}">${esc(s.name)}</button>`).join("")}</div>`;
+  if(!list.length)return chips+`<div class="card empty" style="margin-top:12px"><div class="big">путь начинается здесь</div><p class="muted">тут будут все твои записи по дням. можно загрузить и то, что было раньше.</p><div class="row" style="justify-content:center"><button class="btn accent" data-act="add">${IC.plus} действие</button><button class="btn ghost" data-act="importPast">загрузить прошлое</button></div></div>`;
+  let h="",last="";
+  list.forEach(e=>{if(e.date!==last){const st=S.profile.states[e.date];h+=`<div class="day">${fmtDay(e.date)}${st&&(st.health||st.mood||st.bright)?` <span class="small muted" style="text-transform:none;letter-spacing:0;font-family:var(--f-body)">· ${STATES.map(s=>st[s.k]?s.n+": "+s.labels[st[s.k]-1]:"").filter(Boolean).join(" · ")}</span>`:""}</div>`;last=e.date}h+=`<div style="margin-top:8px">${entryCard(e)}</div>`});
+  return chips+h;
+}
+function niceStep(v){const p=Math.pow(10,Math.floor(Math.log10(v||1)));const m=v/p;return(m<=1?1:m<=2?2:m<=5?5:10)*p}
+function pathChart(d){
+  const P=S.profile;const start=P.seasonStart;const t=today();
+  const shown=Math.min(Math.max(7,diffDays(start,t)+1),P.seasonDays);
+  const byDay={};d.done.forEach(e=>{if(e.date>=start)byDay[e.date]=(byDay[e.date]||0)+xpOf(e)});
+  P.challenges.forEach(c=>{if(c.status==="done"&&c.doneAt)byDay[c.doneAt]=(byDay[c.doneAt]||0)+c.xp;if(c.status==="reviewed"&&c.doneAt)byDay[c.doneAt]=(byDay[c.doneAt]||0)+10});
+  P.goals.forEach(g=>(g.steps||[]).forEach(s=>{if(s.done&&s.doneAt)byDay[s.doneAt]=(byDay[s.doneAt]||0)+40}));
+  const series=[];let acc=0;for(let i=0;i<shown;i++){const dd=addDays(start,i);if(dd>t)break;acc+=byDay[dd]||0;series.push([i,acc])}
+  const W=600,H=230,L=44,R=12,T=14,B=30;
+  const step=niceStep(Math.max(100,acc)/4);const top=Math.ceil(Math.max(100,acc)/step)*step;
+  const x=i=>L+(W-L-R)*(i/(shown-1||1)),y=v=>T+(H-T-B)*(1-v/top);
+  let grid="";for(let v=0;v<=top;v+=step)grid+=`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-width="1"/><text x="${L-6}" y="${y(v)+4}" text-anchor="end">${v}</text>`;
+  const ticks=[0,Math.floor((shown-1)/2),shown-1].filter((v,i,a)=>a.indexOf(v)===i);
+  const xl=ticks.map(i=>`<text x="${x(i)}" y="${H-8}" text-anchor="${i===0?"start":i===shown-1?"end":"middle"}">${fmtD(addDays(start,i))}</text>`).join("");
+  const line=series.map(([i,v],k)=>(k?"L":"M")+x(i).toFixed(1)+" "+y(v).toFixed(1)).join(" ");
+  const area=series.length?line+` L${x(series[series.length-1][0]).toFixed(1)} ${y(0)} L${x(0)} ${y(0)} Z`:"";
+  const lp=series[series.length-1]||[0,0];
+  const made=d.done.filter(e=>["create","ship","sell","teach"].includes(e.type)).length,watched=d.done.filter(e=>e.type==="learn").length,prac=d.done.filter(e=>["practice","try"].includes(e.type)).length,tot=made+watched+prac||1;
+  const weeks=[];for(let w=0;w*7<shown;w++){let n=0;for(let k=0;k<7;k++){const dd=addDays(start,w*7+k);n+=d.done.filter(e=>e.date===dd).length}weeks.push(n)}
+  const wmax=Math.max(1,...weeks);
+  return`<div class="card chart" style="margin-top:12px"><div class="lbl">опыт сезона, накопительно</div>
+  <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="накопленный опыт за сезон: ${acc} xp">${grid}
+  ${area?`<path d="${area}" fill="var(--accent)" fill-opacity=".14"/>`:""}${line?`<path d="${line}" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>`:""}
+  <circle cx="${x(lp[0])}" cy="${y(lp[1])}" r="5.5" fill="var(--accent)" stroke="var(--card)" stroke-width="2.5"/>${xl}</svg>
+  <div class="small muted">сезон длится ${P.seasonDays} дней. сейчас ${acc} xp.</div></div>
+  <div class="card" style="margin-top:10px"><div class="lbl">создаю или смотрю</div>
+   <div class="ratio" aria-hidden="true"><i style="width:${made/tot*100}%;background:var(--accent)"></i><i style="width:${prac/tot*100}%;background:var(--navy)"></i><i style="width:${watched/tot*100}%;background:var(--line)"></i></div>
+   <div class="row small" style="margin-top:8px;gap:14px"><span><b class="num">${made}</b> создал{а|}, выпустил{а|}, научил{а|}, продал{а|}</span><span><b class="num">${prac}</b> практика и новое</span><span><b class="num">${watched}</b> изучил{а|}</span></div></div>
+  <div class="card" style="margin-top:10px"><div class="lbl">действий по неделям</div>
+   <div style="display:grid;grid-template-columns:repeat(${weeks.length},1fr);gap:6px;align-items:end;height:90px;margin-top:10px">${weeks.map((n,i)=>`<div style="display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end"><span class="small num" style="font-weight:600">${n}</span><i style="display:block;width:100%;max-width:34px;border-radius:6px;background:var(--accent);height:${Math.max(3,n/wmax*60)}px"></i><span class="small muted num">${i+1}</span></div>`).join("")}</div></div>`;
+}
+function pathCompare(d){
+  const P=S.profile;const def=addDays(today(),-30);const minD=live().reduce((m,e)=>e.date<m?e.date:m,P.seasonStart);
+  const then=S.thenDate||(def<minD?minD:def);const thenD=derive(addDays(then,-1));
+  const wk=live().filter(e=>!e.planned&&e.date>=then&&e.date<=addDays(then,6));
+  return`<div class="card" style="margin-top:12px"><div class="field" style="margin-top:0"><label for="thenDate">сравнить с днём</label><input class="in-text" type="date" id="thenDate" value="${then}" max="${today()}"></div>
+  <div style="overflow-x:auto;margin-top:10px"><table class="cmp"><thead><tr><th>навык</th><th style="text-align:right">тогда</th><th style="text-align:right">сейчас</th><th style="text-align:right">рост</th></tr></thead><tbody>
+  ${activeSkills().map(s=>{const a=thenD.skills[s.id],b=d.skills[s.id];const dx=b.xp-a.xp;return`<tr><td>${esc(s.name)}</td><td class="n">${a.level}</td><td class="n">${b.level}</td><td class="n ${dx>0?"delta":""}">${dx>0?"+"+dx+" xp":"–"}</td></tr>`}).join("")}
+  <tr><td><b>уровень сезона</b></td><td class="n">${thenD.level}</td><td class="n">${d.level}</td><td class="n ${d.season-thenD.season>0?"delta":""}">${d.season-thenD.season>0?"+"+(d.season-thenD.season)+" xp":"–"}</td></tr>
+  </tbody></table></div></div>
+  ${secTitle("неделя с "+fmtD(then))}
+  ${wk.length?`<div class="stack">${wk.map(entryCard).join("")}</div>`:`<div class="card small muted" style="margin-top:12px">в ту неделю записей нет. со временем здесь будет видно, с чего ты начинал{а|}.</div>`}`;
+}
+
+function vSkills(d){
+  const act=activeSkills();
+  return`${secTitle("мои навыки","skills")}
+  <div class="row" style="margin-top:12px" id="skillBtns"><button class="btn accent" data-act="skillCat" id="skillCatBtn">выбрать навыки</button><button class="btn ghost" data-act="startLevels" id="startLvlBtn">стартовые уровни</button></div>
+  ${!act.length?`<div class="card empty" style="margin-top:12px"><div class="big">пока пусто</div><p class="muted">выбери 5–12 навыков, которые хочешь качать в этом сезоне.</p></div>`:""}
+  <div class="stack">${groupedSkills(s=>{const k=d.skills[s.id];const n=d.done.filter(e=>e.primary===s.id).length;const last=d.done.filter(e=>e.primary===s.id||(e.secondary||[]).includes(s.id)).sort((a,b)=>a.date<b.date?1:-1)[0];
+    return`<div class="card"><div class="row" style="justify-content:space-between;flex-wrap:nowrap"><div style="min-width:0"><div style="font-weight:700">${esc(s.name)}</div><div class="small muted">${esc(s.d)}</div></div><div class="big num" style="font-size:38px">${k.level}</div></div>
+    ${segs(k.frac,k.level)}
+    <div class="row small muted num" style="justify-content:space-between;margin-top:6px"><span>${k.level<10?k.into+" / "+k.need+" xp до "+(k.level+1)+" ур.":"максимум"}</span><span>${n} ${plural(n,"действие","действия","действий")}</span></div>
+    ${last?`<div class="small" style="margin-top:6px">последнее: ${esc(last.title)} · ${fmtDay(last.date)}</div>`:""}
+    <div class="row" style="margin-top:8px"><button class="btn sm ghost" data-act="add" data-skill="${s.id}">${IC.plus} действие</button><button class="btn sm ghost" data-act="pfilterGo" data-id="${s.id}">путь навыка</button></div></div>`})}</div>`;
+}
+
+function vQuests(){
+  const P=S.profile;const act=P.challenges.filter(c=>c.status==="active");const fin=P.challenges.filter(c=>c.status!=="active").slice(-6).reverse();
+  const order={month:0,week:1,day:2};act.sort((a,b)=>order[a.period]-order[b.period]);
+  const unused=GOAL_LIB.filter(g=>!P.goals.some(x=>x.title===g.t));
+  return`${secTitle("квесты","quest")}
+  <div class="addrow" id="questAdd"><button class="btn accent" data-act="qSuggest">${IC.spark} предложи квест</button><button class="btn" data-act="qNew">${IC.plus} свой</button></div>
+  <div class="stack">${act.length?act.map(questCard).join(""):`<div class="card small muted">сейчас квестов нет. возьми какой-нибудь на день, неделю или месяц.</div>`}</div>
+  <div id="goalsSec">${secTitle("цели сезона","goals",`<button class="link" data-act="goalNew">добавить цель</button>`)}
+  ${unused.length?`<details class="card" style="margin-top:12px" ${P.goals.length?"":"open"}><summary style="margin:0">идеи целей с готовыми первыми шагами</summary><div class="chips" style="margin-top:10px">${unused.map(g=>`<button class="chip" data-act="goalQuick" data-t="${esc(g.t)}">+ ${esc(g.t)}</button>`).join("")}</div></details>`:""}
+  <div class="stack">${P.goals.map(g=>{const steps=g.steps||[];const dn=steps.filter(s=>s.done).length;return`<div class="card"><div class="row" style="justify-content:space-between;flex-wrap:nowrap"><div style="font-weight:700;min-width:0">${esc(g.title)}</div><span class="small muted num">${dn}/${steps.length}</span></div>
+    ${steps.length?`<div style="margin-top:6px">${steps.map(s=>`<div class="goal-step"><button class="check ${s.done?"on":""}" data-act="stepToggle" data-g="${g.id}" data-s="${s.id}" aria-label="${s.done?"отменить":"отметить"} шаг" aria-pressed="${!!s.done}">${s.done?IC.check:""}</button><span style="flex:1;min-width:0;${s.done?"text-decoration:line-through;opacity:.6":""}">${esc(s.t)}</span><button class="link" data-act="stepDel" data-g="${g.id}" data-s="${s.id}" aria-label="удалить шаг">✕</button></div>`).join("")}</div>`:`<div class="small muted" style="margin-top:4px">разложи цель на первый маленький шаг</div>`}
+    <form class="row" data-form="step" data-g="${g.id}" style="margin-top:8px;flex-wrap:nowrap"><input class="in-text" name="t" placeholder="новый шаг, например «написать 3 компаниям»" style="padding:9px 10px" aria-label="новый шаг для цели ${esc(g.title)}"><button class="btn sm" type="submit">добавить</button></form>
+    <div class="row" style="margin-top:8px"><button class="link" data-act="goalDel" data-g="${g.id}">удалить цель</button></div></div>`}).join("")}</div></div>
+  ${fin.length?`${secTitle("закрытые")}<div class="stack">${fin.map(questCard).join("")}</div>`:""}`;
+}
+
+function vRewards(d){
+  const P=S.profile;const all=achAll();const hidden=Object.values(P.achEdit||{}).filter(x=>x.hidden).length;
+  return`<section class="hero"><div class="hero-top"><span class="pill">мой кошелёк</span></div><div class="big num" style="font-size:50px;display:flex;align-items:center;gap:12px"><span class="coin" style="width:34px;height:34px"></span>${d.coins}</div>
+  <div class="rank">за сезон заработано ${d.earned}. 10 xp = 1 монета</div></section>
+  <div id="wishSec">${secTitle("вишлист","wish",`<button class="link" data-act="rewardNew">добавить</button>`)}
+  <div class="wish-grid">${P.rewards.map(r=>{const can=d.coins>=r.price;const pr=Math.min(100,Math.round(Math.max(0,d.coins)/r.price*100));const imgs=r.imgs||[];const cv=imgs[0];return`<div class="wish">
+    <div class="ph" ${cv?`style="${coverCSS(cv,4/5)}" data-act="wishView" data-id="${r.id}" role="button" aria-label="смотреть фото: ${esc(r.title)}"`:""}>${cv?"":`<span class="ini">${esc((r.title||"?").trim()[0]||"?")}</span>`}${imgs.length>1?`<span class="tag cnt num">${imgs.length} фото</span>`:""}<button class="edit" data-act="rewardEdit" data-id="${r.id}" aria-label="изменить хотелку">✎</button></div>
+    <div class="bd"><div class="ti">${esc(r.title)}${r.example?' <span class="tag">пример</span>':""}</div>
+    <div class="row small" style="justify-content:space-between"><span class="price num">${IC.coin} ${r.price}</span><span class="muted num">${pr}%</span></div>
+    <div class="prog"><i style="width:${pr}%"></i></div>
+    <button class="btn sm ${can?"accent":"ghost"}" data-act="buy" data-id="${r.id}" ${can?"":"disabled"}>${can?"взять":"ещё "+(r.price-Math.max(0,d.coins))}</button></div></div>`}).join("")}
+    <button class="wish" data-act="rewardNew" style="align-items:center;justify-content:center;min-height:200px;border:1.5px dashed var(--line);background:transparent;color:var(--ink);font-weight:600;gap:6px">${IC.plus}<span>новая хотелка</span></button>
+  </div></div>
+  <div id="achSec">${secTitle("ачивки","ach",`<span class="small muted num">${all.filter(a=>d.ach.includes(a.id)).length} / ${all.length}</span>`)}
+  <div class="ach-grid">${all.map(a=>{const on=d.ach.includes(a.id);return`<button class="ach ${on?"on":""}" data-act="ach" data-id="${a.id}">${achIcon(a)}<div class="an">${esc(a.n)}</div><div class="ad">${esc(a.d||a.cond)}</div></button>`}).join("")}
+  <button class="ach" data-act="achNew" style="border:1.5px dashed var(--line);background:transparent;opacity:1;justify-content:center"><div class="ic">${IC.plus}</div><div class="an">своя ачивка</div></button></div>
+  <p class="small muted" style="margin-top:10px">нажми на ачивку, чтобы переименовать её или поставить свою картинку.${hidden?` <button class="link" data-act="achUnhide">вернуть скрытые (${hidden})</button>`:""}</p></div>
+  ${P.purchases.length?`${secTitle("я себя наградил{а|}")}<div class="card stack" style="gap:6px">${P.purchases.slice().reverse().map(p=>`<div class="row" style="justify-content:space-between"><span>${esc(p.title)}</span><span class="small muted num">${fmtD(p.at)} · ${p.price}</span></div>`).join("")}</div>`:""}`;
+}
+
+/* ================= слои ================= */
+function sheet(html,onMount){
+  const L=$("#layer");L.innerHTML=`<div class="shade" data-act="closeShade"><div class="sheet" role="dialog" aria-modal="true">${gx(html)}</div></div>`;
+  document.body.style.overflow="hidden";tgBack();if(onMount)onMount(L.querySelector(".sheet"));
+}
+function closeSheet(){$("#layer").innerHTML="";document.body.style.overflow="";tgBack()}
+function tgBack(){if(!TG||!TG.BackButton)return;try{$("#layer").innerHTML?TG.BackButton.show():TG.BackButton.hide()}catch(x){}}
+let toastT;function toast(msg){let t=document.querySelector(".toast");if(!t){t=document.createElement("div");t.className="toast";t.setAttribute("role","status");document.body.appendChild(t)}t.textContent=gx(msg);try{TG&&TG.HapticFeedback&&TG.HapticFeedback.impactOccurred("light")}catch(x){}if(T){t.style.top="calc(64px + env(safe-area-inset-top,0px))";t.style.bottom="auto"}else{t.style.top="";t.style.bottom=""}clearTimeout(toastT);toastT=setTimeout(()=>t.remove(),2600)}
+function confirmSheet(title,text,okLabel,onOk){
+  sheet(`<h2>${esc(title)}</h2><p>${esc(text)}</p><div class="row" style="margin-top:16px"><button class="btn accent" id="okBtn">${esc(okLabel)}</button><button class="btn ghost" data-act="close">отмена</button></div>`,el=>{el.querySelector("#okBtn").onclick=()=>{closeSheet();onOk()}});
+}
+function hintSheet(k){const[h,t]=HELP[k];sheet(`<span class="pill">подсказка</span><h2 style="margin-top:10px">${esc(h)}</h2><div style="white-space:pre-line">${esc(t)}</div><button class="btn accent wide" style="margin-top:16px" data-act="close">понятно</button>`)}
+function showLevelUp(c){
+  const el=document.createElement("div");el.className="lvlup";el.setAttribute("role","dialog");
+  let burst="";for(let i=0;i<34;i++)burst+=`<i style="left:${Math.random()*100}%;animation-delay:${Math.random()*0.8}s;opacity:${.4+Math.random()*.6}"></i>`;
+  el.innerHTML=gx(`<div class="burst">${burst}</div><span class="pill soft pop">новый уровень</span><div class="big pop num">${c.level}</div><div style="font-size:20px;font-weight:600;margin-top:8px" class="pop">${c.rankUp?"новое звание: ":""}${esc(c.rank)}</div><p style="opacity:.85;max-width:320px">можно заглянуть в вишлист и выбрать себе что-нибудь.</p><button class="btn" style="margin-top:14px;background:var(--panel-ink);color:var(--panel)">ура!</button>`);
+  document.body.appendChild(el);el.querySelector("button").onclick=()=>{el.remove();if(celebrateQ.length)showLevelUp(celebrateQ.shift())};el.querySelector("button").focus();
+}
+
+/* ================= картинки и кадрирование ================= */
+let assetsNs=null,sampleNs=null,downloadsNs=null;
+const readURL=f=>new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>res(fr.result);fr.onerror=rej;fr.readAsDataURL(f)});
+const loadImg=u=>new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=u});
+async function pickImage(file){
+  const u0=await readURL(file);const im=await loadImg(u0);const w=im.naturalWidth,h=im.naturalHeight;
+  if(assetsNs){try{const r=await assetsNs.upload(file);return{id:r.id,url:r.url,w,h,px:50,py:50,z:1}}catch(x){}}
+  const m=640,k=Math.min(1,m/Math.max(w,h));const c=document.createElement("canvas");c.width=Math.round(w*k);c.height=Math.round(h*k);
+  c.getContext("2d").drawImage(im,0,0,c.width,c.height);return{url:c.toDataURL("image/jpeg",.68),w:c.width,h:c.height,px:50,py:50,z:1};
+}
+/* обложка с кадром: фото не режем, а храним масштаб и точку, и показываем через background */
+function coverCSS(img,A,raw){
+  if(!img||!img.url)return"";const u=raw?`background-image:url("${img.url}");background-repeat:no-repeat;`:`background-image:url(&quot;${esc(img.url)}&quot;);background-repeat:no-repeat;`;
+  if(!img.w||!img.h)return u+"background-size:cover;background-position:center";
+  const a=img.w/img.h,z=img.z||1;let bw,bh;if(a>A){bh=100;bw=a/A*100}else{bw=100;bh=A/a*100}
+  return u+`background-size:${(bw*z).toFixed(2)}% ${(bh*z).toFixed(2)}%;background-position:${(img.px==null?50:img.px).toFixed(1)}% ${(img.py==null?50:img.py).toFixed(1)}%`;
+}
+function overlay(html,onMount){
+  const o=document.createElement("div");o.className="shade";o.style.zIndex="60";
+  o.innerHTML=`<div class="sheet" role="dialog" aria-modal="true">${gx(html)}</div>`;document.body.appendChild(o);
+  const close=()=>o.remove();if(onMount)onMount(o.querySelector(".sheet"),close);return close;
+}
+function cropper(img,A,cb){
+  const c=Object.assign({px:50,py:50,z:1},img);
+  overlay(`<div class="sheet-h"><h2>кадр</h2><button class="iconbtn" data-x="close" aria-label="закрыть">✕</button></div>
+  <p class="small muted" style="margin:0 0 10px">двигай фото пальцем или мышкой, ползунком меняй масштаб.</p>
+  <div class="cropbox" id="cropBox"></div>
+  <div class="field"><label for="cropZ">масштаб</label><input type="range" id="cropZ" min="1" max="4" step="0.01" value="${c.z}"></div>
+  <div class="row" style="margin-top:14px"><button class="btn accent" data-x="ok">готово</button><button class="btn ghost" data-x="reset">сбросить</button></div>`,(el,close)=>{
+    const box=el.querySelector("#cropBox");const zi=el.querySelector("#cropZ");
+    const paint=()=>{box.style.cssText=`aspect-ratio:${A};`+coverCSS(c,A,true)};paint();
+    let dr=null;
+    box.addEventListener("pointerdown",e=>{dr={x:e.clientX,y:e.clientY,px:c.px,py:c.py};try{box.setPointerCapture(e.pointerId)}catch(x){}e.preventDefault()});
+    box.addEventListener("pointermove",e=>{if(!dr||!c.w)return;const W=box.clientWidth,H=box.clientHeight,a=c.w/c.h;let bw,bh;if(a>A){bh=H*c.z;bw=bh*a}else{bw=W*c.z;bh=bw/a}
+      const ox=bw-W,oy=bh-H;if(ox>1)c.px=clamp(dr.px-(e.clientX-dr.x)/ox*100,0,100);if(oy>1)c.py=clamp(dr.py-(e.clientY-dr.y)/oy*100,0,100);paint()});
+    const end=()=>{dr=null};box.addEventListener("pointerup",end);box.addEventListener("pointercancel",end);
+    box.addEventListener("wheel",e=>{e.preventDefault();c.z=clamp(c.z-e.deltaY*0.002,1,4);zi.value=c.z;paint()},{passive:false});
+    zi.oninput=()=>{c.z=+zi.value;paint()};
+    el.addEventListener("click",e=>{const b=e.target.closest("[data-x]");if(!b)return;const x=b.dataset.x;
+      if(x==="close")close();
+      if(x==="reset"){c.px=50;c.py=50;c.z=1;zi.value=1;paint()}
+      if(x==="ok"){close();cb(c)}});
+  });
+}
+
+/* ================= форма действия ================= */
+let F=null,REC=[];
+const tplsFor=id=>{const s=skillById(id);return((s&&s.t)||[]).concat(GEN_T).map(x=>{const k=x.indexOf("|");return{type:x.slice(0,k),t:gx(x.slice(k+1))}})};
+function recentList(){const seen=new Set(),out=[];live().filter(e=>!e.planned&&e.type!=="bonus"&&S.profile.active.includes(e.primary)).sort((a,b)=>(b.ts||0)-(a.ts||0)).forEach(e=>{const k=e.title+"|"+e.primary;if(!seen.has(k)&&out.length<4){seen.add(k);out.push(e)}});return out}
+function skillChoices(){
+  const cnt={};live().forEach(e=>{if(e.primary)cnt[e.primary]=(cnt[e.primary]||0)+1});
+  const act=activeSkills().slice().sort((a,b)=>(cnt[b.id]||0)-(cnt[a.id]||0));
+  const extra=[F.primary,...F.secondary].filter(id=>id&&!act.some(s=>s.id===id)).map(skillById).filter(Boolean);return act.concat(extra);
+}
+function openEntry(e,opts){
+  opts=opts||{};
+  if(!S.profile.active.length){skillCatalog(true);toast("сначала выбери навыки");return}
+  F=e?clone(e):{id:uid(),date:today(),title:"",type:"",primary:opts.skill||"",secondary:[],first:false,fear:false,note:"",link:"",money:"",planned:!!opts.plan,img:null};
+  if(!F.secondary)F.secondary=[];
+  const isEdit=!!e;REC=isEdit?[]:recentList();
+  sheet(`<div class="sheet-h"><h2>${isEdit?"действие":F.planned?"что планируешь?":"что сделал{а|}?"}</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
+  <div class="seg" role="group" aria-label="статус"><button type="button" data-f="plannedNo" aria-pressed="${!F.planned}">сделал{а|}</button><button type="button" data-f="plannedYes" aria-pressed="${F.planned}">планирую</button></div>
+  ${REC.length?`<div class="field"><span class="lbl">повторить недавнее в одно касание</span><div class="chips">${REC.map((r,i)=>`<button type="button" class="chip" data-f="rep" data-i="${i}">↺ ${esc(r.title)}</button>`).join("")}</div></div>`:""}
+  ${sampleNs?`<div class="field"><label for="fAi">или расскажи словами, claude разложит</label><div class="row" style="flex-wrap:nowrap"><input class="in-text" id="fAi" placeholder="например: впервые собрал{а|} бота для заявок"><button class="btn sm" type="button" data-f="ai" aria-label="разобрать">${IC.spark}</button></div></div>`:""}
+  <div class="field" id="fSkillField"><span class="lbl">${isEdit?"":"1. "}какой навык качаешь</span><div class="chips" id="fPrim"></div></div>
+  <div class="field" id="fTplField"><span class="lbl">${isEdit?"":"2. "}что именно сделал{а|}</span><div class="chips" id="fTpls"></div></div>
+  <div id="fCore">
+  <div class="field"><label for="fTitle">${isEdit?"":"3. "}как назовём запись</label><input class="in-text" id="fTitle" value="${esc(F.title)}" placeholder="коротко, своими словами"></div>
+  <div class="field"><span class="lbl">тип действия (от него зависит опыт)</span><div class="chips" id="fTypes"></div></div>
+  </div>
+  <details id="fMore" ${isEdit&&(F.secondary.length||F.first||F.fear||F.date!==today())?"open":""}><summary>ещё: доп. навыки, впервые, шаг в страх, дата</summary>
+  <div class="field"><span class="lbl">ещё качает (до двух, получат 40%)</span><div class="chips" id="fSec"></div></div>
+  <label class="toggle"><input type="checkbox" id="fFirst" ${F.first?"checked":""}> делаю впервые (опыт ×1.5)</label>
+  <label class="toggle"><input type="checkbox" id="fFear" ${F.fear?"checked":""}> это шаг в страх (+${FEAR_XP} xp)</label>
+  <div class="field"><label for="fDate">дата (можно задним числом)</label><input class="in-text" type="date" id="fDate" value="${F.date}"></div>
+  </details>
+  <details ${F.note||F.link||F.money||F.img?"open":""}><summary>заметка, ссылка, результат, фото</summary>
+    <div class="field"><label for="fNote">чему научил{ась|ся}</label><textarea class="in-text" id="fNote" placeholder="одна мысль, которую хочешь запомнить">${esc(F.note)}</textarea></div>
+    <div class="field"><label for="fLink">ссылка</label><input class="in-text" id="fLink" value="${esc(F.link)}" placeholder="пост, проект, урок"></div>
+    <div class="field"><label for="fMoney">результат</label><input class="in-text" id="fMoney" value="${esc(F.money)}" placeholder="например: 15 000 ₽, 300 подписчиков, отзыв"></div>
+    <div class="field"><span class="lbl">скриншот или фото</span><label class="imgpick" for="fImg" style="aspect-ratio:16/9">${F.img&&F.img.url?`<img src="${esc(F.img.url)}" alt="">`:`<span style="text-align:center">${IC.camera}<br>добавить фото</span>`}</label><input type="file" id="fImg" accept="image/*" hidden></div>
+  </details>
+  <div class="xpprev"><div><b class="num" id="fXp">+0 xp</b> <span class="small muted" id="fXpSub"></span></div><button class="btn accent" type="button" data-f="save" id="fSave">сохранить</button></div>
+  ${isEdit?`<button class="link" type="button" data-f="del" style="margin-top:14px">удалить действие</button>`:""}`,el=>{
+    el.addEventListener("click",formClick);el.addEventListener("input",formSync);el.addEventListener("change",formChange);
+    paintForm();
+  });
+}
+function paintForm(){
+  const el=$(".sheet");if(!el||!F||!el.querySelector("#fTypes"))return;
+  const ch=skillChoices();
+  el.querySelector("#fPrim").innerHTML=ch.map(s=>`<button type="button" class="chip" data-f="prim" data-id="${s.id}" aria-pressed="${F.primary===s.id}">${esc(s.name)}</button>`).join("");
+  el.querySelector("#fTpls").innerHTML=F.primary?gx(tplsFor(F.primary).map((t,i)=>`<button type="button" class="chip" data-f="tpl" data-i="${i}" aria-pressed="${F.title===t.t&&F.type===t.type}">${esc(t.t)}</button>`).join("")):`<span class="small muted">сначала выбери навык, и тут появятся варианты</span>`;
+  el.querySelector("#fTypes").innerHTML=gx(TYPES.map(t=>`<button type="button" class="chip" data-f="type" data-id="${t.id}" aria-pressed="${F.type===t.id}" title="${esc(t.hint)}">${esc(t.label)} · ${t.xp}</button>`).join(""));
+  el.querySelector("#fSec").innerHTML=ch.filter(s=>s.id!==F.primary).map(s=>`<button type="button" class="chip sec2" data-f="sec" data-id="${s.id}" aria-pressed="${F.secondary.includes(s.id)}">${esc(s.name)}</button>`).join("");
+  el.querySelectorAll('[data-f="plannedNo"],[data-f="plannedYes"]').forEach(b=>b.setAttribute("aria-pressed",String((b.dataset.f==="plannedYes")===!!F.planned)));
+  const fd=el.querySelector("#fDate");if(!F.planned)fd.max=today();else fd.removeAttribute("max");
+  const x=F.type?xpOf(F):0;
+  el.querySelector("#fXp").textContent=F.planned?"в планы":"+"+x+" xp";
+  el.querySelector("#fXpSub").textContent=F.planned?gx("опыт придёт, когда отметишь «сделал{а|}»"):(x?"+"+coinsW(coinsOf(x)):"выбери тип действия");
+}
+function formSync(){const el=$(".sheet");if(!el||!F||!el.querySelector("#fTitle"))return;F.title=el.querySelector("#fTitle").value;F.first=el.querySelector("#fFirst").checked;F.fear=el.querySelector("#fFear").checked;F.date=el.querySelector("#fDate").value||today();
+  F.note=el.querySelector("#fNote").value;F.link=el.querySelector("#fLink").value.trim();F.money=el.querySelector("#fMoney").value;paintForm()}
+async function formChange(ev){
+  formSync();
+  if(ev.target.id==="fImg"&&ev.target.files[0]){const box=$(".sheet .imgpick");box.innerHTML='<span class="small"><span class="spin"></span> загружаю…</span>';
+    try{F.img=await pickImage(ev.target.files[0]);box.innerHTML=`<img src="${esc(F.img.url)}" alt="">`}catch(x){box.innerHTML='<span class="small">не получилось загрузить фото, попробуй другое</span>'}}
+}
+async function formClick(ev){
+  const b=ev.target.closest("[data-f]");if(!b||!F)return;const f=b.dataset.f;
+  if(f==="plannedNo"){F.planned=false;if(F.date>today())F.date=today();$("#fDate").value=F.date}
+  else if(f==="plannedYes"){F.planned=true}
+  else if(f==="type")F.type=b.dataset.id;
+  else if(f==="prim"){F.primary=b.dataset.id;F.secondary=F.secondary.filter(x=>x!==F.primary)}
+  else if(f==="sec"){const id=b.dataset.id;if(F.secondary.includes(id))F.secondary=F.secondary.filter(x=>x!==id);else{if(F.secondary.length>=2)F.secondary.shift();F.secondary.push(id)}}
+  else if(f==="tpl"){const t=tplsFor(F.primary)[+b.dataset.i];if(t){F.title=t.t;F.type=t.type;$("#fTitle").value=F.title}}
+  else if(f==="rep"){const r=REC[+b.dataset.i];if(r){F.title=r.title;F.type=r.type;F.primary=r.primary;F.secondary=(r.secondary||[]).slice();$("#fTitle").value=F.title}}
+  else if(f==="ai"){await aiParse(b);return}
+  else if(f==="save"){saveEntry();return}
+  else if(f==="del"){const id=F.id;confirmSheet("удалить действие?","опыт за него тоже уйдёт.","удалить",()=>{Store.delEntry(id);F=null;afterChange();toast("удалено")});return}
+  paintForm();
+}
+function saveEntry(){
+  formSync();
+  if(!F.primary){toast("выбери навык");$("#fPrim").scrollIntoView({block:"center"});return}
+  if(!F.title.trim()){toast("напиши, что ты сделал{а|}");$("#fTitle").focus();return}
+  if(!F.type){toast("выбери тип действия");$("#fTypes").scrollIntoView({block:"center"});return}
+  const isNew=!S.entries.some(e=>e.id===F.id);
+  const e=clone(F);e.title=e.title.trim();
+  if(!e.planned&&isNew&&e.date===today())maybeComeback();
+  Store.putEntry(e);closeSheet();F=null;
+  toast(e.planned?"добавлено в планы":"сохранено: +"+xpOf(e)+" xp · +"+coinsW(coinsOf(xpOf(e))));
+  afterChange();
+}
+function maybeComeback(){
+  const t=today();const done=live().filter(e=>!e.planned);
+  if(done.some(e=>e.date===t))return;
+  const prev=done.map(e=>e.date).filter(d=>d<t).sort().pop();
+  if(prev&&diffDays(prev,t)>=3){Store.putEntry({id:uid(),date:t,type:"bonus",xp:25,title:gx("с возвращением! бонус за то, что вернул{ась|ся}"),primary:null,secondary:[]});setTimeout(()=>toast("с возвращением: +25 xp"),1400)}
+}
+const who=()=>"пользователя зовут "+(S.profile.name||"без имени")+", пиши о нём в "+(isM()?"мужском":"женском")+" роде.";
+function aiCtx(){return who()+"\nнавыки (id: название): "+activeSkills().map(s=>s.id+": "+s.name+" ("+s.d+")").join("; ")+".\nтипы действий (id: название): "+TYPES.map(t=>t.id+": "+gx(t.label)+" ("+t.hint+")").join("; ")+"."}
+async function aiParse(btn){
+  const inp=$("#fAi");const text=(inp.value||"").trim();if(!text){inp.focus();return}
+  btn.innerHTML='<span class="spin"></span>';btn.disabled=true;
+  try{
+    const r=await sampleNs.json(aiCtx()+`\nразбери запись о действии для трекера. верни только json вида {"title":"коротко, с маленькой буквы, в прошедшем времени","type":"id типа","primary":"id навыка","secondary":["до 2 id навыков"],"first":true|false,"fear":true|false}.\nfirst = человек явно пишет, что делает это впервые. fear = явно пишет, что было страшно.\nзапись: """${text}"""`,{modelTier:"quick"});
+    const act=S.profile.active;
+    if(r&&TY[r.type])F.type=r.type;if(r&&act.includes(r.primary))F.primary=r.primary;
+    if(r&&Array.isArray(r.secondary))F.secondary=r.secondary.filter(id=>act.includes(id)&&id!==F.primary).slice(0,2);
+    if(r&&r.title){F.title=String(r.title).slice(0,140);$("#fTitle").value=F.title}
+    if(r){F.first=!!r.first;F.fear=!!r.fear;$("#fFirst").checked=F.first;$("#fFear").checked=F.fear}
+    paintForm();toast("готово, проверь и сохрани");
+  }catch(x){toast(x&&x.code==="rate_limited"?"claude занят, попробуй через минуту":"не получилось разобрать, заполни вручную")}
+  btn.innerHTML=IC.spark;btn.disabled=false;
+}
+
+/* ================= знакомство ================= */
+function meetSheet(next){
+  const P=S.profile;let g=P.gender||"f";
+  sheet(`<span class="pill">знакомство</span><h2 style="margin-top:12px">давай знакомиться</h2>
+  <p class="small muted" style="margin:0">имя будет на главной, а обращение нужно, чтобы писать тебе «сделала» или «сделал».</p>
+  <div class="field"><label for="mName">как тебя зовут</label><input class="in-text" id="mName" value="${esc(P.name||(TG&&TG.initDataUnsafe&&TG.initDataUnsafe.user&&TG.initDataUnsafe.user.first_name)||"")}" placeholder="имя" maxlength="30" autocomplete="given-name"></div>
+  <div class="field"><span class="lbl">как к тебе обращаться</span><div class="seg" role="group" id="mG"><button type="button" data-gg="f" aria-pressed="${g==="f"}">она, «сделала»</button><button type="button" data-gg="m" aria-pressed="${g==="m"}">он, «сделал»</button></div></div>
+  <button class="btn accent wide" style="margin-top:18px" id="mOk">${next?"дальше":"сохранить"}</button>`,el=>{
+    el.querySelector("#mG").onclick=e=>{const b=e.target.closest("[data-gg]");if(!b)return;g=b.dataset.gg;el.querySelectorAll("#mG button").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.gg===g)))};
+    el.querySelector("#mOk").onclick=()=>{const n=el.querySelector("#mName").value.trim();if(!n){toast("напиши, как тебя зовут");el.querySelector("#mName").focus();return}
+      P.name=n;P.gender=g;Store.saveProfile();closeSheet();afterChange();if(next)next();else toast("приятно познакомиться, "+n)};
+  });
+}
+
+/* ================= ачивки ================= */
+function achAll(){
+  const P=S.profile;const ed=P.achEdit||{};
+  const b=ACH.filter(a=>!(ed[a.id]&&ed[a.id].hidden)).map(a=>Object.assign({builtin:true,cond:a.d},a,ed[a.id]||{}));
+  const c=(P.achCustom||[]).map(a=>Object.assign({custom:true,cond:ruleText(a.rule)},a));
+  return b.concat(c);
+}
+function ruleText(r){
+  r=r||{k:"manual"};const n=r.n||1;const sk=skillById(r.skill);const ty=TY[r.type];
+  switch(r.k){
+    case"manual":return"отмечаешь сам{а|}, когда получится";
+    case"count":return n+" "+plural(n,"действие","действия","действий");
+    case"type":return"«"+(ty?ty.label:"?")+"» "+n+" "+plural(n,"раз","раза","раз");
+    case"skill":return n+" "+plural(n,"действие","действия","действий")+" в навыке «"+(sk?sk.name:"?")+"»";
+    case"skillLvl":return"навык «"+(sk?sk.name:"?")+"» до "+n+" уровня";
+    case"streak":return"серия "+n+" "+plural(n,"день","дня","дней")+" подряд";
+    case"fear":return n+" "+plural(n,"шаг","шага","шагов")+" в страх";
+    case"quests":return"закрыть "+n+" "+plural(n,"квест","квеста","квестов");
+    case"level":return"уровень сезона "+n;
+  }return"";
+}
+function ruleProgress(r,d){
+  r=r||{k:"manual"};if(r.k==="manual")return null;const n=Math.max(1,r.n||1);let cur=0;
+  switch(r.k){case"count":cur=d.done.length;break;case"type":cur=d.byType[r.type]||0;break;case"skill":cur=d.bySkill[r.skill]||0;break;
+    case"skillLvl":cur=d.skills[r.skill]?d.skills[r.skill].level:0;break;case"streak":cur=d.streak.best;break;case"fear":cur=d.fear;break;case"quests":cur=d.questsDone;break;case"level":cur=d.level;break}
+  return[Math.min(cur,n),n];
+}
+const achIcon=(a,big)=>a.img&&a.img.url?`<div class="ic" style="${coverCSS(a.img,1)}${big?";width:96px;height:96px;border-radius:26px":""}" aria-hidden="true"></div>`:`<div class="ic" aria-hidden="true" ${big?'style="width:96px;height:96px;border-radius:26px;font-size:34px"':""}>${esc(a.ic||"★")}</div>`;
+function achSheet(id){
+  const a=achAll().find(x=>x.id===id);if(!a)return;const d=derive();const got=d.ach.includes(id);const pr=a.custom?ruleProgress(a.rule,d):null;
+  sheet(`<div class="sheet-h"><span class="pill">${got?"получена":"ещё впереди"}</span><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
+  <div class="ach ${got?"on":""}" style="background:transparent;padding:6px 0 0">${achIcon(a,true)}</div>
+  <h2 style="text-align:center;margin-top:12px">${esc(a.n)}</h2>
+  ${a.d&&a.d!==a.cond?`<p style="text-align:center;margin:0">${esc(a.d)}</p>`:""}
+  <div class="card" style="margin-top:14px"><div class="small muted">как получить</div><div style="font-weight:600;margin-top:2px">${esc(a.cond)}</div>
+  ${pr?`<div class="prog" style="margin-top:10px"><i style="width:${pr[0]/pr[1]*100}%;background:var(--accent)"></i></div><div class="small muted num" style="margin-top:4px">${pr[0]} из ${pr[1]}</div>`:""}
+  ${a.custom&&a.coins?`<div class="small" style="margin-top:8px">награда: ${coinsW(a.coins)}</div>`:""}</div>
+  <div class="stack">
+  ${a.custom&&(a.rule||{}).k==="manual"?(got?`<button class="btn ghost wide" data-act="achGot" data-id="${a.id}" data-v="0">снять отметку</button>`:`<button class="btn accent wide" data-act="achGot" data-id="${a.id}" data-v="1">получил{а|}!</button>`):""}
+  <button class="btn ghost wide" data-act="achEdit" data-id="${a.id}">изменить</button>
+  ${a.builtin?`<button class="btn ghost wide" data-act="achHide" data-id="${a.id}">скрыть эту ачивку</button>`:`<button class="btn ghost wide" data-act="achDel" data-id="${a.id}">удалить</button>`}
+  </div>`);
+}
+function achForm(id){
+  const P=S.profile;P.achEdit=P.achEdit||{};P.achCustom=P.achCustom||[];
+  const base=ACH.find(x=>x.id===id);const isB=!!base;const ex=isB?null:P.achCustom.find(x=>x.id===id);
+  const a=isB?Object.assign({ic:base.ic,img:null,n:gx(base.n),d:gx(base.d)},P.achEdit[id]||{}):ex?clone(ex):{id:"a"+uid(),ic:"★",img:null,n:"",d:"",rule:{k:"skill",skill:P.active[0]||"",n:10,type:"create"},coins:20};
+  if(!isB&&!a.rule)a.rule={k:"manual"};
+  const paramHtml=()=>{const r=a.rule;let h="";
+    if(r.k==="type")h+=`<div class="field"><label for="aT">тип действия</label><select class="in-text" id="aT">${TYPES.map(t=>`<option value="${t.id}" ${r.type===t.id?"selected":""}>${esc(gx(t.label))}</option>`).join("")}</select></div>`;
+    if(r.k==="skill"||r.k==="skillLvl")h+=`<div class="field"><label for="aS">навык</label><select class="in-text" id="aS">${activeSkills().map(s=>`<option value="${s.id}" ${r.skill===s.id?"selected":""}>${esc(s.name)}</option>`).join("")}</select></div>`;
+    if(r.k!=="manual")h+=`<div class="field"><label for="aN">${r.k==="skillLvl"||r.k==="level"?"уровень":r.k==="streak"?"дней подряд":"сколько раз"}</label><input class="in-text" id="aN" type="number" min="1" inputmode="numeric" value="${r.n||5}"></div>`;
+    return h};
+  sheet(`<div class="sheet-h"><h2>${isB?"изменить ачивку":ex?"своя ачивка":"новая ачивка"}</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
+  <div class="row" style="flex-wrap:nowrap;align-items:center;gap:14px"><div class="ach on" id="aPrev" style="background:transparent;padding:0"></div>
+  <div class="stack" style="margin:0;flex:1;min-width:0;gap:6px"><label class="btn sm ghost" for="aImg" style="cursor:pointer">загрузить картинку</label><input type="file" id="aImg" accept="image/*" hidden>
+  <button type="button" class="btn sm ghost" id="aCrop">кадр</button><button type="button" class="btn sm ghost" id="aNoImg">без картинки</button></div></div>
+  <div class="field"><label for="aIc">значок, если без картинки: 1–3 символа или эмодзи</label><input class="in-text" id="aIc" maxlength="4" value="${esc(a.ic||"")}"></div>
+  <div class="field"><label for="aNm">название</label><input class="in-text" id="aNm" maxlength="40" value="${esc(a.n)}" placeholder="например: первый миллион"></div>
+  <div class="field"><label for="aDs">описание</label><input class="in-text" id="aDs" maxlength="80" value="${esc(a.d)}" placeholder="за что она"></div>
+  ${isB?`<div class="card small" style="margin-top:14px">условие встроенной ачивки не меняется: ${esc(gx(base.d))}</div>`:`
+  <div class="field"><label for="aR">как её получить</label><select class="in-text" id="aR">${ACH_RULES.map(r=>`<option value="${r.k}" ${a.rule.k===r.k?"selected":""}>${esc(gx(r.n))}</option>`).join("")}</select></div>
+  <div id="aParams">${paramHtml()}</div>
+  <div class="field"><label for="aC">награда в монетах (можно 0)</label><input class="in-text" id="aC" type="number" min="0" inputmode="numeric" value="${a.coins||0}"></div>`}
+  <div class="row" style="margin-top:16px"><button class="btn accent" id="aSave">сохранить</button>${isB&&P.achEdit[id]?`<button class="btn ghost" id="aReset">вернуть как было</button>`:""}</div>`,el=>{
+    const prev=()=>{a.ic=el.querySelector("#aIc").value.trim();el.querySelector("#aPrev").innerHTML=achIcon(a,true)};prev();
+    el.querySelector("#aIc").oninput=prev;
+    el.querySelector("#aImg").onchange=async ev=>{const f=ev.target.files[0];ev.target.value="";if(!f)return;el.querySelector("#aPrev").innerHTML='<span class="spin"></span>';
+      try{const m=await pickImage(f);cropper(m,1,c=>{a.img=c;prev()});a.img=m;prev()}catch(x){toast("не получилось загрузить картинку");prev()}};
+    el.querySelector("#aCrop").onclick=()=>{if(!a.img){toast("сначала загрузи картинку");return}cropper(a.img,1,c=>{a.img=c;prev()})};
+    el.querySelector("#aNoImg").onclick=()=>{a.img=null;prev()};
+    const rs=el.querySelector("#aR");if(rs)rs.onchange=()=>{a.rule={k:rs.value,n:a.rule.n||5,skill:a.rule.skill||P.active[0],type:a.rule.type||"create"};el.querySelector("#aParams").innerHTML=gx(paramHtml())};
+    el.querySelector("#aSave").onclick=()=>{
+      const n=el.querySelector("#aNm").value.trim();if(!n){toast("придумай название");el.querySelector("#aNm").focus();return}
+      const rec={ic:el.querySelector("#aIc").value.trim()||"★",img:a.img||null,n,d:el.querySelector("#aDs").value.trim()};
+      if(isB){P.achEdit[id]=Object.assign({},P.achEdit[id]||{},rec)}
+      else{const r=a.rule;const T_=el.querySelector("#aT"),S_=el.querySelector("#aS"),N_=el.querySelector("#aN");
+        if(T_)r.type=T_.value;if(S_)r.skill=S_.value;if(N_)r.n=Math.max(1,parseInt(N_.value,10)||1);
+        const obj=Object.assign({id:a.id,rule:r,coins:Math.max(0,parseInt(el.querySelector("#aC").value,10)||0),got:a.got||null},rec);
+        const i=P.achCustom.findIndex(x=>x.id===a.id);if(i>=0)P.achCustom[i]=obj;else P.achCustom.push(obj)}
+      Store.saveProfile();closeSheet();toast("ачивка сохранена");afterChange()};
+    const rb=el.querySelector("#aReset");if(rb)rb.onclick=()=>{delete P.achEdit[id];Store.saveProfile();closeSheet();toast("ачивка снова как была");afterChange()};
+  });
+}
+
+/* ================= хотелки ================= */
+function rewardForm(r0){
+  const isEdit=!!r0;const r=r0?clone(r0):{id:uid(),title:"",price:50,link:"",imgs:[]};
+  if(!Array.isArray(r.imgs))r.imgs=r.img?[r.img]:[];delete r.img;
+  sheet(`<div class="sheet-h"><h2>${isEdit?"хотелка":"новая хотелка"}</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
+  <div class="field" style="margin-top:0"><span class="lbl">фото: первое будет обложкой</span><div class="gal" id="rGal"></div>
+  <label class="btn ghost" for="rImg" style="margin-top:8px;cursor:pointer">${IC.plus} добавить фото</label><input type="file" id="rImg" accept="image/*" multiple hidden></div>
+  <div class="field"><label for="rT">что хочу себе позволить</label><input class="in-text" id="rT" value="${esc(r.title)}"></div>
+  <div class="field"><label for="rP">цена в монетах</label><input class="in-text" id="rP" type="number" min="1" inputmode="numeric" value="${r.price}"></div>
+  <p class="small muted">для ориентира: за активный день выходит 5–20 монет.</p>
+  <div class="field"><label for="rL">ссылка, если хочешь</label><input class="in-text" id="rL" value="${esc(r.link||"")}" placeholder="где купить или посмотреть"></div>
+  <div class="row" style="margin-top:14px"><button class="btn accent" id="rS">сохранить</button>${isEdit?`<button class="btn ghost" id="rD">удалить</button>`:""}</div>`,el=>{
+    const gal=el.querySelector("#rGal");
+    const paintG=()=>{gal.innerHTML=r.imgs.length?r.imgs.map((m,i)=>`<div class="gi"><div class="th" style="${coverCSS(m,4/5)}">${i===0?'<span class="tag navy cov">обложка</span>':""}</div>
+      <div class="gi-b">${i>0?`<button type="button" class="btn sm ghost" data-g="cover" data-i="${i}">на обложку</button>`:""}<button type="button" class="btn sm ghost" data-g="crop" data-i="${i}">кадр</button><button type="button" class="btn sm ghost" data-g="del" data-i="${i}" aria-label="убрать фото">убрать</button></div></div>`).join("")
+      :`<label for="rImg" class="imgpick" style="aspect-ratio:16/9;grid-column:1/-1"><span style="text-align:center">${IC.camera}<br>добавь фото, чтобы хотелку было видно</span></label>`};
+    paintG();
+    gal.addEventListener("click",e=>{const b=e.target.closest("[data-g]");if(!b)return;const i=+b.dataset.i;
+      if(b.dataset.g==="cover"){const[m]=r.imgs.splice(i,1);r.imgs.unshift(m);paintG()}
+      if(b.dataset.g==="del"){r.imgs.splice(i,1);paintG()}
+      if(b.dataset.g==="crop")cropper(r.imgs[i],4/5,c=>{r.imgs[i]=c;paintG()})});
+    el.querySelector("#rImg").onchange=async ev=>{const files=[...ev.target.files];ev.target.value="";if(!files.length)return;const was=r.imgs.length;
+      gal.insertAdjacentHTML("beforeend",'<div class="small"><span class="spin"></span> загружаю…</div>');
+      for(const f of files){try{r.imgs.push(await pickImage(f))}catch(x){toast("одно фото не загрузилось")}}
+      paintG();if(was===0&&r.imgs.length)cropper(r.imgs[0],4/5,c=>{r.imgs[0]=c;paintG()})};
+    el.querySelector("#rS").onclick=()=>{const t=el.querySelector("#rT").value.trim();const p=Math.max(1,parseInt(el.querySelector("#rP").value,10)||1);if(!t){toast("напиши хотелку");return}
+      const list=S.profile.rewards;const i=list.findIndex(x=>x.id===r.id);const nr={id:r.id,title:t,price:p,link:el.querySelector("#rL").value.trim(),imgs:r.imgs};if(i>=0)list[i]=nr;else list.push(nr);Store.saveProfile();closeSheet();toast("хотелка сохранена");afterChange()};
+    const del=el.querySelector("#rD");if(del)del.onclick=()=>{S.profile.rewards=S.profile.rewards.filter(x=>x.id!==r.id);Store.saveProfile();closeSheet();afterChange()};
+  });
+}
+function wishView(id){
+  const r=S.profile.rewards.find(x=>x.id===id);if(!r)return;const imgs=r.imgs||[];
+  sheet(`<div class="sheet-h"><h2>${esc(r.title)}</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
+  <div class="stack" style="margin-top:0">${imgs.map(m=>`<img src="${esc(m.url)}" alt="${esc(r.title)}" style="width:100%;border-radius:16px">`).join("")}</div>
+  ${r.link?`<p class="small" style="overflow-wrap:anywhere"><a class="link" target="_blank" rel="noopener" href="${esc(/^https?:\/\//.test(r.link)?r.link:"https://"+r.link)}">${esc(r.link)}</a></p>`:""}
+  <button class="btn ghost wide" style="margin-top:12px" data-act="rewardEdit" data-id="${r.id}">изменить</button>`);
+}
+
+/* ================= навыки: каталог и уровни ================= */
+function skillCatalog(fromEntry){
+  const P=S.profile;
+  const paint=el=>{
+    const act=new Set(P.active);
+    el.querySelector("#catBody").innerHTML=GROUPS.map(g=>{const list=allSkills().filter(s=>s.g===g.id);return`<div class="card"><div class="grp" style="margin:0 0 8px">${esc(g.name)}</div><div class="chips">${list.map(s=>`<button type="button" class="chip" data-c="tog" data-id="${s.id}" aria-pressed="${act.has(s.id)}" title="${esc(s.d)}">${act.has(s.id)?"✓ ":""}${esc(s.name)}</button>`).join("")}</div></div>`}).join("");
+    el.querySelector("#catCount").textContent="выбрано: "+P.active.length;
+  };
+  sheet(`<div class="sheet-h"><h2>выбери навыки</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
+  <p class="small" style="margin:0">отметь, что хочешь качать в этом сезоне. лучше 5–12 штук. сохраняется само.</p>
+  <div class="row" style="justify-content:space-between;margin-top:8px"><b class="small num" id="catCount"></b>${qb("skillcat")}</div>
+  <div class="stack" id="catBody"></div>
+  <div class="card" style="margin-top:10px"><b>свой навык</b><p class="small muted" style="margin:4px 0 8px">например: «работа: холодные звонки» или «вокал»</p>
+  <form id="customForm" class="stack" style="margin-top:0"><input class="in-text" name="n" placeholder="название навыка" maxlength="40"><select class="in-text" name="g">${GROUPS.map(g=>`<option value="${g.id}">${esc(g.name)}</option>`).join("")}</select><button class="btn" type="submit">${IC.plus} добавить и выбрать</button></form></div>
+  <button class="btn accent wide" style="margin-top:14px" data-act="${fromEntry?"catThenAdd":"close"}">готово</button>`,el=>{
+    paint(el);
+    el.addEventListener("click",ev=>{const b=ev.target.closest('[data-c="tog"]');if(!b)return;const id=b.dataset.id;
+      if(P.active.includes(id))P.active=P.active.filter(x=>x!==id);else P.active.push(id);
+      if(P.startLevels[id]==null&&id!=="job")P.startLevels[id]=P.startLevels[id]||1;
+      Store.saveProfile();paint(el);afterChange()});
+    el.querySelector("#customForm").addEventListener("submit",ev=>{ev.preventDefault();const f=ev.target;const n=f.n.value.trim();if(!n){f.n.focus();return}
+      const id="c"+uid();P.custom.push({id,name:n,g:f.g.value,d:"свой навык"});P.active.push(id);Store.saveProfile();f.n.value="";paint(el);afterChange();toast("добавлено: "+n)});
+  });
+}
+function openStartLevels(){
+  const P=S.profile;const act=activeSkills();
+  sheet(`<div class="sheet-h"><h2>стартовые уровни</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
+  <p class="small muted" style="margin:0">на каком уровне ты был{а|} до начала сезона. 1 значит только начинаю, 5 уверенно, 8–9 эксперт.</p>
+  <p class="small" style="font-weight:600">сохраняется, как только нажмёшь цифру.</p>
+  <div class="stack" id="slList">${act.length?act.map(s=>`<div class="card"><div style="font-weight:600">${esc(s.name)}</div><div class="chips" style="margin-top:8px" role="group" aria-label="уровень: ${esc(s.name)}">${[1,2,3,4,5,6,7,8,9].map(n=>`<button type="button" class="chip num" data-sl="${s.id}" data-n="${n}" aria-pressed="${(P.startLevels[s.id]||1)===n}" style="min-width:38px">${n}</button>`).join("")}</div></div>`).join(""):`<div class="card small muted">сначала выбери навыки.</div>`}</div>
+  <button class="btn accent wide" style="margin-top:16px" data-act="close">готово</button>`,el=>{
+    el.addEventListener("click",ev=>{const b=ev.target.closest("[data-sl]");if(!b)return;const id=b.dataset.sl,n=+b.dataset.n;
+      P.startLevels[id]=n;P.seenSkills=null;Store.saveProfile();
+      el.querySelectorAll(`[data-sl="${id}"]`).forEach(x=>x.setAttribute("aria-pressed",String(+x.dataset.n===n)));
+      afterChange();toast(skillById(id).name+": "+n)});
+  });
+}
+
+/* ================= квесты ================= */
+function aboutBlock(a,steps){
+  if(!a)return"";const who=a.by==="app"?"почему приложение предлагает это":a.by==="me"?"зачем мне это":"почему claude предложил именно это";
+  return`<div class="stack" style="margin:0 0 4px">${a.essence?`<div class="card"><div class="lbl">в чём суть</div><p style="margin:4px 0 0">${esc(a.essence)}</p></div>`:""}${a.benefit?`<div class="card"><div class="lbl">чем это полезно</div><p style="margin:4px 0 0">${esc(a.benefit)}</p></div>`:""}${a.reason?`<div class="card"><div class="lbl">${who}</div><p style="margin:4px 0 0">${esc(a.reason)}</p></div>`:""}${(steps||[]).length?`<div class="card"><div class="lbl">этапы</div><ol style="margin:6px 0 0;padding-left:20px">${steps.map(t=>`<li>${esc(t)}</li>`).join("")}</ol></div>`:""}</div>`;
+}
+function newQuest(pre){
+  pre=pre||{};let per=pre.period||"week";let sk=pre.skill||S.profile.active[0]||"";let about=pre.about||null;let fromIdea=null;
+  sheet(`<div class="sheet-h"><h2>${pre.auto?"квест для тебя":pre.title?"квест от claude":"новый квест"}</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
+  <div id="qAbout">${aboutBlock(about,pre.steps)}</div>
+  <div class="field"><label for="qTitle">квест</label><textarea class="in-text" id="qTitle" style="min-height:64px" placeholder="что сделаешь, чтобы стать сильнее">${esc(pre.title||"")}</textarea></div>
+  <div class="field"><span class="lbl">срок</span><div class="chips">${Object.entries(PERIODS).map(([k,p])=>`<button type="button" class="chip" data-q="per" data-id="${k}" aria-pressed="${per===k}">${p.label} · ${p.xp} xp</button>`).join("")}</div></div>
+  <div class="field"><span class="lbl">какой навык качает</span><div class="chips">${activeSkills().map(s=>`<button type="button" class="chip" data-q="sk" data-id="${s.id}" aria-pressed="${sk===s.id}">${esc(s.name)}</button>`).join("")}</div></div>
+  ${pre.title?"":`<div class="field"><span class="lbl">готовые квесты с пояснением, нажми чтобы выбрать</span><div class="chips" id="qIdeas"></div></div>
+  <details id="qOwn"><summary>своё пояснение, если хочешь</summary>
+    <div class="field"><label for="qEss">в чём суть</label><textarea class="in-text" id="qEss" style="min-height:60px" placeholder="что сделать и как понять, что готово"></textarea></div>
+    <div class="field"><label for="qBen">зачем мне это</label><textarea class="in-text" id="qBen" style="min-height:60px" placeholder="что это даст"></textarea></div>
+  </details>`}
+  <button class="btn accent wide" style="margin-top:18px" data-q="save">принять квест</button>`,el=>{
+    const paintI=()=>{const box=el.querySelector("#qIdeas");if(!box)return;box.innerHTML=gx(ideaFor(sk,per).map((x,i)=>`<button type="button" class="chip" data-q="idea" data-i="${i}" aria-pressed="${fromIdea===x.t}">${esc(x.t)}</button>`).join(""))};paintI();
+    el.addEventListener("click",ev=>{const b=ev.target.closest("[data-q]");if(!b)return;
+      if(b.dataset.q==="idea"){const x=ideaFor(sk,per)[+b.dataset.i];if(!x)return;el.querySelector("#qTitle").value=x.t;fromIdea=x.t;about=x.about;el.querySelector("#qAbout").innerHTML=gx(aboutBlock(about));paintI();return}
+      if(b.dataset.q==="per"){per=b.dataset.id;el.querySelectorAll('[data-q="per"]').forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.id===per)));paintI()}
+      if(b.dataset.q==="sk"){sk=b.dataset.id;el.querySelectorAll('[data-q="sk"]').forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.id===sk)));paintI()}
+      if(b.dataset.q==="save"){const t=el.querySelector("#qTitle").value.trim();if(!t){toast("сформулируй квест");return}
+        if(fromIdea&&t!==fromIdea&&about&&about.by==="app")about=null; // текст переписали, пояснение уже не про то
+        const e1=el.querySelector("#qEss"),b1=el.querySelector("#qBen");
+        if(e1&&(e1.value.trim()||b1.value.trim()))about={essence:e1.value.trim(),benefit:b1.value.trim(),reason:"",by:"me"};
+        const Pd=PERIODS[per],td=today();S.profile.challenges.push({id:uid(),title:t,why:"",about:about?Object.assign({},about,{essence:gx(about.essence||""),benefit:gx(about.benefit||""),reason:gx(about.reason||"")}):null,steps:(pre.steps||[]).map(x=>({id:uid(),t:x,done:false})),period:per,skill:sk,xp:Pd.xp,coins:Pd.coins,status:"active",due:per==="day"?td:per==="week"?endOfWeek(td):endOfMonth(td),moved:0,created:td});
+        Store.saveProfile();closeSheet();toast("квест принят");afterChange()}
+    });
+  });
+}
+function suggestLocal(){
+  const P=S.profile,d=derive();const act=activeSkills();if(!act.length){skillCatalog();return}
+  const taken=new Set(P.challenges.filter(c=>c.status==="active").map(c=>c.title));
+  const has=p=>P.challenges.some(c=>c.status==="active"&&c.period===p);
+  const per=!has("week")?"week":!has("day")?"day":"month";
+  const since=addDays(today(),-14);const recent={};d.done.filter(e=>e.date>=since).forEach(e=>{if(e.primary)recent[e.primary]=(recent[e.primary]||0)+xpOf(e)});
+  const order=act.slice().sort((a,b)=>(recent[a.id]||0)-(recent[b.id]||0)||Math.random()-.5);
+  for(const sk of order){const opts=ideaFor(sk.id,per).filter(x=>!taken.has(x.t));if(!opts.length)continue;
+    const x=opts[Math.floor(Math.random()*opts.length)];
+    const why=recent[sk.id]?"за две недели навык «"+sk.name+"» получил меньше всего опыта среди твоих навыков.":"за две недели в навыке «"+sk.name+"» не было ни одного действия.";
+    x.about.reason=why+" "+PER_REASON[per];
+    newQuest({title:x.t,about:x.about,period:per,skill:sk.id,auto:true});return}
+  toast("все готовые идеи уже взяты, придумай свой квест");
+}
+async function suggestQuest(btn){
+  if(!sampleNs){toast("подсказки claude работают, когда страница открыта в claude");return}
+  const P=S.profile;const d=derive();
+  if(!P.fears){openFears(true);return}
+  const old=btn.innerHTML;btn.innerHTML='<span class="spin"></span> думаю…';btn.disabled=true;
+  try{
+    const recent=d.done.slice(-15).map(e=>e.date+": "+e.title).join("\n")||"пока нет";
+    const r=await sampleNs.json(aiCtx()+`\nты помогаешь человеку расти. ${who()} предложи ОДИН квест, конкретный и выполнимый, который ведёт к целям и немного пугает. по-русски, с маленькой буквы, простыми словами, без тире и пафоса.\nцели: ${P.goals.map(g=>g.title).join(", ")||"не указаны"}\nчто важно и чего боится: ${P.fears}\nуровни навыков: ${activeSkills().map(s=>s.name+" "+d.skills[s.id].level).join(", ")}\nпоследние действия:\n${recent}\nактивные квесты (не повторяй): ${P.challenges.filter(c=>c.status==="active").map(c=>c.title).join("; ")||"нет"}\nверни только json: {"title":"квест одним предложением","essence":"2–3 предложения: что именно сделать и как понять, что готово","benefit":"2 предложения: что это даст для навыков и целей","reason":"2 предложения: почему именно сейчас, со ссылкой на конкретные цели, уровни или последние действия человека","steps":["3–4 коротких этапа, от простого к сложному"],"period":"day|week|month","skill":"id навыка"}`,{modelTier:"default"});
+    newQuest({title:r.title,about:{essence:String(r.essence||""),benefit:String(r.benefit||""),reason:String(r.reason||""),by:"claude"},steps:Array.isArray(r.steps)?r.steps.map(String).slice(0,5):[],period:PERIODS[r.period]?r.period:"week",skill:P.active.includes(r.skill)?r.skill:P.active[0]});
+  }catch(x){toast(x&&x.code==="rate_limited"?"claude занят, попробуй через минуту":"не получилось придумать квест, попробуй ещё раз")}
+  btn.innerHTML=old;btn.disabled=false;
+}
+function openFears(thenSuggest){
+  sheet(`<div class="sheet-h"><h2>что важно и чего боюсь</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div><p class="small muted">claude будет учитывать это, когда придумывает квесты. кроме тебя, это никто не видит.</p>
+  <div class="field"><label for="fearTxt">например: боюсь выступать на камеру, продавать дорого, показывать незаконченное</label><textarea class="in-text" id="fearTxt">${esc(S.profile.fears)}</textarea></div>
+  <button class="btn accent wide" style="margin-top:16px" id="fearSave">сохранить${thenSuggest?" и предложить квест":""}</button>`,el=>{
+    el.querySelector("#fearSave").onclick=()=>{S.profile.fears=el.querySelector("#fearTxt").value.trim();Store.saveProfile();closeSheet();toast("сохранено");if(thenSuggest&&S.profile.fears){const b=document.querySelector('[data-act="qSuggest"]');if(b)suggestQuest(b)}};
+  });
+}
+async function weeklyRecap(){
+  const d=derive();const from=addDays(today(),-6);const wk=d.done.filter(e=>e.date>=from);const xp=wk.reduce((a,e)=>a+xpOf(e),0);
+  const bySk={};wk.forEach(e=>{if(e.primary)bySk[e.primary]=(bySk[e.primary]||0)+xpOf(e)});
+  const topSk=Object.entries(bySk).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([k,v])=>((skillById(k)||{}).name||k)+" +"+v).join(", ")||"пока пусто";
+  const silent=activeSkills().filter(s=>!bySk[s.id]).map(s=>s.name).slice(0,4).join(", ");
+  sheet(`<div class="sheet-h"><h2>итог недели</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
+  <div class="card stack" style="margin-top:0;gap:6px"><div><b class="num">${wk.length}</b> ${plural(wk.length,"действие","действия","действий")} · <b class="num">+${xp}</b> xp</div><div class="small">больше всего качал{а|}: ${esc(topSk)}</div>${silent?`<div class="small muted">в тишине: ${esc(silent)}</div>`:""}</div>
+  <div id="recapAi" class="card" style="margin-top:10px">${sampleNs?`<button class="btn accent" id="recapBtn">${IC.spark} письмо от claude</button>`:`<span class="small muted">разбор от claude появится, когда страница открыта в claude.</span>`}</div>`,el=>{
+    const b=el.querySelector("#recapBtn");if(!b)return;
+    b.onclick=async()=>{const box=el.querySelector("#recapAi");box.innerHTML='<span class="small"><span class="spin"></span> пишу…</span>';
+      try{const list=wk.map(e=>e.date+": "+e.title+(e.note?", вывод: "+e.note:"")).join("\n")||"за неделю записей нет";
+        const states=Object.entries(S.profile.states).filter(([k])=>k>=from).map(([k,v])=>k+": "+STATES.map(s=>s.n+" "+(v[s.k]||"-")).join(", ")).join("\n")||"не отмечено";
+        await sampleNs(`${who()}\nнапиши короткий итог недели для трекера навыков, как пишет близкая подруга в телеграме. по-русски, всё с маленькой буквы, 4–6 коротких строк: что получилось, что прокачалось, что просело, пару слов про состояние и один конкретный шаг на следующую неделю. честно и по делу. нельзя: тире, эмодзи, пафос, фразы вроде «ты молодец», «важно помнить», «не просто x, а y», «давай разберём».\nцели: ${S.profile.goals.map(g=>g.title).join(", ")}\nдействия:\n${list}\nсостояние (1–5):\n${states}`,{modelTier:"default",onText:({text})=>{box.innerHTML=`<div style="white-space:pre-wrap">${esc(text)}</div>`}});
+      }catch(x){box.innerHTML='<span class="small">не получилось написать итог. попробуй позже.</span>'}};
+  });
+}
+
+/* ================= настройки, бэкап, импорт ================= */
+function openSettings(){
+  let th="system";try{th=localStorage.getItem("prk-theme")||"system"}catch(x){}
+  sheet(`<div class="sheet-h"><h2>настройки</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
+  <div class="field"><span class="lbl">тема</span><div class="seg" role="group">${[["system","как в системе"],["light","светлая"],["dark","тёмная"]].map(([k,l])=>`<button data-act="theme" data-id="${k}" aria-pressed="${th===k}">${l}</button>`).join("")}</div></div>
+  <div class="card stack" style="margin-top:16px;gap:10px">
+    <button class="btn ghost wide" data-act="meet">имя и обращение</button>
+    <button class="btn ghost wide" data-act="skillCat">выбрать навыки</button>
+    <button class="btn ghost wide" data-act="startLevels">стартовые уровни</button>
+        <button class="btn ghost wide" data-act="importPast">перенести данные из claude</button>
+    <button class="btn ghost wide" data-act="tourStart">пройти обучение</button>
+    <button class="btn ghost wide" data-act="rules">правила игры</button>
+  </div>
+  ${secTitle("резервная копия")}
+  <p class="small muted" style="margin:10px 0 0">в резервной копии все твои данные одним файлом. пригодится на всякий случай и при переезде в телеграм.${S.profile.lastBackup?" последняя: "+fmtD(S.profile.lastBackup)+".":""}</p>
+  <div class="row" style="margin-top:10px"><button class="btn accent" data-act="backup">скачать копию</button><label class="btn ghost" for="restoreFile" style="cursor:pointer">загрузить из файла</label><input type="file" id="restoreFile" accept="application/json,.json" hidden></div>
+  <div id="backupBox"></div>`,el=>{
+    el.querySelector("#restoreFile").onchange=ev=>{const f=ev.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{let data;try{data=JSON.parse(rd.result)}catch(x){toast("это не файл копии прокачки");return}
+      if(!data||!data.profile||!Array.isArray(data.entries)){toast("в файле нет данных прокачки");return}
+      confirmSheet("заменить данные?","сейчас записей: "+live().length+". в копии: "+data.entries.filter(e=>!e.del).length+". текущие данные заменятся копией.","заменить",()=>restore(data))};rd.readAsText(f)};
+  });
+}
+async function backup(){
+  const data=JSON.stringify({app:"prokachka",v:2,exported:new Date().toISOString(),profile:S.profile,entries:S.entries},null,1);
+  const name="prokachka-"+today()+".json";
+  if(downloadsNs){try{await downloadsNs.save({filename:name,data});S.profile.lastBackup=today();Store.saveProfile();toast("копия сохранена");return}catch(x){if(x&&x.code==="declined")return}}
+  const box=$("#backupBox");if(!box){openSettings();return backup()}
+  box.innerHTML=`<div class="field"><label for="bkTxt">скопируй текст и сохрани в файл ${name}</label><textarea class="in-text" id="bkTxt" readonly style="min-height:120px;font-size:12px">${esc(data)}</textarea><button class="btn sm" id="bkCopy">скопировать</button></div>`;
+  $("#bkCopy").onclick=()=>{navigator.clipboard.writeText(data).then(()=>{toast("скопировано");S.profile.lastBackup=today();Store.saveProfile()}).catch(()=>{const t=$("#bkTxt");t.focus();t.select()})};
+}
+async function restore(data){
+  S.entries.forEach(e=>{if(!e.del)Store.delEntry(e.id)});
+  S.profile=normalize(data.profile);S.profile.fresh=false;Store.saveProfile();
+  for(const e of data.entries){if(e&&e.id&&!e.del){const n=clone(e);Store.putEntry(n)}}
+  afterChange();toast("копия загружена");
+}
+function importPast(){
+  sheet(`<div class="sheet-h"><h2>перенести данные</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
+  <p style="margin:0">если ты уже пользовал{ась|ся} прокачкой в claude, открой её там, зайди в настройки и нажми «скачать копию». потом здесь в настройках нажми «загрузить из файла».</p>
+  <p class="small muted">прошлые дела можно добавить и вручную: при записи действия поменяй дату на нужный день.</p>
+  <button class="btn accent wide" style="margin-top:12px" data-act="settings">открыть настройки</button>`);
+}
+function rulesSheet(){
+  sheet(`<div class="sheet-h"><h2>правила игры</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
+  <div class="stack" style="margin-top:0">
+  <div class="card"><b>сезон и уровни</b><p class="small" style="margin:6px 0 0">сезон длится 90 дней. опыт поднимает уровень, а на некоторых уровнях дают звание: ${RANKS.map(r=>r[1]).join(" → ")}.</p></div>
+  <div class="card"><b>сколько опыта за что</b><div class="xptable">${TYPES.map(t=>`<span>${t.label} <span class="muted small">${t.hint}</span></span><b>${t.xp}</b>`).join("")}<span>делаю впервые</span><b>×1.5</b><span>шаг в страх</span><b>+${FEAR_XP}</b><span>квест дня / недели / босс</span><b>30 / 80 / 250</b><span>шаг к цели сезона</span><b>40</b></div></div>
+  <div class="card"><b>навыки</b><p class="small" style="margin:6px 0 0">у каждого навыка 10 уровней. основной навык получает весь опыт за действие, дополнительные (их можно выбрать до двух) получают по 40%.</p></div>
+  <div class="card"><b>монеты</b><p class="small" style="margin:6px 0 0">за каждые 10 xp дают монету. их можно потратить на хотелки из вишлиста.</p></div>
+  <div class="card"><b>мягкая серия</b><p class="small" style="margin:6px 0 0">за неделю без пропусков дают заморозку, максимум три. если пропустишь день, сгорит заморозка, а серия останется. если вернёшься после перерыва в пару дней, получишь 25 xp бонусом.</p></div>
+  <div class="card"><b>где хранятся данные</b><p class="small" style="margin:6px 0 0">всё сразу сохраняется на телефоне, а потом уходит в облако. значок сверху показывает, дошло или нет.</p></div>
+  </div>`);
+}
+function helpSheet(){
+  sheet(`<div class="sheet-h"><h2>помощь</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
+  <p class="small" style="margin:0 0 10px">если что-то непонятно, нажми «?» рядом с блоком.</p>
+  <div class="stack" style="margin-top:0"><button class="btn accent wide" data-act="tourStart">пройти обучение заново</button><button class="btn ghost wide" data-act="rules">правила игры: как считается опыт</button><button class="btn ghost wide" data-act="sync">где мои данные</button></div>`);
+}
+
+/* ================= обучение ================= */
+function introSheet(){
+  sheet(`<span class="pill">2 минуты</span><h2 style="margin-top:12px">привет! давай покажу, что тут где</h2>
+  <p>пройдём по настоящим экранам. нужная кнопка будет подсвечена, а рядом я напишу, что делать.</p>
+  <p class="small muted">обучение потом можно пройти ещё раз через «?» сверху.</p>
+  <div class="row" style="margin-top:16px"><button class="btn accent" data-act="introGo">поехали</button><button class="btn ghost" data-act="tourSkip">позже</button></div>`);
+}
+async function introGo(){
+  closeSheet();
+  if(!S.profile.name||!S.profile.gender){meetSheet(introGo);return}
+
+  if(!S.profile.active.length){S.view="skills";render();tourStart(true);return}
+  tourStart();
+}
+const TOUR=[
+  {id:"cat",v:"skills",t:"#skillCatBtn",h:"что качаем",p:"сначала выбери навыки, которые хочешь прокачать в этом сезоне.",tap:"нажми «выбрать навыки»",until:()=>!!$("#catBody"),onlyIf:()=>true},
+  {id:"catpick",t:"#catBody",h:"отметь навыки",p:"нажимай на названия, выбранные потемнеют. всё сохраняется само. свой навык можно добавить внизу.",free:true,need:()=>S.profile.active.length>0,needMsg:"выбери хотя бы один",back:"cat",leave:()=>closeSheet()},
+  {id:"hero",v:"home",t:".hero",h:"твой уровень",p:"это твой уровень в этом сезоне. за каждое действие полоса чуть заполняется, а когда заполнится, откроется новый уровень."},
+  {id:"stats",v:"home",t:"#statsRow",h:"монеты и серия",p:"монеты копятся вместе с опытом, на них можно взять хотелку. серия считает дни подряд, а заморозки спасают её, если пропустишь день."},
+  {id:"q",v:"home",t:"#statsRow .q",h:"кнопка «?»",p:"такая есть у каждого блока. если что-то непонятно, нажми на неё, там короткое объяснение."},
+  {id:"add",v:"home",t:"#addBtn",h:"первое действие",p:"вспомни, что ты сегодня сделал{а|} для себя: посмотрел{а|} урок, написал{а|} пост, что угодно.",tap:"нажми «записать действие»",until:()=>!!$(".sheet #fCore")},
+  {id:"skill",t:"#fSkillField",h:"навык",p:"сначала выбери, какой навык качает это действие.",tap:"нажми на навык",until:()=>!!(F&&F.primary),back:"add"},
+  {id:"tpl",t:"#fTplField",h:"что именно",p:"здесь варианты для этого навыка. выбери подходящий, а если такого нет, впиши своё ниже.",tap:"нажми на вариант",until:()=>!!(F&&F.type&&F.title),back:"add"},
+  {id:"core",t:"#fCore",h:"проверь",p:"текст можно переписать своими словами. от типа зависит, сколько дадут опыта: за «создал{а|}» и «выпустил{а|}» больше, чем за «изучил{а|}».",back:"add"},
+  {id:"save",t:"#fSave",h:"сохрани",p:"слева написано, сколько опыта и монет ты получишь.",tap:"нажми «сохранить»",until:()=>!$(".sheet")&&live().length>T.base,back:"add",done:"сохранено, запись уже в «сегодня»"},
+  {id:"today",v:"home",t:"#todaySec",h:"первая запись",p:"через «изменить» можно дописать, чему научил{ась|ся}, добавить ссылку, результат или фото."},
+  {id:"needs",v:"home",t:"#needsCard",h:"состояние",p:"раз в день отмечай, как ты. слева слабее, справа лучше. нажмёшь ещё раз, и отметка снимется.",free:true},
+  {id:"path",t:".nav [data-id='path']",h:"путь",p:"здесь вся твоя история.",tap:"нажми «путь»",until:()=>S.view==="path"},
+  {id:"seg",v:"path",t:"#pathSeg",h:"три вида",p:"в ленте все действия по дням. на графике видно, как растёт опыт. «до и после» сравнивает тебя сейчас и в любой прошлый день."},
+  {id:"skills",t:".nav [data-id='skills']",h:"навыки",p:"здесь все твои навыки.",tap:"нажми «навыки»",until:()=>S.view==="skills"},
+  {id:"lvl",v:"skills",t:"#startLvlBtn",h:"с чего начинаешь",p:"укажи, на каком уровне ты уже сейчас, чтобы не начинать с нуля там, где давно умеешь.",tap:"нажми «стартовые уровни»",until:()=>!!$("#slList")},
+  {id:"lvlpick",t:"#slList",h:"нажимай цифры",p:"1 значит только начинаю, 5 уверенно, 8–9 эксперт. всё сохраняется сразу.",free:true,back:"lvl",leave:()=>closeSheet()},
+  {id:"quests",t:".nav [data-id='quests']",h:"квесты",p:"здесь задания посложнее.",tap:"нажми «квесты»",until:()=>S.view==="quests"},
+  {id:"qa",v:"quests",t:"#questAdd",h:"как взять квест",p:"по кнопке «предложи квест» приложение подберёт задание для навыка, который сейчас отстаёт, и объяснит зачем. а можно придумать своё."},
+  {id:"goals",v:"quests",t:"#goalsSec",h:"цели сезона",p:"тут большие цели. впиши маленький шаг и нажми «добавить». за каждую галочку дают 40 xp."},
+  {id:"rw",t:".nav [data-id='rewards']",h:"награды",p:"а тут монеты тратят.",tap:"нажми «награды»",until:()=>S.view==="rewards"},
+  {id:"wish",v:"rewards",t:"#wishSec",h:"вишлист",p:"добавь хотелку с фото и ценой в монетах. полоска покажет, сколько ещё копить."},
+  {id:"ach",v:"rewards",t:"#achSec",h:"ачивки",p:"значки за особые моменты. нажми на любую, чтобы переименовать или поставить свою картинку. можно придумать и свои, с условием и наградой."},
+  {id:"sync",t:"#syncBtn",h:"сохранение",p:"зелёная точка значит, что всё сохранено в облаке телеграма и будет на любом твоём устройстве. нажми, если хочешь подробнее."},
+  {id:"help",t:"#helpBtn",h:"если забудешь",p:"здесь можно пройти обучение ещё раз и посмотреть, сколько опыта за что дают."}
+];
+let T=null;
+function tourStart(withSkills){
+  closeSheet();if(T)clearInterval(T.iv);
+  let i=TOUR.findIndex(s=>s.id==="hero");if(withSkills||!S.profile.active.length)i=0;
+  T={i,base:live().length,iv:0,miss:0};tourShow();
+}
+function tourSkip(){S.profile.tourDone=true;Store.saveProfile();closeSheet();if(T)tourEnd()}
+function tourEnd(){if(T)clearInterval(T.iv);const el=$("#tourEl");if(el)el.remove();T=null;S.profile.tourDone=true;Store.saveProfile()}
+function tourGo(id){const i=TOUR.findIndex(s=>s.id===id);T.i=i<0?T.i:i;tourShow()}
+function tourShow(state){
+  const st=TOUR[T.i];clearInterval(T.iv);T.miss=0;T.scrolled=false;T.state=state||"";
+  if(st.v&&S.view!==st.v){closeSheet();S.view=st.v;render();window.scrollTo(0,0)}
+  let el=$("#tourEl");if(!el){el=document.createElement("div");el.id="tourEl";el.className="tour";document.body.appendChild(el)}
+  const tapMode=!!st.tap&&T.state!=="done";const interactive=tapMode||st.free;
+  const showNext=!tapMode;
+  el.innerHTML=gx(`${interactive?'<div class="blk" data-b="t"></div><div class="blk" data-b="b"></div><div class="blk" data-b="l"></div><div class="blk" data-b="r"></div>':'<div class="blk" style="inset:0"></div>'}
+  <div class="hole ${tapMode?"tap":""}"></div>
+  <div class="tip" role="dialog" aria-live="polite"><div class="row" style="justify-content:space-between"><span class="small muted num">шаг ${T.i+1} из ${TOUR.length}</span><button class="link" id="tourExit">выйти из обучения</button></div>
+  <h3>${esc(st.h)}</h3>${T.state==="done"?`<div class="ok">✓ ${esc(st.done||"получилось!")}</div>`:`<p>${esc(st.p)}</p>${tapMode?`<div class="do">→ ${esc(st.tap)}</div>`:""}`}
+  <div class="small" id="tourMsg" style="color:var(--warn);font-weight:600;margin-top:6px"></div>
+  ${showNext?`<div class="row" style="margin-top:12px;justify-content:flex-end"><button class="btn sm accent" id="tourNextBtn">${T.i===TOUR.length-1?"готово":"дальше"}</button></div>`:""}</div>`);
+  el.querySelector("#tourExit").onclick=()=>{tourEnd();closeSheet()};
+  const nb=el.querySelector("#tourNextBtn");if(nb)nb.onclick=()=>{if(st.need&&!st.need()&&T.state!=="done"){el.querySelector("#tourMsg").textContent=st.needMsg||"";return}tourNext()};
+  T.iv=setInterval(tourTick,150);tourTick();
+}
+function tourTick(){
+  if(!T)return;const st=TOUR[T.i];const el=$("#tourEl");if(!el)return;
+  if(T.state!=="done"){
+    if(st.until&&st.until()){clearInterval(T.iv);if(st.done){tourShow("done")}else setTimeout(tourNext,350);return}
+    if(st.back&&!$(".sheet")){tourGo(st.back);return}
+  }
+  const tg=document.querySelector(st.t);
+  const hole=el.querySelector(".hole"),tip=el.querySelector(".tip");
+  if(!tg){T.miss++;hole.classList.add("none");
+    el.querySelectorAll(".blk[data-b]").forEach(b=>Object.assign(b.style,{left:0,top:0,width:"100%",height:"100%"}));
+    if(T.miss>6&&!el.querySelector("#tourNextBtn")){const r=document.createElement("div");r.className="row";r.style.cssText="margin-top:12px;justify-content:flex-end";r.innerHTML='<button class="btn sm accent" id="tourNextBtn">дальше</button>';tip.appendChild(r);r.firstChild.onclick=tourNext}
+    tip.style.top=Math.max(16,(innerHeight-tip.offsetHeight)/2)+"px";tip.style.left=Math.max(16,(innerWidth-tip.offsetWidth)/2)+"px";return}
+  hole.classList.remove("none");
+  if(!T.scrolled){T.scrolled=true;const r0=tg.getBoundingClientRect();if(r0.top<70||r0.bottom>innerHeight-90)tg.scrollIntoView({block:"center"})}
+  const r=tg.getBoundingClientRect(),pd=6,vw=innerWidth,vh=innerHeight;
+  const x=Math.max(4,r.left-pd),y=Math.max(4,r.top-pd),w=Math.max(0,Math.min(vw-4,r.right+pd)-x),h=Math.max(0,Math.min(vh-4,r.bottom+pd)-y);
+  Object.assign(hole.style,{left:x+"px",top:y+"px",width:w+"px",height:h+"px"});
+  el.querySelectorAll(".blk[data-b]").forEach(b=>{const k=b.dataset.b;
+    if(k==="t")Object.assign(b.style,{left:0,top:0,width:"100%",height:y+"px"});
+    if(k==="b")Object.assign(b.style,{left:0,top:(y+h)+"px",width:"100%",height:Math.max(0,vh-y-h)+"px"});
+    if(k==="l")Object.assign(b.style,{left:0,top:y+"px",width:x+"px",height:h+"px"});
+    if(k==="r")Object.assign(b.style,{left:(x+w)+"px",top:y+"px",width:Math.max(0,vw-x-w)+"px",height:h+"px"});});
+  const th=tip.offsetHeight,tw=tip.offsetWidth;const above=y-12,below=vh-(y+h)-12;let top;
+  if(below>=th+8)top=y+h+12;else if(above>=th+8)top=y-12-th;else top=vh-th-90;
+  tip.style.top=Math.max(8,top)+"px";tip.style.left=Math.min(vw-tw-16,Math.max(16,r.left+r.width/2-tw/2))+"px";
+}
+function tourNext(){if(!T)return;const st=TOUR[T.i];if(st.leave)st.leave();T.i++;if(T.i>=TOUR.length){tourEnd();S.view="home";render();window.scrollTo(0,0);finalSheet();return}tourShow()}
+function finalSheet(){
+  sheet(`<span class="pill">готово</span><h2 style="margin-top:12px">вот и всё</h2>
+  <p>дальше всё просто. сделал{а|} что-нибудь, даже совсем маленькое, запиши сюда.</p>
+  <div class="stack"><button class="btn accent wide" data-act="close">начать</button><button class="btn ghost wide" data-act="importPast">перенести данные из claude</button></div>`);
+}
+
+/* ================= события ================= */
+document.addEventListener("click",ev=>{
+  if(T&&ev.target.closest("#tourEl"))return;
+  const b=ev.target.closest("[data-act]");if(!b)return;
+  const a=b.dataset.act,id=b.dataset.id,P=S.profile;
+  if(a==="closeShade"){if(ev.target===b)closeSheet();return}
+  switch(a){
+    case"close":closeSheet();break;
+    case"hint":hintSheet(b.dataset.k);break;
+    case"tab":S.view=id;closeSheet();render();window.scrollTo(0,0);break;
+    case"add":openEntry(null,{plan:b.dataset.plan==="1",skill:b.dataset.skill});break;
+    case"editEntry":{const e=S.entries.find(x=>x.id===id);if(e)openEntry(e);break}
+    case"markDone":{const e=S.entries.find(x=>x.id===id);if(!e)break;const n=clone(e);n.planned=false;n.date=today();maybeComeback();Store.putEntry(n);toast("сделано: +"+xpOf(n)+" xp");afterChange();break}
+    case"need":{const t=today();const st=Object.assign({},P.states[t]||{});const n=+b.dataset.n;st[b.dataset.k]=st[b.dataset.k]===n?0:n;P.states[t]=st;Store.saveProfile();render();
+      const s=STATES.find(x=>x.k===b.dataset.k);toast(st[b.dataset.k]?s.n+": "+s.labels[n-1]:s.n+": снято");break}
+    case"pmode":S.pathMode=id;render();break;
+    case"pfilter":S.pathFilter=id||null;render();break;
+    case"pfilterGo":S.view="path";S.pathMode="feed";S.pathFilter=id;render();window.scrollTo(0,0);break;
+    case"recap":weeklyRecap();break;
+    case"qDone":{const c=P.challenges.find(x=>x.id===id);if(!c)break;c.status="done";c.doneAt=today();Store.saveProfile();toast("+"+c.xp+" xp · +"+coinsW(c.coins));afterChange();break}
+    case"qInfo":questSheet(id);break;
+    case"qStep":{const c=P.challenges.find(x=>x.id===id);const st=c&&(c.steps||[]).find(x=>x.id===b.dataset.s);if(!st||c.status!=="active")break;st.done=!st.done;Store.saveProfile();
+      const inSheet=!!b.closest(".sheet");if(c.steps.every(x=>x.done)){toast(c.period==="month"?"босс повержен! нажми «пройден», чтобы забрать награду":"все этапы пройдены, забирай награду");}else if(st.done)toast("этап пройден");
+      if(inSheet){render();questSheet(id)}else render();break}
+    case"qStepDel":{const c=P.challenges.find(x=>x.id===id);if(!c)break;c.steps=(c.steps||[]).filter(x=>x.id!==b.dataset.s);Store.saveProfile();render();questSheet(id);break}
+    case"qMove":{const c=P.challenges.find(x=>x.id===id);if(!c)break;c.moved=(c.moved||0)+1;c.due=c.period==="day"?addDays(today(),1):c.period==="week"?endOfWeek(addDays(today(),7)):endOfMonth(addDays(endOfMonth(today()),1));Store.saveProfile();toast("перенесено до "+fmtD(c.due));render();break}
+    case"qDel":{const c=P.challenges.find(x=>x.id===id);if(!c)break;closeSheet();confirmSheet("удалить квест?","«"+c.title+"»","удалить",()=>{P.challenges=P.challenges.filter(x=>x.id!==id);Store.saveProfile();afterChange()});break}
+    case"qReview":{const c=P.challenges.find(x=>x.id===id);if(!c)break;
+      sheet(`<h2>разбор квеста</h2><p class="small">«${esc(c.title)}»</p><div class="field"><label for="rvTxt">что помешало и что {поняла|понял}? за честный разбор +10 xp</label><textarea class="in-text" id="rvTxt"></textarea></div><div class="row" style="margin-top:14px"><button class="btn accent" id="rvSave">закрыть разбором</button><button class="btn ghost" data-act="close">отмена</button></div>`,el=>{
+        el.querySelector("#rvSave").onclick=()=>{c.note=el.querySelector("#rvTxt").value.trim();c.status="reviewed";c.doneAt=today();Store.saveProfile();closeSheet();toast("разбор сохранён");afterChange()}});break}
+    case"qNew":if(!P.active.length){skillCatalog();break}newQuest();break;
+    case"qSuggest":suggestLocal();break;
+    case"fears":openFears(false);break;
+    case"goalNew":sheet(`<div class="sheet-h"><h2>новая цель</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div><form id="goalForm"><div class="field"><label for="gT">цель сезона</label><input class="in-text" id="gT" name="t" placeholder="например: закрыть кредитки"></div><button class="btn accent wide" style="margin-top:14px" type="submit">добавить</button></form>`,el=>{el.querySelector("#goalForm").onsubmit=ev2=>{ev2.preventDefault();const t=el.querySelector("#gT").value.trim();if(!t){el.querySelector("#gT").focus();return}P.goals.push({id:uid(),title:t,steps:[]});Store.saveProfile();closeSheet();toast("цель добавлена");afterChange()}});break;
+    case"goalQuick":{const gl=GOAL_LIB.find(x=>x.t===b.dataset.t);P.goals.push({id:uid(),title:b.dataset.t,steps:(gl?gl.s:[]).map(t=>({id:uid(),t,done:false}))});}Store.saveProfile();toast("цель добавлена");afterChange();break;
+    case"goalDel":{const g=P.goals.find(x=>x.id===b.dataset.g);if(!g)break;confirmSheet("удалить цель?","«"+g.title+"» и её шаги исчезнут.","удалить",()=>{P.goals=P.goals.filter(x=>x.id!==g.id);Store.saveProfile();afterChange()});break}
+    case"stepToggle":{const g=P.goals.find(x=>x.id===b.dataset.g);const s=g&&g.steps.find(x=>x.id===b.dataset.s);if(!s)break;s.done=!s.done;s.doneAt=s.done?today():null;Store.saveProfile();toast(s.done?"шаг закрыт: +40 xp · +4 монеты":"отметка снята");afterChange();break}
+    case"stepDel":{const g=P.goals.find(x=>x.id===b.dataset.g);if(!g)break;g.steps=g.steps.filter(x=>x.id!==b.dataset.s);Store.saveProfile();afterChange();break}
+    case"buy":{const r=P.rewards.find(x=>x.id===id);if(!r)break;confirmSheet("взять награду?","«"+r.title+"» за "+coinsW(r.price)+". ты это заработал{а|}.","взять",()=>{P.purchases.push({id:uid(),rid:r.id,title:r.title,price:r.price,at:today()});Store.saveProfile();toast("наслаждайся");afterChange()});break}
+    case"rewardNew":rewardForm();break;
+    case"wishView":wishView(id);break;
+    case"ach":achSheet(id);break;
+    case"achNew":achForm(null);break;
+    case"achEdit":achForm(id);break;
+    case"achGot":{const a=(P.achCustom||[]).find(x=>x.id===id);if(!a)break;a.got=b.dataset.v==="1"?today():null;Store.saveProfile();closeSheet();if(!a.got)P.seenAch=(P.seenAch||[]).filter(x=>x!==id);afterChange();break}
+    case"achHide":P.achEdit[id]=Object.assign({},P.achEdit[id]||{},{hidden:true});Store.saveProfile();closeSheet();toast("ачивка скрыта");afterChange();break;
+    case"achUnhide":Object.values(P.achEdit).forEach(x=>{delete x.hidden});Store.saveProfile();afterChange();break;
+    case"achDel":{const a=(P.achCustom||[]).find(x=>x.id===id);if(!a)break;confirmSheet("удалить ачивку?","«"+a.n+"»","удалить",()=>{P.achCustom=P.achCustom.filter(x=>x.id!==id);Store.saveProfile();afterChange()});break}
+    case"meet":meetSheet();break;
+    case"rewardEdit":rewardForm(P.rewards.find(x=>x.id===id));break;
+    case"settings":openSettings();break;
+    case"theme":try{localStorage.setItem("prk-theme",id)}catch(x){}applyTheme(id);document.querySelectorAll('[data-act="theme"]').forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.id===id)));break;
+    case"backup":backup();break;
+    case"skillCat":skillCatalog();break;
+    case"catThenAdd":closeSheet();if(S.profile.active.length)openEntry(null,{});break;
+    case"startLevels":openStartLevels();break;
+    case"importPast":importPast();break;
+    case"tourStart":tourStart();break;
+    case"tourSkip":tourSkip();break;
+    case"introGo":introGo();break;
+    case"help":helpSheet();break;
+    case"rules":rulesSheet();break;
+    case"sync":syncSheet();break;
+    case"allowCloud":allowCloud();break;
+    case"retrySync":closeSheet();Store.ready?Store.flush():Store.connect();break;
+    case"managePerms":managePerms();break;
+  }
+});
+document.addEventListener("submit",ev=>{
+  const f=ev.target;
+  if(f.dataset.form==="qabout"){ev.preventDefault();const c=S.profile.challenges.find(x=>x.id===f.dataset.id);if(!c)return;c.about=Object.assign({},c.about||{by:"me",reason:""},{essence:f.e.value.trim(),benefit:f.b.value.trim()});Store.saveProfile();render();questSheet(c.id);toast("пояснение сохранено");return}
+  if(f.dataset.form==="qstep"){ev.preventDefault();const c=S.profile.challenges.find(x=>x.id===f.dataset.id);const t=f.t.value.trim();if(!c||!t){f.t.focus();return}c.steps=c.steps||[];c.steps.push({id:uid(),t,done:false});Store.saveProfile();render();questSheet(c.id);return}
+  if(f.dataset.form!=="step")return;ev.preventDefault();
+  const g=S.profile.goals.find(x=>x.id===f.dataset.g);const t=f.t.value.trim();if(!g||!t){f.t.focus();return}
+  g.steps=g.steps||[];g.steps.push({id:uid(),t,done:false});Store.saveProfile();toast("шаг добавлен");afterChange();
+});
+document.addEventListener("change",ev=>{if(ev.target.id==="thenDate"){S.thenDate=ev.target.value||null;render()}});
+document.addEventListener("keydown",ev=>{if(ev.key==="Escape"&&$("#layer").innerHTML&&!T)closeSheet()});
+function applyTheme(t){if(!t){try{t=localStorage.getItem("prk-theme")}catch(x){}}t=t||"system";const r=document.documentElement;
+  if(t==="system"){if(TG)r.setAttribute("data-theme",TG.colorScheme==="dark"?"dark":"light");else r.removeAttribute("data-theme")}else r.setAttribute("data-theme",t);
+  tgColors()}
+function tgColors(){if(!TG)return;requestAnimationFrame(()=>{const rgb=getComputedStyle(document.body).backgroundColor.match(/\d+/g);if(!rgb)return;const hex="#"+rgb.slice(0,3).map(n=>(+n).toString(16).padStart(2,"0")).join("");
+  try{TG.setHeaderColor(hex);TG.setBackgroundColor(hex);if(TG.setBottomBarColor)TG.setBottomBarColor(hex)}catch(x){}})}
+
+/* ================= старт ================= */
+if(TG){try{TG.ready();TG.expand();if(TG.disableVerticalSwipes)TG.disableVerticalSwipes();TG.onEvent("themeChanged",()=>applyTheme());TG.BackButton.onClick(()=>{if(T)return;const ov=[...document.querySelectorAll("body>.shade")].pop();if(ov){ov.remove();return}closeSheet()})}catch(x){}}
+applyTheme();
+const loc=Store.loadLocal();
+S.profile=loc.p?normalize(loc.p):defaultProfile();
+if(loc.p&&loc.p.v!==2)S.profile.upd=Date.now(); // переезд считается свежим изменением
+S.entries=loc.e;
+afterChange();
+(async()=>{
+  await Promise.race([Store.connect(),sleep(4000)]);
+  setTimeout(()=>{if(T||$("#layer").innerHTML)return;if(!S.profile.tourDone)introSheet();else if(!S.profile.name||!S.profile.gender)meetSheet()},400);
+})();
+})();
+</script>
+</body>
+</html>
