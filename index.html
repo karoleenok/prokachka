@@ -783,7 +783,7 @@ function defaultProfile(){
       {id:uid(),title:"вечер без дел и чувства вины",price:60,example:true},
       {id:uid(),title:"кино или выставка",price:150,example:true}
     ],
-    purchases:[],states:{},achEdit:{},achCustom:[],name:"",gender:"",tourDone:false,seenLevel:null,seenSkills:null,seenAch:null,lastBackup:null};
+    purchases:[],states:{},achEdit:{},achCustom:[],name:"",gender:"",remind:{on:false,hour:20},tourDone:false,seenLevel:null,seenSkills:null,seenAch:null,lastBackup:null};
 }
 function normalize(p){
   const o=Object.assign(defaultProfile(),p||{});
@@ -909,6 +909,19 @@ const Store={
   putEntry(e){e.upd=Date.now();if(!e.ts)e.ts=e.upd;const i=S.entries.findIndex(x=>x.id===e.id);if(i>=0){const old=S.entries[i];if(bucketOf(old.date)!==bucketOf(e.date))this.mark(bucketOf(old.date));S.entries[i]=e}else S.entries.push(e);this.cache();this.mark(bucketOf(e.date))},
   delEntry(id){const e=S.entries.find(x=>x.id===id);if(!e)return;e.del=true;e.upd=Date.now();this.cache();this.mark(bucketOf(e.date))}
 };
+/* напоминания в телеграме: приложение сообщает боту, когда напомнить и когда была последняя запись */
+const BOT_API="https://prokachka-bot.karolinabelikova90.workers.dev";
+let _pushT=null;
+function pushSync(now){
+  if(!TG||!S.profile)return;clearTimeout(_pushT);
+  const go=()=>{try{
+    const R=S.profile.remind||{on:false,hour:20};
+    const last=S.entries.filter(e=>!e.del&&!e.planned).reduce((m,e)=>e.date>m?e.date:m,"");
+    fetch(BOT_API+"/sync",{method:"POST",headers:{"content-type":"text/plain"},body:JSON.stringify({initData:TG.initData,on:!!R.on,hour:R.hour,tz:-new Date().getTimezoneOffset(),last})}).catch(()=>{});
+  }catch(x){}};
+  if(now)go();else _pushT=setTimeout(go,2500);
+}
+["saveProfile","putEntry","delEntry"].forEach(k=>{const f=Store[k];Store[k]=function(){const r=f.apply(this,arguments);pushSync();return r}});
 function paintSync(){
   const b=$("#syncBtn");if(!b)return;const st=Store.status;b.className="sync "+st;
   const tx=st==="cloud"?"сохранено":st==="syncing"?"сохраняю":st==="error"?"ошибка":"устройство";$("#syncTxt").textContent=tx;b.setAttribute("aria-label","где сохраняются данные: "+tx);b.title=tx;
@@ -1689,6 +1702,11 @@ function openSettings(){
   let th="dark";try{th=localStorage.getItem("prk-theme")||"dark"}catch(x){}
   sheet(`<div class="sheet-h"><h2>настройки</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
   <div class="field"><span class="lbl">тема</span><div class="seg" role="group">${[["system","как в системе"],["light","светлая"],["dark","тёмная"]].map(([k,l])=>`<button data-act="theme" data-id="${k}" aria-pressed="${th===k}">${l}</button>`).join("")}</div></div>
+  ${TG?`<div class="field" style="margin-top:16px"><span class="lbl">напоминания в телеграме</span>
+    <div class="seg" role="group" id="remSeg">${[[0,"выключены"],[1,"включены"]].map(([k,l])=>`<button data-rem="${k}" aria-pressed="${(S.profile.remind&&S.profile.remind.on?1:0)===k}">${l}</button>`).join("")}</div>
+    <div class="row" style="margin-top:10px;gap:10px;align-items:center"><label for="remHour" class="small muted">во сколько</label>
+    <select class="in-text" id="remHour" style="width:auto;padding:8px 12px">${Array.from({length:16},(_,i)=>i+8).map(h=>`<option value="${h}" ${((S.profile.remind&&S.profile.remind.hour)||20)===h?"selected":""}>${String(h).padStart(2,"0")}:00</option>`).join("")}</select></div>
+    <p class="small muted" style="margin:8px 0 0">бот напишет один раз в день, только если за день у тебя ещё нет записей.</p></div>`:`<p class="small muted" style="margin-top:16px">напоминания работают, когда приложение открыто из телеграма.</p>`}
   <div class="card stack" style="margin-top:16px;gap:10px">
     <button class="btn ghost wide" data-act="meet">имя и обращение</button>
     <button class="btn ghost wide" data-act="skillCat">выбрать навыки</button>
@@ -1701,6 +1719,14 @@ function openSettings(){
   <p class="small muted" style="margin:10px 0 0">в резервной копии все твои данные одним файлом. пригодится на всякий случай и при переезде в телеграм.${S.profile.lastBackup?" последняя: "+fmtD(S.profile.lastBackup)+".":""}</p>
   <div class="row" style="margin-top:10px"><button class="btn accent" data-act="backup">скачать копию</button><label class="btn ghost" for="restoreFile" style="cursor:pointer">загрузить из файла</label><input type="file" id="restoreFile" accept="application/json,.json" hidden></div>
   <div id="backupBox"></div>`,el=>{
+    const rs=el.querySelector("#remSeg");
+    if(rs){const P=S.profile;if(!P.remind)P.remind={on:false,hour:20};
+      const apply=on=>{P.remind.on=on;P.remind.hour=+el.querySelector("#remHour").value;Store.saveProfile();pushSync(true);
+        rs.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",String((+b.dataset.rem===1)===on)));
+        toast(on?"буду напоминать в "+String(P.remind.hour).padStart(2,"0")+":00":"напоминания выключены")};
+      rs.querySelectorAll("button").forEach(b=>b.onclick=()=>{const on=+b.dataset.rem===1;
+        if(on&&TG&&TG.requestWriteAccess){try{TG.requestWriteAccess(()=>{})}catch(x){}}apply(on)});
+      el.querySelector("#remHour").onchange=()=>{if(P.remind.on)apply(true);else{P.remind.hour=+el.querySelector("#remHour").value;Store.saveProfile()}}}
     el.querySelector("#restoreFile").onchange=ev=>{const f=ev.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{let data;try{data=JSON.parse(rd.result)}catch(x){toast("это не файл копии прокачки");return}
       if(!data||!data.profile||!Array.isArray(data.entries)){toast("в файле нет данных прокачки");return}
       confirmSheet("заменить данные?","сейчас записей: "+live().length+". в копии: "+data.entries.filter(e=>!e.del).length+". текущие данные заменятся копией.","заменить",()=>restore(data))};rd.readAsText(f)};
@@ -1938,6 +1964,7 @@ function tgColors(){if(!TG)return;requestAnimationFrame(()=>{const rgb=getComput
 /* ================= старт ================= */
 if(TG){try{TG.ready();TG.expand();if(TG.disableVerticalSwipes)TG.disableVerticalSwipes();TG.onEvent("themeChanged",()=>applyTheme());TG.BackButton.onClick(()=>{if(T)return;const ov=[...document.querySelectorAll("body>.shade")].pop();if(ov){ov.remove();return}closeSheet()})}catch(x){}}
 applyTheme();
+setTimeout(()=>pushSync(true),5000);
 const loc=Store.loadLocal();
 S.profile=loc.p?normalize(loc.p):defaultProfile();
 if(loc.p&&loc.p.v!==2)S.profile.upd=Date.now(); // переезд считается свежим изменением
