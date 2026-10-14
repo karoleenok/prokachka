@@ -18,7 +18,7 @@ img{max-width:100%}
   --f-display:"Sexsmith","Times New Roman",serif;
   --f-body:"Inter Tight",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   --bg:#FFFFFF; --bg-deep:#F1F3FF; --ink:#171C24; --muted:#667385; --muted-bg:#667385; --line:#E3E7ED; --chip:#EEF1F5;
-  --accent:#5668C5; --accent-ink:#FFFFFF; --accent-t:#5668C5; --brand:#171C24;
+  --accent:#5668C5; --accent-ink:#FFFFFF; --accent-t:#5668C5; --brand:#171C24; --dot:#171C24;
   --card:#171C24; --s-ink:#FFFFFF; --s-muted:#A9B3C5; --s-line:#2B3342; --s-chip:#262E3B; --s-accent-t:#B3C0FF; --s-navy:#E7EBFF; --s-navy-ink:#171C24; --s-good:#45C08E; --s-warn:#F0A256;
   --navy:#171C24; --navy-ink:#FFFFFF; --soft:#E7EBFF; --soft2:#D8DEFF; --tile:#F1F3FF; --tile-line:#E3E7ED; --btn:#E7EBFF; --ghost:#D8DEFF;
   --primary:#171C24; --primary-ink:#FFFFFF;
@@ -28,7 +28,7 @@ img{max-width:100%}
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#171C24; --bg-deep:#11151B; --ink:#FFFFFF; --muted:#A9B3C5; --muted-bg:#A9B3C5; --line:#2B3342; --chip:#222A36;
-  --accent:#5668C5; --accent-ink:#FFFFFF; --accent-t:#B3C0FF; --brand:#B3C0FF;
+  --accent:#5668C5; --accent-ink:#FFFFFF; --accent-t:#B3C0FF; --brand:#B3C0FF; --dot:#B3C0FF;
   --card:#FFFFFF; --s-ink:#171C24; --s-muted:#667385; --s-line:#E3E7ED; --s-chip:#EEF1F5; --s-accent-t:#4350A8; --s-navy:#171C24; --s-navy-ink:#FFFFFF; --s-good:#1E8F62; --s-warn:#C9741F;
   --navy:#E7EBFF; --navy-ink:#171C24; --soft:#E7EBFF; --soft2:#D8DEFF; --tile:#FFFFFF; --tile-line:#E3E7ED; --btn:#FFFFFF; --ghost:#FFFFFF;
   --primary:#5668C5; --primary-ink:#FFFFFF;
@@ -39,7 +39,7 @@ img{max-width:100%}
 }}
 :root[data-theme="dark"]{
   --bg:#171C24; --bg-deep:#11151B; --ink:#FFFFFF; --muted:#A9B3C5; --muted-bg:#A9B3C5; --line:#2B3342; --chip:#222A36;
-  --accent:#5668C5; --accent-ink:#FFFFFF; --accent-t:#B3C0FF; --brand:#B3C0FF;
+  --accent:#5668C5; --accent-ink:#FFFFFF; --accent-t:#B3C0FF; --brand:#B3C0FF; --dot:#B3C0FF;
   --card:#FFFFFF; --s-ink:#171C24; --s-muted:#667385; --s-line:#E3E7ED; --s-chip:#EEF1F5; --s-accent-t:#4350A8; --s-navy:#171C24; --s-navy-ink:#FFFFFF; --s-good:#1E8F62; --s-warn:#C9741F;
   --navy:#E7EBFF; --navy-ink:#171C24; --soft:#E7EBFF; --soft2:#D8DEFF; --tile:#FFFFFF; --tile-line:#E3E7ED; --btn:#FFFFFF; --ghost:#FFFFFF;
   --primary:#5668C5; --primary-ink:#FFFFFF;
@@ -64,15 +64,15 @@ button{cursor:pointer;border:0;background:none;-webkit-tap-highlight-color:trans
 
 /* header */
 .top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);display:flex;align-items:center;justify-content:space-between;gap:8px;padding-block:12px 10px}
-.brand{font-family:var(--f-body);font-weight:700;font-style:italic;font-size:25px;letter-spacing:-.03em;color:var(--brand);line-height:1}
-.brand .lg{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px;text-decoration-skip-ink:none}
-.brand small{display:block;font-style:normal;font-family:var(--f-body);font-weight:500;font-size:13px;white-space:nowrap;letter-spacing:0;text-transform:none;color:var(--muted-bg);margin-top:3px}
+.brand{color:var(--brand);line-height:1}
+.brand .logo{display:block;height:30px;width:auto}
+.brand small{display:block;font-style:normal;font-family:var(--f-body);font-weight:500;font-size:13px;white-space:nowrap;letter-spacing:0;text-transform:none;color:var(--muted-bg);margin-top:5px}
 .iconbtn{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--btn);color:var(--ink);flex:none}
 .iconbtn svg{width:20px;height:20px}
 .sync{display:inline-grid;place-items:center;width:40px;height:40px;border-radius:12px;background:var(--btn);font-size:13px;font-weight:600;white-space:nowrap}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .sync i{width:14px;height:14px;border-radius:50%;background:var(--muted)}
-.sync.cloud i{background:var(--good)}.sync.local i{background:var(--warn)}.sync.error i{background:#D64545}.sync.syncing i{background:var(--accent);animation:blink 1s infinite}
+.sync.cloud i{background:var(--dot)}.sync.local i{background:var(--muted)}.sync.error i{background:#D64545}.sync.syncing i{background:var(--accent);animation:blink 1s infinite}
 @keyframes blink{50%{opacity:.3}}
 
 /* hero panel */
@@ -184,8 +184,8 @@ button{cursor:pointer;border:0;background:none;-webkit-tap-highlight-color:trans
 .note{font-size:13.5px;color:var(--muted);border-left:3px solid var(--line);padding-left:9px}
 .day{font-family:var(--f-body);font-weight:600;text-transform:uppercase;font-size:13px;letter-spacing:.06em;color:var(--ink);opacity:.8;margin-top:14px}
 
-.remind{background:var(--navy);color:var(--navy-ink);border-radius:18px;padding:14px 15px;display:flex;gap:12px;align-items:flex-start}
-.remind svg{flex:none;width:22px;height:22px;margin-top:2px}
+.remind{background:var(--tile);color:#171C24;border:1px solid var(--tile-line);border-radius:18px;padding:14px 15px;display:flex;gap:12px;align-items:flex-start}
+.remind svg{flex:none;width:22px;height:22px;margin-top:2px;color:#58647A}
 
 /* quest */
 .quest{display:flex;flex-direction:column;gap:8px}
@@ -262,6 +262,9 @@ table.cmp td.n{text-align:right;font-variant-numeric:tabular-nums;font-weight:60
 .in-text{width:100%;background:var(--tile);border:1.5px solid var(--tile-line);border-radius:12px;padding:11px 12px;outline:none}
 .in-text:focus{border-color:var(--accent-t)}
 textarea.in-text{min-height:84px;resize:vertical}
+input.in-text[type=date]{display:block;box-sizing:border-box;min-width:0;max-width:100%;height:46px;-webkit-appearance:none;appearance:none;text-align:left;line-height:1.2;font-family:inherit}
+input.in-text[type=date]::-webkit-date-and-time-value{text-align:left;min-height:1.2em}
+input.in-text[type=date]::-webkit-calendar-picker-indicator{opacity:.7}
 .xpprev{position:sticky;bottom:0;margin-top:16px;background:var(--bg);padding-top:10px;display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}
 .xpprev b{font-family:var(--f-body);font-weight:700;font-size:24px}
 details summary{cursor:pointer;font-weight:600;font-size:14px;margin-top:16px}
@@ -412,7 +415,7 @@ html.tt,html.tt *{transition:background-color .4s ease,color .4s ease,border-col
 <body>
 <div class="wrap" id="app">
   <header class="top">
-    <div class="brand"><span class="lg">прокачка</span><small id="seasonLbl">сезон 1</small></div>
+    <div class="brand"><svg class="logo" viewBox="0 0 480 119" role="img" aria-label="прокачка" fill="none"><path d="M-2.32793e-05 95L8.94722 41.2203H55.8962L46.949 95H32.6622L39.7334 52.9576H21.0212L14.0462 95H-2.32793e-05ZM49.333 115.107L61.7437 41.2203H76.4152L74.924 50.3119H75.5494C76.4473 48.8367 77.6338 47.3455 79.109 45.8383C80.6163 44.331 82.4763 43.0803 84.689 42.0862C86.9018 41.06 89.4994 40.5469 92.4818 40.5469C96.3942 40.5469 99.8256 41.5731 102.776 43.6255C105.726 45.6458 107.843 48.7084 109.126 52.8133C110.44 56.9181 110.601 62.0491 109.607 68.2064C108.612 74.1712 106.801 79.2221 104.171 83.359C101.573 87.4638 98.4466 90.5745 94.7907 92.691C91.1349 94.8076 87.2545 95.8659 83.1497 95.8659C80.2956 95.8659 77.9385 95.3848 76.0785 94.4228C74.2185 93.4607 72.7754 92.2581 71.7492 90.815C70.723 89.3398 69.9854 87.8647 69.5364 86.3895H69.0554L64.2931 115.107H49.333ZM80.4559 84.0324C82.9252 84.0003 85.0899 83.3269 86.9499 82.0121C88.8419 80.6652 90.4133 78.8052 91.664 76.4321C92.9468 74.0269 93.8607 71.269 94.4059 68.1583C94.8869 65.0476 94.8869 62.3217 94.4059 59.9807C93.9569 57.6076 93.0109 55.7476 91.5678 54.4007C90.1247 53.0538 88.1685 52.3803 85.6992 52.3803C83.294 52.3803 81.1294 53.0377 79.2052 54.3526C77.3131 55.6353 75.7257 57.4633 74.443 59.8364C73.1923 62.1774 72.3104 64.9514 71.7973 68.1583C71.2842 71.3331 71.2681 74.1071 71.7492 76.4802C72.2302 78.8533 73.2083 80.6972 74.6835 82.0121C76.1587 83.3269 78.0828 84.0003 80.4559 84.0324ZM133.108 96.0583C127.624 96.0262 123.086 94.8397 119.495 92.4986C115.903 90.1576 113.37 86.9026 111.894 82.7336C110.451 78.5326 110.195 73.6581 111.125 68.1102C112.023 62.5943 113.867 57.7679 116.657 53.631C119.447 49.4941 122.99 46.2872 127.288 44.0103C131.617 41.7014 136.491 40.5469 141.911 40.5469C147.363 40.5469 151.884 41.7174 155.476 44.0584C159.068 46.3995 161.585 49.6705 163.028 53.8715C164.504 58.0726 164.776 62.9631 163.846 68.5431C162.948 74.0269 161.088 78.8372 158.266 82.9741C155.476 87.079 151.933 90.2859 147.635 92.5948C143.37 94.8717 138.528 96.0262 133.108 96.0583ZM134.599 84.5134C137.101 84.5134 139.329 83.8079 141.286 82.3969C143.242 80.9538 144.861 78.9976 146.144 76.5283C147.427 74.0269 148.325 71.2048 148.838 68.0621C149.351 64.9514 149.383 62.1774 148.934 59.7402C148.517 57.3029 147.603 55.3948 146.192 54.0158C144.781 52.6048 142.841 51.9153 140.372 51.9474C137.87 51.9153 135.641 52.6208 133.685 54.064C131.729 55.5071 130.11 57.4793 128.827 59.9807C127.544 62.4821 126.646 65.3041 126.133 68.4469C125.62 71.5255 125.572 74.2834 125.989 76.7207C126.406 79.1579 127.32 81.066 128.731 82.445C130.174 83.824 132.13 84.5134 134.599 84.5134ZM187.396 96.0583C181.912 96.0262 177.374 94.8397 173.782 92.4986C170.191 90.1576 167.657 86.9026 166.182 82.7336C164.739 78.5326 164.482 73.6581 165.412 68.1102C166.31 62.5943 168.154 57.7679 170.944 53.631C173.734 49.4941 177.278 46.2872 181.575 44.0103C185.904 41.7014 190.779 40.5469 196.199 40.5469C201.65 40.5469 206.172 41.7174 209.764 44.0584C213.356 46.3995 215.873 49.6705 217.316 53.8715C218.791 58.0726 219.064 62.9631 218.134 68.5431C217.236 74.0269 215.376 78.8372 212.554 82.9741C209.764 87.079 206.22 90.2859 201.923 92.5948C197.658 94.8717 192.815 96.0262 187.396 96.0583ZM188.887 84.5134C191.388 84.5134 193.617 83.8079 195.573 82.3969C197.529 80.9538 199.149 78.9976 200.432 76.5283C201.714 74.0269 202.612 71.2048 203.126 68.0621C203.639 64.9514 203.671 62.1774 203.222 59.7402C202.805 57.3029 201.891 55.3948 200.48 54.0158C199.069 52.6048 197.129 51.9153 194.659 51.9474C192.158 51.9153 189.929 52.6208 187.973 54.064C186.017 55.5071 184.397 57.4793 183.114 59.9807C181.832 62.4821 180.934 65.3041 180.421 68.4469C179.908 71.5255 179.859 74.2834 180.276 76.7207C180.693 79.1579 181.607 81.066 183.018 82.445C184.461 83.824 186.418 84.5134 188.887 84.5134ZM217.343 95L226.29 41.2203H241.202L237.643 62.0972H241.876L259.963 41.2203H277.52L254.046 67.9659L268.766 95H251.015L240.962 75.951H235.43L232.255 95H217.343ZM284.041 96.0102C280.642 96.0102 277.692 95.4169 275.19 94.2303C272.689 93.0117 270.861 91.2159 269.706 88.8428C268.552 86.4697 268.263 83.5193 268.841 79.9917C269.354 76.9772 270.316 74.4759 271.727 72.4876C273.17 70.4672 274.934 68.8317 277.018 67.581C279.103 66.3303 281.412 65.3843 283.945 64.7429C286.479 64.1015 289.092 63.6526 291.786 63.396C294.929 63.1074 297.478 62.8188 299.434 62.5302C301.391 62.2095 302.866 61.7605 303.86 61.1833C304.854 60.606 305.447 59.7562 305.64 58.6338V58.3933C305.96 56.1805 305.544 54.4808 304.389 53.2943C303.267 52.0757 301.439 51.4503 298.905 51.4183C296.244 51.4503 293.983 52.0436 292.123 53.1981C290.295 54.3526 288.98 55.8277 288.178 57.6236L274.661 56.5172C275.848 53.2462 277.66 50.4241 280.097 48.051C282.566 45.6458 285.549 43.8019 289.044 42.5191C292.54 41.2043 296.436 40.5469 300.733 40.5469C303.716 40.5469 306.506 40.8996 309.103 41.6052C311.701 42.3107 313.946 43.401 315.838 44.8762C317.73 46.3193 319.093 48.1953 319.926 50.5043C320.792 52.8133 320.953 55.5552 320.408 58.73L314.395 95H300.3L301.551 87.4959H301.118C299.996 89.1955 298.601 90.6867 296.933 91.9695C295.298 93.2202 293.405 94.2143 291.257 94.9519C289.108 95.6574 286.703 96.0102 284.041 96.0102ZM290.054 85.716C292.203 85.716 294.191 85.2831 296.019 84.4172C297.847 83.5193 299.354 82.3328 300.541 80.8576C301.759 79.3503 302.529 77.6667 302.85 75.8067L303.764 70.0824C303.283 70.371 302.609 70.6436 301.743 70.9002C300.878 71.1246 299.931 71.3491 298.905 71.5736C297.879 71.766 296.853 71.9424 295.827 72.1028C294.8 72.231 293.886 72.3593 293.085 72.4876C291.289 72.7441 289.685 73.161 288.274 73.7383C286.863 74.2834 285.709 75.0371 284.811 75.9991C283.945 76.9291 283.4 78.0997 283.175 79.5107C282.823 81.531 283.288 83.0703 284.57 84.1286C285.885 85.1869 287.713 85.716 290.054 85.716ZM375.705 41.2203L366.854 95H352.664L361.611 41.2203H375.705ZM364.834 64.8872L362.958 76.6245C361.739 77.1376 360.232 77.6186 358.436 78.0676C356.672 78.5165 354.844 78.8853 352.952 79.174C351.06 79.4305 349.281 79.5588 347.613 79.5588C339.884 79.5588 334.064 77.9714 330.151 74.7965C326.271 71.5896 324.908 66.4907 326.063 59.4996L329.093 41.1722H343.139L340.061 59.4996C339.74 61.5841 339.836 63.2357 340.349 64.4543C340.862 65.6729 341.857 66.5388 343.332 67.0519C344.839 67.565 346.907 67.8215 349.537 67.8215C352.006 67.8536 354.46 67.6131 356.897 67.1C359.334 66.5869 361.98 65.8493 364.834 64.8872ZM372.606 95L381.553 41.2203H396.465L392.905 62.0972H397.138L415.225 41.2203H432.783L409.309 67.9659L424.028 95H406.278L396.224 75.951H390.692L387.518 95H372.606ZM439.304 96.0102C435.905 96.0102 432.954 95.4169 430.453 94.2303C427.951 93.0117 426.124 91.2159 424.969 88.8428C423.815 86.4697 423.526 83.5193 424.103 79.9917C424.616 76.9772 425.578 74.4759 426.989 72.4876C428.432 70.4672 430.196 68.8317 432.281 67.581C434.365 66.3303 436.674 65.3843 439.208 64.7429C441.741 64.1015 444.355 63.6526 447.049 63.396C450.191 63.1074 452.741 62.8188 454.697 62.5302C456.653 62.2095 458.128 61.7605 459.123 61.1833C460.117 60.606 460.71 59.7562 460.902 58.6338V58.3933C461.223 56.1805 460.806 54.4808 459.652 53.2943C458.529 52.0757 456.701 51.4503 454.168 51.4183C451.506 51.4503 449.245 52.0436 447.385 53.1981C445.557 54.3526 444.243 55.8277 443.441 57.6236L429.924 56.5172C431.11 53.2462 432.922 50.4241 435.359 48.051C437.829 45.6458 440.811 43.8019 444.307 42.5191C447.802 41.2043 451.699 40.5469 455.996 40.5469C458.978 40.5469 461.768 40.8996 464.366 41.6052C466.963 42.3107 469.208 43.401 471.1 44.8762C472.992 46.3193 474.355 48.1953 475.189 50.5043C476.055 52.8133 476.215 55.5552 475.67 58.73L469.657 95H455.563L456.814 87.4959H456.381C455.258 89.1955 453.863 90.6867 452.196 91.9695C450.56 93.2202 448.668 94.2143 446.519 94.9519C444.371 95.6574 441.966 96.0102 439.304 96.0102ZM445.317 85.716C447.465 85.716 449.454 85.2831 451.282 84.4172C453.11 83.5193 454.617 82.3328 455.803 80.8576C457.022 79.3503 457.792 77.6667 458.112 75.8067L459.026 70.0824C458.545 70.371 457.872 70.6436 457.006 70.9002C456.14 71.1246 455.194 71.3491 454.168 71.5736C453.142 71.766 452.115 71.9424 451.089 72.1028C450.063 72.231 449.149 72.3593 448.347 72.4876C446.551 72.7441 444.948 73.161 443.537 73.7383C442.126 74.2834 440.971 75.0371 440.074 75.9991C439.208 76.9291 438.663 78.0997 438.438 79.5107C438.085 81.531 438.55 83.0703 439.833 84.1286C441.148 85.1869 442.976 85.716 445.317 85.716Z" fill="currentColor"/><path d="M106.894 114.278H206.743" stroke="currentColor" stroke-width="7.88127" stroke-linecap="round"/><path d="M166.829 27.8288L272.048 27.8288" stroke="currentColor" stroke-width="7.88127" stroke-linecap="round"/></svg><small id="seasonLbl">сезон 1</small></div>
     <div class="row" style="flex-wrap:nowrap;gap:6px">
       <button class="sync local" id="syncBtn" data-act="sync" aria-label="где сохраняются данные: устройство"><i></i><span id="syncTxt" class="sr">устройство</span></button>
       <button class="iconbtn" id="helpBtn" data-act="help" aria-label="помощь" style="font-weight:700;font-size:18px">?</button>
@@ -574,9 +577,9 @@ function ideaFor(skill,per){
 }
 const RANKS=[[1,"стажёр"],[4,"оператор"],[8,"{изобретательница|изобретатель}"],[13,"архитектор"],[19,"{основательница|основатель}"],[25,"легенда"]];
 const STATES=[
-  {k:"health",n:"здоровье",labels:["очень плохо","слабо","нормально","хорошо","отлично"]},
+  {k:"health",n:"энергия",labels:["нет сил","мало сил","нормально","бодро","полно сил"]},
   {k:"mood",n:"настроение",labels:["тяжело","грустно","ровно","хорошо","кайф"]},
-  {k:"bright",n:"яркость жизни",labels:["серо","тускло","обычно","ярко","огонь"]}
+  {k:"bright",n:"яркость жизни",labels:["ливень","лужи","пасмурно","проясняется","сияет"]}
 ];
 /* идеи целей сезона с первыми шагами */
 const GOAL_LIB=[
@@ -692,18 +695,25 @@ const IC={
 };
 /* иконки состояния: 1 — слабее, 5 — ярче */
 function stateIcon(k,n){
-  if(k==="health"){ // батарейка
-    let bars="";for(let i=0;i<n;i++)bars+=`<rect x="${5.2+i*2.9}" y="9.2" width="2.1" height="5.6" rx=".5" fill="currentColor"/>`;
-    return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="7.5" width="16" height="9" rx="2"/><path d="M21 10.5v3" stroke-linecap="round"/>${bars}</svg>`;
+  const W='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">',E="</svg>";
+  const heart=(x,y,z)=>`<path d="M${x} ${y+z*.9}C${x-z*1.6} ${y-z*.2} ${x-z*.7} ${y-z*1.3} ${x} ${y-z*.4}C${x+z*.7} ${y-z*1.3} ${x+z*1.6} ${y-z*.2} ${x} ${y+z*.9}Z" fill="currentColor" stroke="none"/>`;
+  if(k==="health"){ // батарейка, на максимуме с молнией
+    let bars="";for(let i=0;i<n;i++)bars+=`<rect x="${5.2+i*2.9}" y="9.2" width="2.1" height="5.6" rx=".5" fill="currentColor" stroke="none"/>`;
+    return W+`<rect x="3.5" y="7.5" width="16" height="9" rx="2"/><path d="M21 10.5v3"/>${bars}${n===5?'<path d="M14.5 1.8L11.5 6h3l-2.5 3.6" stroke-width="1.6"/>':""}`+E;
   }
-  if(k==="mood"){ // лицо: от грусти к улыбке
-    const c=[11.5,13.2,15,16.8,18.6][n-1];const ey=n===1?"M8.3 9.6l2 .8M15.7 9.6l-2 .8":"";
-    return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="9" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="10" r="1" fill="currentColor" stroke="none"/>${ey?`<path d="${ey}"/>`:""}<path d="M8 15.5Q12 ${c} 16 15.5"/></svg>`;
+  if(k==="mood"){ // лицо: от грусти к восторгу с сердечками
+    if(n===5)return W+`<circle cx="12" cy="13" r="7.6"/><path d="M8.6 11.4q1.2-1.8 2.4 0M13 11.4q1.2-1.8 2.4 0"/><path d="M8 14.6Q12 20.4 16 14.6Z" fill="currentColor"/>${heart(4,4.6,1.5)}${heart(20,4.6,1.5)}${heart(12,2.2,1.1)}`+E;
+    const c=[11.5,13.2,15,16.8][n-1];const ey=n===1?"M8.3 9.6l2 .8M15.7 9.6l-2 .8":"";
+    return W+`<circle cx="12" cy="12" r="9"/><circle cx="9" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="10" r="1" fill="currentColor" stroke="none"/>${ey?`<path d="${ey}"/>`:""}<path d="M8 15.5Q12 ${c} 16 15.5"/>`+E;
   }
-  // яркость: солнце растёт
-  const r=[3,3.6,4.2,4.8,5.2][n-1];const rays=[0,2,4,6,8][n-1];let ray="";
-  for(let i=0;i<rays;i++){const a=(Math.PI*2/rays)*i-Math.PI/2;const x1=12+Math.cos(a)*(r+2.2),y1=12+Math.sin(a)*(r+2.2),x2=12+Math.cos(a)*(r+4.4),y2=12+Math.sin(a)*(r+4.4);ray+=`<path d="M${x1.toFixed(1)} ${y1.toFixed(1)}L${x2.toFixed(1)} ${y2.toFixed(1)}"/>`}
-  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="${r}" ${n>=3?'fill="currentColor"':""}/>${ray}</svg>`;
+  // яркость жизни: погода от ливня до солнца
+  const cloud='<path d="M7 16.5h9.5a3.5 3.5 0 0 0 .4-7 5 5 0 0 0-9.6 1.2A3 3 0 0 0 7 16.5z"/>';
+  const ray=(r,cnt,start)=>{let o="";for(let i=0;i<cnt;i++){const a=start+(Math.PI*2/cnt)*i;o+=`<path d="M${(12+Math.cos(a)*r).toFixed(1)} ${(12+Math.sin(a)*r).toFixed(1)}L${(12+Math.cos(a)*(r+2.6)).toFixed(1)} ${(12+Math.sin(a)*(r+2.6)).toFixed(1)}"/>`}return o};
+  if(n===1)return W+`<g transform="translate(0 -4)">${cloud}</g><path d="M8.5 15.5l-1 3M12.5 15.5l-1 4M16.5 15.5l-1 3"/>`+E;
+  if(n===2)return W+`<path d="M12 3.6c-1.9 2.8-3 4.4-3 5.9a3 3 0 0 0 6 0c0-1.5-1.1-3.1-3-5.9z"/><ellipse cx="12" cy="18.4" rx="8.4" ry="2.8"/><ellipse cx="12" cy="18.4" rx="3.6" ry="1.1"/>`+E;
+  if(n===3)return W+`<g transform="translate(0 1.5)">${cloud}</g>`+E;
+  if(n===4)return W+`<circle cx="9" cy="9" r="3.4"/><path d="M9 2.8v1.4M2.8 9h1.4M4.6 4.6l1 1M13.4 4.6l-1 1"/><g transform="translate(3 3.5)">${cloud}</g>`+E;
+  return W+`<circle cx="12" cy="12" r="4.6" fill="currentColor"/>${ray(7.4,8,-Math.PI/2)}`+E;
 }
 
 /* ================= профиль ================= */
@@ -712,7 +722,7 @@ function defaultProfile(){
   const t=today();
   return {v:2,fresh:true,upd:0,seasonStart:t,seasonDays:90,active:[],custom:[],startLevels:{},fears:"",
     goals:[],
-    challenges:[{id:uid(),title:"попробовать одну новую вещь в главном навыке",about:{essence:"выбери навык, который для тебя сейчас главный, и попробуй в нём одну вещь, которую раньше не делал{а|}: инструмент, приём или формат.",benefit:"новое расширяет навык и даёт бонус «впервые» к опыту. а ещё так проще понять, что тебе по-настоящему интересно.",reason:"это стартовый квест: он помогает разогнаться в первую неделю, пока ещё не набралось истории действий.",by:"app"},steps:[],period:"week",skill:"",xp:80,coins:15,status:"active",due:endOfWeek(t),moved:0,created:t}],
+    challenges:[{id:uid(),title:"пример: выпустить одну маленькую работу за неделю",about:{essence:"это пример, чтобы было с чего начать. замени его своей задачей на неделю: пост, макет, ролик, урок или первый заказ. свой квест добавляется кнопкой «свой» над списком.",benefit:"маленькая законченная вещь за неделю даёт больше, чем большой план, и быстро показывает, куда тебя тянет.",reason:"это стартовый квест: он помогает разогнаться в первую неделю, пока ещё не набралось истории действий.",by:"app"},steps:[],period:"week",skill:"",xp:80,coins:15,status:"active",due:endOfWeek(t),moved:0,created:t}],
     rewards:[
       {id:uid(),title:"кофе в любимом месте",price:30,example:true},
       {id:uid(),title:"вечер без дел и чувства вины",price:60,example:true},
@@ -731,7 +741,7 @@ function normalize(p){
   if(!o.startLevels||typeof o.startLevels!=="object")o.startLevels={};
   if(!o.states||typeof o.states!=="object")o.states={};
   if(!o.achEdit||typeof o.achEdit!=="object")o.achEdit={};if(!Array.isArray(o.achCustom))o.achCustom=[];
-  o.challenges.forEach(c=>{if(!c.about&&c.title==="попробовать одну новую вещь в главном навыке")c.about={essence:"выбери навык, который для тебя сейчас главный, и попробуй в нём одну вещь, которую раньше не делал{а|}: инструмент, приём или формат.",benefit:"новое расширяет навык и даёт бонус «впервые» к опыту. а ещё так проще понять, что тебе по-настоящему интересно.",reason:"это стартовый квест: он помогает разогнаться в первую неделю, пока ещё не набралось истории действий.",by:"app"}});
+  o.challenges.forEach(c=>{if(c.title==="попробовать одну новую вещь в главном навыке"||(!c.about&&c.title==="пример: выпустить одну маленькую работу за неделю")){c.title="пример: выпустить одну маленькую работу за неделю";c.about={essence:"это пример, чтобы было с чего начать. замени его своей задачей на неделю: пост, макет, ролик, урок или первый заказ. свой квест добавляется кнопкой «свой» над списком.",benefit:"маленькая законченная вещь за неделю даёт больше, чем большой план, и быстро показывает, куда тебя тянет.",reason:"это стартовый квест: он помогает разогнаться в первую неделю, пока ещё не набралось истории действий.",by:"app"}}});
   o.rewards.forEach(r=>{if(!Array.isArray(r.imgs))r.imgs=r.img?[r.img]:[];delete r.img});
   return o;
 }
