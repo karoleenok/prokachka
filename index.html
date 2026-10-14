@@ -935,6 +935,15 @@ function pingClosed(){
     if(navigator.sendBeacon)navigator.sendBeacon(BOT_API+"/closed",new Blob([b],{type:"text/plain"}));
     else fetch(BOT_API+"/closed",{method:"POST",body:b,keepalive:true,headers:{"content-type":"text/plain"}})}catch(x){}
 }
+/* сигнал «я открыта»: пока он идёт, бот молчит; когда пропал, бот пишет в чат (нужен, пока человек не настроил напоминания) */
+let _hb=null,_hbN=0;
+function heartbeat(){
+  if(!TG||!S.profile||document.visibilityState==="hidden")return;
+  if(++_hbN>60){clearInterval(_hb);return}
+  fetch(BOT_API+"/alive",{method:"POST",headers:{"content-type":"text/plain"},body:JSON.stringify({initData:TG.initData,tz:-new Date().getTimezoneOffset()})})
+    .then(r=>r.json()).then(j=>{if(j&&j.need===false)clearInterval(_hb)}).catch(()=>{});
+}
+if(TG)setTimeout(()=>{heartbeat();_hb=setInterval(heartbeat,8000)},4000);
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")pingClosed()});
 window.addEventListener("pagehide",pingClosed);
 ["saveProfile","putEntry","delEntry"].forEach(k=>{const f=Store[k];Store[k]=function(){const r=f.apply(this,arguments);pushSync();return r}});
