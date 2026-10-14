@@ -100,7 +100,7 @@ button{cursor:pointer;border:0;background:none;-webkit-tap-highlight-color:trans
 .sec{margin-top:32px;display:flex;align-items:center;justify-content:space-between;gap:10px}
 .sec-l{display:flex;align-items:center;gap:8px;min-width:0}
 .sel{position:relative;display:inline-block;font-weight:700;font-size:15px;background:var(--tile);color:var(--ink);padding:3px 9px;border:1.5px solid var(--accent);border-radius:2px}
-.greet{font-family:var(--f-body);font-weight:600;font-size:19px;letter-spacing:-.01em;line-height:1.25;margin:20px 0 0;color:var(--ink)}
+.greet{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:var(--f-body);font-weight:600;font-size:19px;letter-spacing:-.01em;line-height:1.25;margin:20px 0 0;color:var(--ink)}
 .greet span{color:var(--accent-t)}
 .nextgoal{margin-top:14px}
 .ng-t{font-family:var(--f-body);font-weight:600;text-transform:uppercase;letter-spacing:.06em;font-size:13px;color:var(--muted)}
@@ -332,7 +332,8 @@ button.ach{border:0;font:inherit;color:var(--ink);cursor:pointer}
 .is-plan .st-mark{border:2px dashed var(--accent);background:transparent;cursor:pointer}
 .is-plan .st-mark:hover{background:var(--chip)}
 .is-plan .t{opacity:.85}
-.is-plan .tag{background:transparent;border:1.5px solid var(--dash)}
+.is-plan .tag{background:transparent;border:1.5px solid var(--dash);color:var(--ink)}
+.is-plan .tag.good{background:var(--good);color:#fff}.is-plan .tag.warn{background:var(--warn);color:#fff}
 .is-plan .tag.good,.is-plan .tag.warn{border:0}
 
 /* игровая карточка квеста: все оттенки одного синего */
@@ -452,6 +453,17 @@ html.tt,html.tt *{transition:background-color .4s ease,color .4s ease,border-col
   .wish-grid,.ach-grid,.wishes,.achs{gap:16px}
 }
 @media (min-width:1500px){.wrap{max-width:1240px}.hero .big{font-size:150px}}
+
+.br-all{display:flex;justify-content:space-between;align-items:baseline;font-size:14px;color:var(--muted);padding:2px 2px 8px;border-bottom:1px solid var(--line)}
+.br-all b{font-family:var(--f-display);font-weight:400;font-size:30px;color:var(--ink);line-height:1}
+.br-h{display:grid;grid-template-columns:1fr auto auto 18px;align-items:center;gap:2px 10px;width:100%;text-align:left;padding:10px 2px 6px;color:var(--ink)}
+.br-n{font-family:var(--f-body);font-weight:700;font-size:15px;text-transform:lowercase}
+.br-c{color:var(--muted)}
+.br-a{font-family:var(--f-display);font-weight:400;font-size:26px;line-height:1}
+.br-ch{width:18px;height:18px;color:var(--muted);transition:transform .2s ease}
+.br-h.open .br-ch{transform:rotate(180deg)}
+.br-h .segs{grid-column:1/-1;margin-top:4px}
+.br-list{display:flex;flex-direction:column;gap:12px;padding:6px 0 10px 12px;border-left:2px solid var(--line);margin-left:3px}
 </style>
 
 </head>
@@ -760,7 +772,7 @@ function stateIcon(k,n){
 }
 
 /* ================= профиль ================= */
-const S={profile:null,entries:[],view:"home",pathMode:"feed",pathFilter:null,thenDate:null,lastW:null};
+const S={grpOpen:(()=>{try{return JSON.parse(localStorage.getItem("prk-grp"))||{}}catch(x){return{}}})(),profile:null,entries:[],view:"home",pathMode:"feed",pathFilter:null,thenDate:null,lastW:null};
 function defaultProfile(){
   const t=today();
   return {v:2,fresh:true,upd:0,seasonStart:t,seasonDays:90,active:[],custom:[],startLevels:{},fears:"",
@@ -994,6 +1006,19 @@ const PLAIN_SEC=new Set(["сделано сегодня","в планах","со
 const secTitle=(t,k,right)=>{const pl=" plain";t=t.charAt(0).toUpperCase()+t.slice(1);return`<div class="sec"><div class="sec-l">${k&&HELP[k]?`<button class="sel sel-b${pl}" data-act="hint" data-k="${k}" aria-label="что это: ${esc(HELP[k][0])}">${t}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5v.1"/></svg></button>`:`<span class="sel${pl}">${t}</span>`}</div>${right||""}</div>`};
 function segs(frac,level){let h="";for(let i=1;i<=10;i++){if(i<level)h+='<i class="on"></i>';else if(i===level&&level<10)h+=`<i class="part" style="--p:${Math.round(frac*100)}%"></i>`;else if(i===level)h+='<i class="on"></i>';else h+="<i></i>"}return`<div class="segs" aria-hidden="true">${h}</div>`}
 function skillRow(s,k){return`<div class="skill"><div class="nm">${esc(s.name)}</div><div class="lv num" aria-label="уровень">${k.level}</div>${segs(k.frac,k.level)}</div>`}
+function fmt1(x){return(Math.round(x*10)/10).toFixed(1).replace(".",",")}
+function branchBlock(d){
+  const act=activeSkills();const open=S.grpOpen||{};
+  const val=s=>{const k=d.skills[s.id];return k.level+k.frac};
+  const all=act.map(val);const mean=a=>a.reduce((x,y)=>x+y,0)/a.length;
+  let h=`<div class="br-all"><span>средний уровень</span><b class="num">${fmt1(mean(all))}</b></div>`;
+  GROUPS.forEach(g=>{const list=act.filter(s=>s.g===g.id);if(!list.length)return;
+    const m=mean(list.map(val));const o=!!open[g.id];
+    h+=`<button class="br-h ${o?"open":""}" data-act="grpTog" data-id="${g.id}" aria-expanded="${o}"><span class="br-n">${esc(g.name)}</span><span class="br-c small num">${list.length} ${plural(list.length,"навык","навыка","навыков")}</span><b class="br-a num" title="средний уровень ветки">${fmt1(m)}</b><svg class="br-ch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>${segs(m%1,Math.floor(m))}</button>`;
+    if(o)h+=`<div class="br-list">${list.map(s=>skillRow(s,d.skills[s.id])).join("")}</div>`;
+  });
+  return h;
+}
 function groupedSkills(fn){
   const act=activeSkills();let h="";
   GROUPS.forEach(g=>{const list=act.filter(s=>s.g===g.id);if(!list.length)return;h+=`<div class="grp">${esc(g.name)}</div>`+list.map(fn).join("")});
@@ -1047,7 +1072,7 @@ function vHome(d){
       ${d.coins>0||d.streak.cur>0||d.streak.freezes>0?"":`<span class="small" style="opacity:.8">монеты и серия появятся после первой записи</span>`}
     </div>
   </section>
-  <h2 class="greet">${P.name?`<span>&gt;&gt; ${esc(P.name)},</span> `:"<span>&gt;&gt;</span> "}${d.streak.activeToday?"сегодня ты уже в игре?":"сегодня ещё нет записей"}</h2>
+  <h2 class="greet">${P.name?`<span>&gt;&gt; ${esc(P.name)},</span> `:"<span>&gt;&gt;</span> "}ты в игре?</h2>
   ${noSkills?`<div class="card" style="margin-top:12px"><b>сначала выбери, что качаешь</b><p class="small muted" style="margin:6px 0 10px">пока навыки не выбраны, опыт некуда начислять.</p><button class="btn accent" data-act="skillCat">выбрать навыки</button></div>`:""}
   <div class="addrow" id="addRow"><button class="btn accent" data-act="add" id="addBtn">${IC.plus} записать действие</button><button class="btn ghost" data-act="add" data-plan="1">запланировать</button></div>
 
@@ -1063,7 +1088,7 @@ function vHome(d){
   <div class="card stack" id="needsCard" style="margin-top:12px;gap:0">${stateBlock(t)}</div>
 
   ${P.active.length?`${secTitle("ветки навыков","skills",`<button class="link" data-act="tab" data-id="skills">подробнее</button>`)}
-  <div class="card stack" style="gap:12px">${groupedSkills(s=>skillRow(s,d.skills[s.id]))}</div>`:""}
+  <div class="card stack" style="gap:6px">${branchBlock(d)}</div>`:""}
   </div></div>`;
 }
 
@@ -1442,7 +1467,8 @@ function ruleProgress(r,d){
     case"skillLvl":cur=d.skills[r.skill]?d.skills[r.skill].level:0;break;case"streak":cur=d.streak.best;break;case"fear":cur=d.fear;break;case"quests":cur=d.questsDone;break;case"level":cur=d.level;break}
   return[Math.min(cur,n),n];
 }
-const achIcon=(a,big)=>a.img&&a.img.url?`<div class="ic" style="${coverCSS(a.img,1)}${big?";width:96px;height:96px;border-radius:26px":""}" aria-hidden="true"></div>`:`<div class="ic" aria-hidden="true" ${big?'style="width:96px;height:96px;border-radius:26px;font-size:34px"':""}>${esc(a.ic||"★")}</div>`;
+const ACH_SVG={"first": "<path d=\"M12 21v-9M12 12c0-4-3-6-7-6 0 4 3 6 7 6zM12 14c0-3 2-5 6-5 0 3-2 5-6 5z\"/>", "thirty": "<path d=\"M13 2L5 13h6l-1 9 8-11h-6z\"/>", "ship": "<path d=\"M12 3c3 2 5 5 5 9l-2 3H9l-2-3c0-4 2-7 5-9zM9 15l-2.5 4 3.5-1M15 15l2.5 4-3.5-1\"/><circle cx=\"12\" cy=\"10\" r=\"1.6\"/>", "client": "<rect x=\"3\" y=\"7\" width=\"18\" height=\"10\" rx=\"2\"/><circle cx=\"12\" cy=\"12\" r=\"2.5\"/><path d=\"M6.5 12h.01M17.5 12h.01\"/>", "deal10": "<path d=\"M4 17l5-5 4 3 7-8M15 7h5v5\"/>", "mentor": "<path d=\"M2 9l10-5 10 5-10 5zM6 11.5V16c0 1.5 3 3 6 3s6-1.5 6-3v-4.5M22 9v6\"/>", "brave": "<path d=\"M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z\"/>", "brave5": "<path d=\"M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z\"/><path d=\"M12 8.5l1.1 2.3 2.5.3-1.8 1.7.5 2.5-2.3-1.2-2.3 1.2.5-2.5-1.8-1.7 2.5-.3z\"/>", "explorer": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M15.5 8.5l-2 5-5 2 2-5z\"/>", "week": "<path d=\"M12 3c1 3.5 5 5.5 5 10a5 5 0 0 1-10 0c0-1.8.9-3.2 2-4.2.2 1.4.9 2.2 1.8 2.5C10.6 8.7 11 6 12 3z\"/>", "month": "<path d=\"M12 3c1 3.5 5 5.5 5 10a5 5 0 0 1-10 0c0-1.8.9-3.2 2-4.2.2 1.4.9 2.2 1.8 2.5C10.6 8.7 11 6 12 3z\"/><path d=\"M19.5 3v3M18 4.5h3\"/>", "master": "<path d=\"M3 18h18l-1.5-10-4.5 4-3-6-3 6-4.5-4z\"/>", "wide": "<path d=\"M12 3v18M4.2 7.5l15.6 9M19.8 7.5l-15.6 9\"/>", "boss": "<path d=\"M14.5 5.5L19.5 4 18 9l-9.5 9.5-3-3zM5.5 15.5l-2 2M7 17l-2.5 2.5\"/>", "treat": "<rect x=\"4\" y=\"10\" width=\"16\" height=\"10\" rx=\"1.5\"/><rect x=\"3\" y=\"7\" width=\"18\" height=\"3\" rx=\"1\"/><path d=\"M12 7v13M12 7C10 4 7 4 7 5.5S10 7 12 7zm0 0c2-3 5-3 5-1.5S14 7 12 7z\"/>", "back": "<path d=\"M4 12a8 8 0 1 1 3 6.2M4 18v-5h5\"/>", "lvl10": "<path d=\"M8 4h8v5a4 4 0 0 1-8 0zM8 6H4v1a3 3 0 0 0 4 3M16 6h4v1a3 3 0 0 1-4 3M12 13v4M8 20h8M10 17h4\"/>"};
+const achIcon=(a,big)=>!a.custom&&ACH_SVG[a.id]&&!(a.img&&a.img.url)?`<div class="ic svg" aria-hidden="true" ${big?'style="width:96px;height:96px;border-radius:26px"':""}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:${big?48:28}px;height:${big?48:28}px">${ACH_SVG[a.id]}</svg></div>`:a.img&&a.img.url?`<div class="ic" style="${coverCSS(a.img,1)}${big?";width:96px;height:96px;border-radius:26px":""}" aria-hidden="true"></div>`:`<div class="ic" aria-hidden="true" ${big?'style="width:96px;height:96px;border-radius:26px;font-size:34px"':""}>${esc(a.ic||"★")}</div>`;
 function achSheet(id){
   const a=achAll().find(x=>x.id===id);if(!a)return;const d=derive();const got=d.ach.includes(id);const pr=a.custom?ruleProgress(a.rule,d):null;
   sheet(`<div class="sheet-h"><span class="pill">${got?"получена":"ещё впереди"}</span><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
@@ -1874,6 +1900,7 @@ document.addEventListener("click",ev=>{
     case"theme":try{localStorage.setItem("prk-theme",id)}catch(x){}applyTheme(id);document.querySelectorAll('[data-act="theme"]').forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.id===id)));break;
     case"themeToggle":{const isDark=document.documentElement.getAttribute("data-theme")==="dark";const n=isDark?"light":"dark";try{localStorage.setItem("prk-theme",n)}catch(x){}applyTheme(n);break}
     case"backup":backup();break;
+    case"grpTog":{S.grpOpen=S.grpOpen||{};S.grpOpen[id]=!S.grpOpen[id];try{localStorage.setItem("prk-grp",JSON.stringify(S.grpOpen))}catch(x){}render();break}
     case"skillCat":skillCatalog();break;
     case"catThenAdd":closeSheet();if(S.profile.active.length)openEntry(null,{});break;
     case"startLevels":openStartLevels();break;
