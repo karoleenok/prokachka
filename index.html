@@ -16,7 +16,7 @@ img{max-width:100%}
 :root{
   --bg:#A9CDF5; --bg-deep:#93BEF0;
   --panel:#3373CF; --panel-2:#2A64BD; --panel-ink:#FFFFFF; --panel-soft:rgba(255,255,255,.18); --panel-line:rgba(255,255,255,.28);
-  --card:#FFFFFF; --ink:#14315F; --muted:#5B7298; --line:#D7E4F6; --chip:#E9F1FC;
+  --card:#FFFFFF; --ink:#14315F; --muted:#5B7298; --muted-bg:#2F4A78; --line:#D7E4F6; --chip:#E9F1FC;
   --navy:#1C3F7E; --navy-ink:#FFFFFF; --accent:#3373CF; --accent-ink:#FFFFFF;
   --good:#1E8F62; --warn:#C9741F; --coin:#E9A522; --shade:rgba(20,49,95,.5); --dash:rgba(51,115,207,.45);
   --f-display:"Oswald","Arial Narrow",Impact,sans-serif;
@@ -25,7 +25,7 @@ img{max-width:100%}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#0B1830; --bg-deep:#091327;
   --panel:#1F56B5; --panel-2:#1A4A9D; --panel-ink:#FFFFFF; --panel-soft:rgba(255,255,255,.14); --panel-line:rgba(255,255,255,.22);
-  --card:#122546; --ink:#E5EEFC; --muted:#93A9CE; --line:#223A63; --chip:#1A3259;
+  --card:#122546; --ink:#E5EEFC; --muted:#93A9CE; --muted-bg:#A9BDDD; --line:#223A63; --chip:#1A3259;
   --navy:#0D1D3B; --navy-ink:#E5EEFC; --accent:#6EA3F6; --accent-ink:#0B1830;
   --good:#45C08E; --warn:#F0A256; --coin:#F4C04E; --shade:rgba(0,0,0,.62); --dash:rgba(110,163,246,.5);
   color-scheme:dark;
@@ -33,12 +33,16 @@ img{max-width:100%}
 :root[data-theme="dark"]{
   --bg:#0B1830; --bg-deep:#091327;
   --panel:#1F56B5; --panel-2:#1A4A9D; --panel-ink:#FFFFFF; --panel-soft:rgba(255,255,255,.14); --panel-line:rgba(255,255,255,.22);
-  --card:#122546; --ink:#E5EEFC; --muted:#93A9CE; --line:#223A63; --chip:#1A3259;
+  --card:#122546; --ink:#E5EEFC; --muted:#93A9CE; --muted-bg:#A9BDDD; --line:#223A63; --chip:#1A3259;
   --navy:#0D1D3B; --navy-ink:#E5EEFC; --accent:#6EA3F6; --accent-ink:#0B1830;
   --good:#45C08E; --warn:#F0A256; --coin:#F4C04E; --shade:rgba(0,0,0,.62); --dash:rgba(110,163,246,.5);
   color-scheme:dark;
 }
 *{box-sizing:border-box}
+/* серый текст прямо на голубом фоне страницы: контраст не ниже 4.5:1 */
+.sec .muted,.sec .link,.day,.day .muted,.group-h,.glabel,.wrap>.muted,.wrap>p.muted,#achSec>p.muted,.addrow+.row .muted,.skills-grp,.sg-h{color:var(--muted-bg)}
+.sec .link{opacity:1}
+
 html,body{background:var(--bg)}
 body{color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0}
@@ -51,11 +55,12 @@ button{cursor:pointer;border:0;background:none;-webkit-tap-highlight-color:trans
 /* header */
 .top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);display:flex;align-items:center;justify-content:space-between;gap:8px;padding-block:12px 10px}
 .brand{font-family:var(--f-display);font-weight:700;font-size:22px;letter-spacing:.02em;text-transform:uppercase;color:var(--ink);line-height:1}
-.brand small{display:block;font-family:var(--f-body);font-weight:500;font-size:12px;letter-spacing:0;text-transform:none;color:var(--muted);margin-top:3px}
+.brand small{display:block;font-family:var(--f-body);font-weight:500;font-size:13px;white-space:nowrap;letter-spacing:0;text-transform:none;color:var(--muted-bg);margin-top:3px}
 .iconbtn{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--card);color:var(--ink);flex:none}
 .iconbtn svg{width:20px;height:20px}
-.sync{display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 11px;border-radius:12px;background:var(--card);font-size:12.5px;font-weight:600;white-space:nowrap}
-.sync i{width:9px;height:9px;border-radius:50%;background:var(--muted)}
+.sync{display:inline-grid;place-items:center;width:40px;height:40px;border-radius:12px;background:var(--card);font-size:13px;font-weight:600;white-space:nowrap}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.sync i{width:14px;height:14px;border-radius:50%;background:var(--muted)}
 .sync.cloud i{background:var(--good)}.sync.local i{background:var(--warn)}.sync.error i{background:#D64545}.sync.syncing i{background:var(--accent);animation:blink 1s infinite}
 @keyframes blink{50%{opacity:.3}}
 
@@ -63,14 +68,14 @@ button{cursor:pointer;border:0;background:none;-webkit-tap-highlight-color:trans
 .hero{background:var(--panel);color:var(--panel-ink);border-radius:22px;padding:18px 18px 16px;position:relative;overflow:hidden}
 .hero::after{content:"";position:absolute;right:-60px;top:-50px;width:220px;height:220px;border-radius:50%;background:var(--panel-2);opacity:.7;pointer-events:none}
 .hero>*{position:relative;z-index:1}
-.pill{display:inline-flex;align-items:center;gap:6px;background:var(--navy);color:var(--navy-ink);border-radius:999px;padding:4px 11px;font-size:12px;font-weight:600}
+.pill{display:inline-flex;align-items:center;gap:6px;background:var(--navy);color:var(--navy-ink);border-radius:999px;padding:4px 11px;font-size:13px;font-weight:600}
 .pill.soft{background:var(--panel-soft);color:var(--panel-ink)}
 .big{font-family:var(--f-display);font-weight:700;text-transform:uppercase;line-height:.95;letter-spacing:.01em}
 .hero .big{font-size:clamp(46px,14vw,58px);margin-top:10px}
 .rank{font-size:15px;font-weight:600;margin-top:6px;opacity:.95}
 .xpbar{height:16px;border-radius:999px;background:var(--panel-soft);margin-top:14px;overflow:hidden}
 .xpbar i{display:block;height:100%;border-radius:999px;background:var(--panel-ink);transition:width .9s cubic-bezier(.2,.8,.2,1)}
-.xpmeta{display:flex;justify-content:space-between;font-size:12.5px;margin-top:6px;opacity:.9}
+.xpmeta{display:flex;justify-content:space-between;font-size:13px;margin-top:6px;opacity:.9}
 .stats{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
 .stat{display:inline-flex;align-items:center;gap:6px;background:var(--panel-soft);border-radius:12px;padding:7px 10px;font-size:13px;font-weight:600}
 .stat svg{width:16px;height:16px}
@@ -81,11 +86,17 @@ button{cursor:pointer;border:0;background:none;-webkit-tap-highlight-color:trans
 .sec{margin-top:22px;display:flex;align-items:center;justify-content:space-between;gap:10px}
 .sec-l{display:flex;align-items:center;gap:8px;min-width:0}
 .sel{position:relative;display:inline-block;font-weight:700;font-size:15px;background:var(--card);color:var(--ink);padding:3px 9px;border:1.5px solid var(--accent);border-radius:2px}
+.nextgoal{margin-top:14px}
+.ng-t{font-family:var(--f-display);font-weight:700;text-transform:uppercase;letter-spacing:.06em;font-size:13px;color:var(--muted)}
+.ng-h{font-size:17px;margin:4px 0 10px}
+.xpbar.sm{height:10px;margin-top:0;background:var(--chip)}.xpbar.sm i{background:var(--accent)}
+.sel-b{display:inline-flex;align-items:center;gap:6px;font-family:inherit;cursor:pointer;text-align:left}
+.sel-b svg{width:16px;height:16px;flex:none;opacity:.55}
 .sel::before,.sel::after{content:"";position:absolute;width:6px;height:6px;background:var(--card);border:1.5px solid var(--accent)}
 .sel::before{left:-4px;top:-4px}.sel::after{right:-4px;bottom:-4px}
 .q{flex:none;width:24px;height:24px;border-radius:50%;display:inline-grid;place-items:center;background:var(--card);color:var(--accent);font-weight:700;font-size:13px;line-height:1;border:1.5px solid var(--line)}
 .link{font-size:13px;font-weight:600;color:var(--ink);opacity:.85;text-decoration:underline;text-underline-offset:3px}
-.stack{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+.stack{display:flex;flex-direction:column;gap:10px;margin-top:14px}
 .card{background:var(--card);border-radius:18px;padding:14px 15px}
 .muted{color:var(--muted)}
 .small{font-size:13px}
@@ -107,13 +118,13 @@ button{cursor:pointer;border:0;background:none;-webkit-tap-highlight-color:trans
 .chip{border-radius:999px;padding:7px 12px;font-size:13px;font-weight:500;background:var(--chip);color:var(--ink);border:1.5px solid transparent}
 .chip[aria-pressed="true"]{background:var(--navy);color:var(--navy-ink)}
 .chip.sec2[aria-pressed="true"]{background:var(--card);border-color:var(--accent);color:var(--ink)}
-.tag{display:inline-block;border-radius:999px;padding:2px 8px;font-size:11.5px;font-weight:600;background:var(--chip);color:var(--ink)}
+.tag{display:inline-block;border-radius:999px;padding:2px 8px;font-size:13px;font-weight:600;background:var(--chip);color:var(--ink)}
 .tag.navy{background:var(--navy);color:var(--navy-ink)}
 .tag.good{background:var(--good);color:#fff}
 .tag.warn{background:var(--warn);color:#fff}
 
 /* skills */
-.grp{font-family:var(--f-display);font-weight:500;text-transform:uppercase;font-size:13px;letter-spacing:.05em;color:var(--muted);margin-top:4px}
+.grp{font-family:var(--f-display);font-weight:500;text-transform:uppercase;font-size:13px;letter-spacing:.05em;color:var(--muted-bg);margin-top:4px}
 .skill{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:center}
 .skill .nm{font-weight:600;font-size:14px;min-width:0}
 .skill .lv{font-family:var(--f-display);font-weight:700;font-size:20px;line-height:1}
@@ -163,6 +174,10 @@ button{cursor:pointer;border:0;background:none;-webkit-tap-highlight-color:trans
 .wish{background:var(--card);border-radius:18px;overflow:hidden;display:flex;flex-direction:column}
 .wish .ph{aspect-ratio:4/5;max-width:100%;background:var(--chip);position:relative;display:grid;place-items:center;color:var(--muted)}
 .wish .ph{background-repeat:no-repeat}
+.wish .ph.noimg{aspect-ratio:auto;height:72px}
+.wish .ph.noimg>svg{width:28px;height:28px;color:var(--accent)}
+.wish-new{align-items:center;justify-content:center;min-height:200px;border:1.5px dashed var(--line);background:transparent;color:var(--ink);font-weight:600;gap:6px}
+.ideas summary{font-weight:600;cursor:pointer}
 .wish .ph .ini{font-family:var(--f-display);font-weight:700;font-size:44px;color:var(--accent);text-transform:uppercase}
 .wish .ph .edit{position:absolute;right:8px;top:8px;width:32px;height:32px;border-radius:10px;background:var(--card);color:var(--ink);display:grid;place-items:center;font-size:14px}
 .wish .bd{padding:10px 11px 12px;display:flex;flex-direction:column;gap:6px;flex:1}
@@ -172,11 +187,11 @@ button{cursor:pointer;border:0;background:none;-webkit-tap-highlight-color:trans
 .wish .btn{margin-top:auto}
 .ach-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px;margin-top:12px}
 .ach{background:var(--card);border-radius:16px;padding:12px 8px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px}
-.ach .ic{width:52px;height:52px;border-radius:16px;display:grid;place-items:center;background:var(--chip);color:var(--muted);font-family:var(--f-display);font-weight:700;font-size:19px}
+.ach .ic{width:52px;height:52px;border-radius:16px;display:grid;place-items:center;background:var(--chip);color:var(--muted-bg);font-family:var(--f-display);font-weight:700;font-size:19px}
 .ach.on .ic{background:var(--accent);color:var(--accent-ink)}
-.ach .an{font-size:12.5px;font-weight:600;line-height:1.2}
-.ach .ad{font-size:11px;color:var(--muted);line-height:1.25}
-.ach:not(.on){opacity:.7}
+.ach .an{font-size:13px;font-weight:600;line-height:1.2}
+.ach .ad{font-size:13px;color:var(--muted);line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ach:not(.on) .ic{opacity:.7}
 
 /* segmented */
 .seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--card);border-radius:14px;padding:4px;gap:4px;margin-top:4px}
@@ -190,7 +205,7 @@ button{cursor:pointer;border:0;background:none;-webkit-tap-highlight-color:trans
 .ratio i{display:block;height:100%}
 table.cmp{width:100%;border-collapse:collapse;font-size:14px}
 table.cmp td,table.cmp th{padding:7px 4px;border-bottom:1px solid var(--line);text-align:left}
-table.cmp th{font-size:12px;color:var(--muted);font-weight:600}
+table.cmp th{font-size:13px;color:var(--muted);font-weight:600}
 table.cmp td.n{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
 .delta{color:var(--good)}
 
@@ -198,7 +213,7 @@ table.cmp td.n{text-align:right;font-variant-numeric:tabular-nums;font-weight:60
 .nav{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--card);border-top:1px solid var(--line);
   padding:6px max(10px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(10px,env(safe-area-inset-left,0px))}
 .nav .in{max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr)}
-.nav button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px;font-size:11.5px;font-weight:600;color:var(--muted);border-radius:12px}
+.nav button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px;font-size:13px;font-weight:600;color:var(--muted);border-radius:12px}
 .nav button svg{width:22px;height:22px}
 .nav button[aria-current="page"]{color:var(--ink)}
 .nav button[aria-current="page"] svg{color:var(--accent)}
@@ -260,7 +275,7 @@ details summary{cursor:pointer;font-weight:600;font-size:14px;margin-top:16px}
 .gi .th{aspect-ratio:4/5;max-width:100%;border-radius:12px;background-color:var(--chip);position:relative}
 .gi .cov{position:absolute;left:6px;top:6px}
 .gi-b{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
-.gi-b .btn{padding:5px 8px;font-size:11.5px;border-radius:9px}
+.gi-b .btn{padding:5px 8px;font-size:13px;border-radius:9px}
 .wish .ph[data-act]{cursor:zoom-in}
 .wish .ph .cnt{position:absolute;left:8px;bottom:8px;background:var(--card)}
 button.ach{border:0;font:inherit;color:inherit;cursor:pointer}
@@ -299,7 +314,7 @@ button.ach{border:0;font:inherit;color:inherit;cursor:pointer}
 .q-title{font-family:var(--f-display);font-weight:700;text-transform:uppercase;font-size:24px;line-height:1.05;letter-spacing:.01em;text-wrap:balance}
 .q-skill{font-size:13px;opacity:.8;margin-top:-4px}
 .hp{display:flex;flex-direction:column;gap:5px}
-.hp-l{display:flex;justify-content:space-between;font-size:12.5px;font-weight:600;opacity:.9}
+.hp-l{display:flex;justify-content:space-between;font-size:13px;font-weight:600;opacity:.9}
 .hp-bar{display:flex;gap:4px;height:8px}
 .hp-bar i{flex:1;border-radius:4px;background:currentColor;opacity:.2}
 .hp-bar i.on{background:currentColor;opacity:1}
@@ -324,7 +339,8 @@ button.ach{border:0;font:inherit;color:inherit;cursor:pointer}
 .q-loot .q-chest{width:22px;height:22px}
 .q-loot .q-chest svg{width:100%;height:100%}
 .q-moved{opacity:.75;margin-left:auto}
-.q-btns{gap:6px}
+.q-btns{gap:8px;flex-wrap:nowrap}
+.q-btns .btn{min-height:48px;height:48px}.q-main{flex:1}.q-more{width:48px;padding:0;font-size:22px;line-height:1;flex:none}
 .q-main{background:var(--panel-ink);color:var(--panel)}
 .q-day .q-main{background:var(--accent);color:var(--accent-ink)}
 .q-month .q-main{background:var(--navy-ink);color:var(--navy)}
@@ -339,7 +355,7 @@ button.ach{border:0;font:inherit;color:inherit;cursor:pointer}
   <header class="top">
     <div class="brand">прокачка<small id="seasonLbl">сезон 1</small></div>
     <div class="row" style="flex-wrap:nowrap;gap:6px">
-      <button class="sync local" id="syncBtn" data-act="sync" aria-label="где сохраняются данные"><i></i><span id="syncTxt">устройство</span></button>
+      <button class="sync local" id="syncBtn" data-act="sync" aria-label="где сохраняются данные: устройство"><i></i><span id="syncTxt" class="sr">устройство</span></button>
       <button class="iconbtn" id="helpBtn" data-act="help" aria-label="помощь" style="font-weight:700;font-size:18px">?</button>
       <button class="iconbtn" id="themeBtn" data-act="themeToggle" aria-label="сменить тему"></button>
       <button class="iconbtn" data-act="settings" aria-label="настройки"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg></button>
@@ -771,7 +787,7 @@ const Store={
 };
 function paintSync(){
   const b=$("#syncBtn");if(!b)return;const st=Store.status;b.className="sync "+st;
-  $("#syncTxt").textContent=st==="cloud"?"сохранено":st==="syncing"?"сохраняю":st==="error"?"ошибка":"устройство";
+  const tx=st==="cloud"?"сохранено":st==="syncing"?"сохраняю":st==="error"?"ошибка":"устройство";$("#syncTxt").textContent=tx;b.setAttribute("aria-label","где сохраняются данные: "+tx);b.title=tx;
 }
 function syncSheet(){
   const st=Store.status;
@@ -854,14 +870,14 @@ function afterChange(){
 function render(d){
   d=d||derive();const P=S.profile;
   const day=Math.max(1,Math.min(P.seasonDays,diffDays(P.seasonStart,today())+1));
-  $("#seasonLbl").textContent="сезон 1 · день "+day+" из "+P.seasonDays;
+  $("#seasonLbl").textContent="день "+day+" из "+P.seasonDays;
   const tabs=[["home","главная",IC.home],["path","путь",IC.path],["skills","навыки",IC.skills],["quests","квесты",IC.quest],["rewards","награды",IC.gift]];
   $("#nav").innerHTML=tabs.map(([id,l,ic])=>`<button data-act="tab" data-id="${id}" ${S.view===id?'aria-current="page"':""}>${ic}<span>${l}</span></button>`).join("");
   $("#view").innerHTML=gx({home:vHome,path:vPath,skills:vSkills,quests:vQuests,rewards:vRewards}[S.view](d));
   requestAnimationFrame(()=>document.querySelectorAll("[data-w]").forEach(el=>{el.style.width=el.dataset.w;S.lastW=el.dataset.w}));
   paintSync();
 }
-const secTitle=(t,k,right)=>`<div class="sec"><div class="sec-l"><span class="sel">${t}</span>${k?qb(k):""}</div>${right||""}</div>`;
+const secTitle=(t,k,right)=>`<div class="sec"><div class="sec-l">${k&&HELP[k]?`<button class="sel sel-b" data-act="hint" data-k="${k}" aria-label="что это: ${esc(HELP[k][0])}">${t}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5v.1"/></svg></button>`:`<span class="sel">${t}</span>`}</div>${right||""}</div>`;
 function segs(frac,level){let h="";for(let i=1;i<=10;i++){if(i<level)h+='<i class="on"></i>';else if(i===level&&level<10)h+=`<i class="part" style="--p:${Math.round(frac*100)}%"></i>`;else if(i===level)h+='<i class="on"></i>';else h+="<i></i>"}return`<div class="segs" aria-hidden="true">${h}</div>`}
 function skillRow(s,k){return`<div class="skill"><div class="nm">${esc(s.name)}</div><div class="lv num" aria-label="уровень">${k.level}</div>${segs(k.frac,k.level)}</div>`}
 function groupedSkills(fn){
@@ -904,7 +920,7 @@ function vHome(d){
   return`
   ${!Store.lsOk&&Store.status!=="cloud"?`<div class="warnbox">сейчас данные не сохраняются. открой приложение через бота в телеграме.</div>`:""}
   <section class="hero" aria-label="уровень сезона" style="margin-top:4px">
-    <div class="hero-top"><span class="pill">${P.name?esc(P.name)+", ":""}${d.streak.activeToday?"сегодня ты уже в игре":"сегодня ещё нет записей"}</span>${qb("level")}</div>
+    <div class="hero-top"><span class="pill">${P.name?esc(P.name)+", ":""}${d.streak.activeToday?"сегодня ты уже в игре":"сегодня ещё нет записей"}</span></div>
     <div class="big num">уровень ${d.level}</div>
     <div class="rank">${esc(rankOf(d.level))}</div>
     <div class="xpbar" role="progressbar" aria-valuemin="0" aria-valuemax="${d.lv.need}" aria-valuenow="${d.lv.into}"><i style="width:${S.lastW||"0%"}" data-w="${Math.max(2,Math.round(d.lv.frac*100))}%"></i></div>
@@ -913,12 +929,10 @@ function vHome(d){
       <span class="stat num">${IC.coin} ${coinsW(d.coins)}</span>
       <span class="stat num">${IC.flame} серия ${d.streak.cur} ${plural(d.streak.cur,"день","дня","дней")}</span>
       <span class="stat num">${IC.snow} заморозки ${d.streak.freezes}</span>
-      ${qb("stats")}
     </div>
   </section>
   ${noSkills?`<div class="card" style="margin-top:12px"><b>сначала выбери, что качаешь</b><p class="small muted" style="margin:6px 0 10px">пока навыки не выбраны, опыт некуда начислять.</p><button class="btn accent" data-act="skillCat">выбрать навыки</button></div>`:""}
   <div class="addrow" id="addRow"><button class="btn accent" data-act="add" id="addBtn">${IC.plus} записать действие</button><button class="btn" data-act="add" data-plan="1">запланировать</button></div>
-  <div class="row" style="justify-content:flex-end;margin-top:6px"><span class="small muted">что выбрать?</span>${qb("add")}</div>
 
   ${!todays.length?`<div class="remind" style="margin-top:8px">${IC.bell}<div>${esc(reminder)}</div></div>`:""}
   ${todays.length?`<div id="todaySec">${secTitle("сделано сегодня","today",`<span class="small muted num">+${todays.reduce((a,e)=>a+xpOf(e),0)} xp</span>`)}<div class="stack">${todays.map(entryCard).join("")}</div></div>`:""}
@@ -956,7 +970,7 @@ function questCard(c){
     ${st==="active"?`<div class="q-time"><span>${timeLeft(c)}</span>${questPips(c)}</div>`:`<div class="q-time"><span>${st==="done"?"пройден "+fmtD(c.doneAt):"разобран "+fmtD(c.doneAt)}</span></div>`}
     <div class="q-loot"><span class="q-chest">${CHEST}</span><span>награда</span><b class="num">+${c.xp} xp</b><span class="price num">${IC.coin} ${c.coins}</span>${c.moved?`<span class="q-moved">перенесён ×${c.moved}</span>`:""}</div>
     ${c.note?`<div class="note">${esc(c.note)}</div>`:""}
-    <div class="row q-btns">${st==="active"?`<button class="btn sm q-main" data-act="qDone" data-id="${c.id}">${IC.check} пройден</button>`:""}<button class="btn sm q-sec" data-act="qInfo" data-id="${c.id}">в чём суть</button>${st==="active"?`<button class="btn sm q-sec" data-act="qMove" data-id="${c.id}">перенести</button><button class="btn sm q-sec" data-act="qReview" data-id="${c.id}">разбор</button>`:""}</div>
+    <div class="row q-btns">${st==="active"?`<button class="btn q-main" data-act="qDone" data-id="${c.id}">${IC.check} пройден</button><button class="btn q-sec" data-act="qMove" data-id="${c.id}">перенести</button><button class="btn q-sec q-more" data-act="qMenu" data-id="${c.id}" aria-label="ещё: в чём суть, разбор">⋯</button>`:`<button class="btn q-sec" data-act="qInfo" data-id="${c.id}">в чём суть</button>`}</div>
   </div>`;
 }
 function questSheet(id){
@@ -977,9 +991,13 @@ function questSheet(id){
 
 function vPath(d){
   const modes=[["feed","лента"],["chart","график"],["compare","до и после"]];
-  const body=S.pathMode==="feed"?pathFeed(d):S.pathMode==="chart"?pathChart(d):pathCompare(d);
+  const body=(S.pathMode==="feed"?pathFeed(d):S.pathMode==="chart"?pathChart(d):pathCompare(d))+(S.pathMode==="feed"&&live().filter(e=>!e.planned).length<5?nextGoal(d):"");
   return`${secTitle("мой путь",S.pathMode,`<button class="link" data-act="recap">итог недели</button>`)}
   <div class="seg" role="group" id="pathSeg" style="margin-top:12px">${modes.map(([id,l])=>`<button data-act="pmode" data-id="${id}" aria-pressed="${S.pathMode===id}">${l}</button>`).join("")}</div>${body}`;
+}
+function nextGoal(d){
+  const left=d.lv.need-d.lv.into;
+  return`<div class="card nextgoal"><div class="ng-t">следующая цель</div><div class="ng-h">до уровня ${d.level+1}: <b class="num">${left} xp</b></div><div class="xpbar sm" aria-hidden="true"><i style="width:${Math.max(2,Math.round(d.lv.frac*100))}%"></i></div><button class="btn accent wide" data-act="add" style="margin-top:12px;min-height:48px">${IC.plus} записать действие</button></div>`;
 }
 function pathFeed(){
   const f=S.pathFilter;
@@ -1055,7 +1073,7 @@ function vQuests(){
   <div class="addrow" id="questAdd"><button class="btn accent" data-act="qSuggest">${IC.spark} предложи квест</button><button class="btn" data-act="qNew">${IC.plus} свой</button></div>
   <div class="stack">${act.length?act.map(questCard).join(""):`<div class="card small muted">сейчас квестов нет. возьми какой-нибудь на день, неделю или месяц.</div>`}</div>
   <div id="goalsSec">${secTitle("цели сезона","goals",`<button class="link" data-act="goalNew">добавить цель</button>`)}
-  ${unused.length?`<details class="card" style="margin-top:12px" ${P.goals.length?"":"open"}><summary style="margin:0">идеи целей с готовыми первыми шагами</summary><div class="chips" style="margin-top:10px">${unused.map(g=>`<button class="chip" data-act="goalQuick" data-t="${esc(g.t)}">+ ${esc(g.t)}</button>`).join("")}</div></details>`:""}
+  ${unused.length?`<details class="card" style="margin-top:12px" ${P.goals.length?"":"open"}><summary style="margin:0">идеи целей с готовыми первыми шагами</summary><div class="chips" style="margin-top:10px">${(S.goalsAll?unused:unused.slice(0,4)).map(g=>`<button class="chip" data-act="goalQuick" data-t="${esc(g.t)}">+ ${esc(g.t)}</button>`).join("")}${unused.length>4?`<button class="chip" data-act="goalsMore">${S.goalsAll?"свернуть":"ещё "+(unused.length-4)}</button>`:""}</div></details>`:""}
   <div class="stack">${P.goals.map(g=>{const steps=g.steps||[];const dn=steps.filter(s=>s.done).length;return`<div class="card"><div class="row" style="justify-content:space-between;flex-wrap:nowrap"><div style="font-weight:700;min-width:0">${esc(g.title)}</div><span class="small muted num">${dn}/${steps.length}</span></div>
     ${steps.length?`<div style="margin-top:6px">${steps.map(s=>`<div class="goal-step"><button class="check ${s.done?"on":""}" data-act="stepToggle" data-g="${g.id}" data-s="${s.id}" aria-label="${s.done?"отменить":"отметить"} шаг" aria-pressed="${!!s.done}">${s.done?IC.check:""}</button><span style="flex:1;min-width:0;${s.done?"text-decoration:line-through;opacity:.6":""}">${esc(s.t)}</span><button class="link" data-act="stepDel" data-g="${g.id}" data-s="${s.id}" aria-label="удалить шаг">✕</button></div>`).join("")}</div>`:`<div class="small muted" style="margin-top:4px">разложи цель на первый маленький шаг</div>`}
     <form class="row" data-form="step" data-g="${g.id}" style="margin-top:8px;flex-wrap:nowrap"><input class="in-text" name="t" placeholder="новый шаг, например «написать 3 компаниям»" style="padding:9px 10px" aria-label="новый шаг для цели ${esc(g.title)}"><button class="btn sm" type="submit">добавить</button></form>
@@ -1063,21 +1081,26 @@ function vQuests(){
   ${fin.length?`${secTitle("закрытые")}<div class="stack">${fin.map(questCard).join("")}</div>`:""}`;
 }
 
+function wishCard(r){
+  const d=derive();const can=d.coins>=r.price;const pr=Math.min(100,Math.round(Math.max(0,d.coins)/r.price*100));const imgs=r.imgs||[];const cv=imgs[0];
+  return`<div class="wish">
+    <div class="ph ${cv?"":"noimg"}" ${cv?`style="${coverCSS(cv,4/5)}" data-act="wishView" data-id="${r.id}" role="button" aria-label="смотреть фото: ${esc(r.title)}"`:""}>${cv?"":IC.gift}${imgs.length>1?`<span class="tag cnt num">${imgs.length} фото</span>`:""}<button class="edit" data-act="rewardEdit" data-id="${r.id}" aria-label="изменить хотелку">✎</button></div>
+    <div class="bd"><div class="ti">${esc(r.title)}${r.example?' <span class="tag">пример</span>':""}</div>
+    <div class="row small" style="justify-content:space-between"><span class="price num">${IC.coin} ${r.price}</span><span class="muted num">${pr}%</span></div>
+    <div class="prog"><i style="width:${pr}%"></i></div>
+    <button class="btn sm ${can?"accent":"ghost"}" data-act="buy" data-id="${r.id}" ${can?"":"disabled"}>${can?"взять":"ещё "+(r.price-Math.max(0,d.coins))}</button></div></div>`;
+}
 function vRewards(d){
   const P=S.profile;const all=achAll();const hidden=Object.values(P.achEdit||{}).filter(x=>x.hidden).length;
   return`<section class="hero"><div class="hero-top"><span class="pill">мой кошелёк</span></div><div class="big num" style="font-size:50px;display:flex;align-items:center;gap:12px"><span class="coin" style="width:34px;height:34px"></span>${d.coins}</div>
   <div class="rank">за сезон заработано ${d.earned}. 10 xp = 1 монета</div></section>
   <div id="wishSec">${secTitle("вишлист","wish",`<button class="link" data-act="rewardNew">добавить</button>`)}
-  <div class="wish-grid">${P.rewards.map(r=>{const can=d.coins>=r.price;const pr=Math.min(100,Math.round(Math.max(0,d.coins)/r.price*100));const imgs=r.imgs||[];const cv=imgs[0];return`<div class="wish">
-    <div class="ph" ${cv?`style="${coverCSS(cv,4/5)}" data-act="wishView" data-id="${r.id}" role="button" aria-label="смотреть фото: ${esc(r.title)}"`:""}>${cv?"":`<span class="ini">${esc((r.title||"?").trim()[0]||"?")}</span>`}${imgs.length>1?`<span class="tag cnt num">${imgs.length} фото</span>`:""}<button class="edit" data-act="rewardEdit" data-id="${r.id}" aria-label="изменить хотелку">✎</button></div>
-    <div class="bd"><div class="ti">${esc(r.title)}${r.example?' <span class="tag">пример</span>':""}</div>
-    <div class="row small" style="justify-content:space-between"><span class="price num">${IC.coin} ${r.price}</span><span class="muted num">${pr}%</span></div>
-    <div class="prog"><i style="width:${pr}%"></i></div>
-    <button class="btn sm ${can?"accent":"ghost"}" data-act="buy" data-id="${r.id}" ${can?"":"disabled"}>${can?"взять":"ещё "+(r.price-Math.max(0,d.coins))}</button></div></div>`}).join("")}
-    <button class="wish" data-act="rewardNew" style="align-items:center;justify-content:center;min-height:200px;border:1.5px dashed var(--line);background:transparent;color:var(--ink);font-weight:600;gap:6px">${IC.plus}<span>новая хотелка</span></button>
-  </div></div>
-  <div id="achSec">${secTitle("ачивки","ach",`<span class="small muted num">${all.filter(a=>d.ach.includes(a.id)).length} / ${all.length}</span>`)}
-  <div class="ach-grid">${all.map(a=>{const on=d.ach.includes(a.id);return`<button class="ach ${on?"on":""}" data-act="ach" data-id="${a.id}">${achIcon(a)}<div class="an">${esc(a.n)}</div><div class="ad">${esc(a.d||a.cond)}</div></button>`}).join("")}
+  <div class="wish-grid">${P.rewards.filter(r=>!r.example).map(wishCard).join("")}
+    <button class="wish wish-new" data-act="rewardNew">${IC.plus}<span>новая хотелка</span></button>
+  </div>
+  ${P.rewards.some(r=>r.example)?`<details class="card ideas" style="margin-top:12px"><summary style="margin:0">идеи для вишлиста (${P.rewards.filter(r=>r.example).length})</summary><div class="wish-grid">${P.rewards.filter(r=>r.example).map(wishCard).join("")}</div></details>`:""}</div>
+  <div id="achSec">${secTitle("ачивки","ach",`<span class="small muted num">${all.filter(a=>d.ach.includes(a.id)).length} / ${all.length}</span> <button class="link" data-act="achAll">${S.achAll?"свернуть":"все "+all.length}</button>`)}
+  <div class="ach-grid">${(S.achAll?all:all.filter(a=>d.ach.includes(a.id)).concat(all.filter(a=>!d.ach.includes(a.id)).slice(0,3))).map(a=>{const on=d.ach.includes(a.id);return`<button class="ach ${on?"on":""}" data-act="ach" data-id="${a.id}">${achIcon(a)}<div class="an">${esc(a.n)}</div><div class="ad">${esc(a.d||a.cond)}</div></button>`}).join("")}
   <button class="ach" data-act="achNew" style="border:1.5px dashed var(--line);background:transparent;opacity:1;justify-content:center"><div class="ic">${IC.plus}</div><div class="an">своя ачивка</div></button></div>
   <p class="small muted" style="margin-top:10px">нажми на ачивку, чтобы переименовать её или поставить свою картинку.${hidden?` <button class="link" data-act="achUnhide">вернуть скрытые (${hidden})</button>`:""}</p></div>
   ${P.purchases.length?`${secTitle("я себя наградил{а|}")}<div class="card stack" style="gap:6px">${P.purchases.slice().reverse().map(p=>`<div class="row" style="justify-content:space-between"><span>${esc(p.title)}</span><span class="small muted num">${fmtD(p.at)} · ${p.price}</span></div>`).join("")}</div>`:""}`;
@@ -1594,7 +1617,7 @@ const TOUR=[
   {id:"catpick",t:"#catBody",h:"отметь навыки",p:"нажимай на названия, выбранные потемнеют. всё сохраняется само. свой навык можно добавить внизу.",free:true,need:()=>S.profile.active.length>0,needMsg:"выбери хотя бы один",back:"cat",leave:()=>closeSheet()},
   {id:"hero",v:"home",t:".hero",h:"твой уровень",p:"это твой уровень в этом сезоне. за каждое действие полоса чуть заполняется, а когда заполнится, откроется новый уровень."},
   {id:"stats",v:"home",t:"#statsRow",h:"монеты и серия",p:"монеты копятся вместе с опытом, на них можно взять хотелку. серия считает дни подряд, а заморозки спасают её, если пропустишь день."},
-  {id:"q",v:"home",t:"#statsRow .q",h:"кнопка «?»",p:"такая есть у каждого блока. если что-то непонятно, нажми на неё, там короткое объяснение."},
+  {id:"q",v:"home",t:".sec .sel-b",h:"названия блоков",p:"нажми на название блока, если что-то непонятно: там короткое объяснение."},
   {id:"add",v:"home",t:"#addBtn",h:"первое действие",p:"вспомни, что ты сегодня сделал{а|} для себя: посмотрел{а|} урок, написал{а|} пост, что угодно.",tap:"нажми «записать действие»",until:()=>!!$(".sheet #fCore")},
   {id:"skill",t:"#fSkillField",h:"навык",p:"сначала выбери, какой навык качает это действие.",tap:"нажми на навык",until:()=>!!(F&&F.primary),back:"add"},
   {id:"tpl",t:"#fTplField",h:"что именно",p:"здесь варианты для этого навыка. выбери подходящий, а если такого нет, впиши своё ниже.",tap:"нажми на вариант",until:()=>!!(F&&F.type&&F.title),back:"add"},
@@ -1695,6 +1718,9 @@ document.addEventListener("click",ev=>{
     case"recap":weeklyRecap();break;
     case"qDone":{const c=P.challenges.find(x=>x.id===id);if(!c)break;c.status="done";c.doneAt=today();Store.saveProfile();toast("+"+c.xp+" xp · +"+coinsW(c.coins));afterChange();break}
     case"qInfo":questSheet(id);break;
+    case"goalsMore":S.goalsAll=!S.goalsAll;render();break;
+    case"achAll":S.achAll=!S.achAll;render();break;
+    case"qMenu":{const c=P.challenges.find(x=>x.id===id);if(!c)break;sheet(`<div class="sheet-h"><span class="pill">${esc(c.title.slice(0,40))}</span><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div><div class="stack"><button class="btn wide" data-act="qInfo" data-id="${c.id}">в чём суть</button><button class="btn wide" data-act="qReview" data-id="${c.id}">разбор</button></div>`);break}
     case"qStep":{const c=P.challenges.find(x=>x.id===id);const st=c&&(c.steps||[]).find(x=>x.id===b.dataset.s);if(!st||c.status!=="active")break;st.done=!st.done;Store.saveProfile();
       const inSheet=!!b.closest(".sheet");if(c.steps.every(x=>x.done)){toast(c.period==="month"?"босс повержен! нажми «пройден», чтобы забрать награду":"все этапы пройдены, забирай награду");}else if(st.done)toast("этап пройден");
       if(inSheet){render();questSheet(id)}else render();break}
