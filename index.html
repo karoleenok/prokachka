@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ru">
+<html lang="ru" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
@@ -409,6 +409,49 @@ body::after{content:"";position:fixed;inset:-200px;z-index:9998;pointer-events:n
 .shade{animation:fade .2s ease-out both}
 html.tt,html.tt *{transition:background-color .4s ease,color .4s ease,border-color .4s ease,fill .4s ease,stroke .4s ease!important}
 @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+
+.hm-cols,.hm-a,.hm-b{display:contents}
+#view.enter .hm-a>*,#view.enter .hm-b>*{animation:rise .38s cubic-bezier(.2,.8,.2,1) both}
+.hm-b>.sec:first-child{margin-top:32px}
+/* ===== компьютер ===== */
+@media (min-width:1000px){
+  body{padding-left:248px;padding-right:32px}
+  .wrap{max-width:1120px;padding-bottom:64px}
+  .top{padding-block:28px 12px}
+  .brand .logo{height:38px}
+  .nav{top:0;right:auto;width:216px;bottom:0;border-top:0;border-right:1px solid #E3E7ED;padding:96px 14px 24px}
+  .nav .in{display:flex;flex-direction:column;gap:4px;max-width:none;margin:0}
+  .nav button{flex-direction:row;justify-content:flex-start;gap:12px;font-size:15px;padding:12px 14px;border-radius:14px;text-align:left}
+  .nav button svg{width:24px;height:24px}
+  .nav button:hover{background:rgba(23,28,36,.06)}
+  .nav button[aria-current="page"]{background:rgba(67,80,168,.12)}
+  .iconbtn:hover,.btn:hover,.chip:hover,.sync:hover,.needb:hover{filter:brightness(.96)}
+  .btn,.needb,.chip,.iconbtn,.nav button,.link{cursor:pointer}
+  .hero{padding:32px 36px 28px;display:grid;grid-template-columns:1fr minmax(320px,420px);column-gap:48px;align-items:end}
+  .hero .big{font-size:128px;grid-column:1;grid-row:1}
+  .hero .rank{grid-column:1;grid-row:2;font-size:18px;margin-top:14px}
+  .sec{min-height:32px}
+  #view[data-v=path],#view[data-v=rewards]{max-width:800px}
+  .stack>.grp{grid-column:1/-1;margin-top:10px}
+  .hero .xpbar{grid-column:2;grid-row:1;align-self:end}
+  .hero .xpmeta{grid-column:2;grid-row:2}
+  .hero .stats{grid-column:1/-1;grid-row:3;margin-top:20px}
+  .greet{font-size:24px;margin-top:28px}
+  .addrow{grid-template-columns:auto auto;justify-content:start;gap:10px}
+  .addrow .btn{padding-inline:28px}
+  .hm-cols{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);column-gap:40px;align-items:start}
+  .hm-a,.hm-b{display:block;min-width:0}
+  .hm-a>.sec:first-child,.hm-b>.sec:first-child{margin-top:32px}
+  .stack{gap:14px}
+  #view>.stack,#view>div>.stack{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr))}
+  .q-title{font-size:34px}
+  .needb{min-height:104px}
+  .shade{align-items:center}
+  .sheet{border-radius:24px;max-width:560px;max-height:86vh;margin-left:216px}
+  .toast{bottom:32px;left:calc(50% + 108px)}
+  .wish-grid,.ach-grid,.wishes,.achs{gap:16px}
+}
+@media (min-width:1500px){.wrap{max-width:1240px}.hero .big{font-size:150px}}
 </style>
 
 </head>
@@ -942,7 +985,7 @@ function render(d){
   $("#seasonLbl").textContent="день "+day+" из "+P.seasonDays;
   const tabs=[["home","главная",IC.home],["path","путь",IC.path],["skills","навыки",IC.skills],["quests","квесты",IC.quest],["rewards","награды",IC.gift]];
   $("#nav").innerHTML=tabs.map(([id,l,ic])=>`<button data-act="tab" data-id="${id}" ${S.view===id?'aria-current="page"':""}>${ic}<span>${l}</span></button>`).join("");
-  {const vw=$("#view");vw.classList.toggle("enter",S._lv!==S.view);S._lv=S.view}
+  {const vw=$("#view");vw.classList.toggle("enter",S._lv!==S.view);vw.dataset.v=S.view;S._lv=S.view}
   $("#view").innerHTML=gx({home:vHome,path:vPath,skills:vSkills,quests:vQuests,rewards:vRewards}[S.view](d));
   requestAnimationFrame(()=>document.querySelectorAll("[data-w]").forEach(el=>{el.style.width=el.dataset.w;S.lastW=el.dataset.w}));
   paintSync();
@@ -1008,17 +1051,20 @@ function vHome(d){
   ${noSkills?`<div class="card" style="margin-top:12px"><b>сначала выбери, что качаешь</b><p class="small muted" style="margin:6px 0 10px">пока навыки не выбраны, опыт некуда начислять.</p><button class="btn accent" data-act="skillCat">выбрать навыки</button></div>`:""}
   <div class="addrow" id="addRow"><button class="btn accent" data-act="add" id="addBtn">${IC.plus} записать действие</button><button class="btn ghost" data-act="add" data-plan="1">запланировать</button></div>
 
+  <div class="hm-cols"><div class="hm-a">
   ${!todays.length?`<div class="remind" style="margin-top:8px">${IC.bell}<div>${esc(reminder)}</div></div>`:""}
   ${todays.length?`<div id="todaySec">${secTitle("сделано сегодня","today",`<span class="small muted num">+${todays.reduce((a,e)=>a+xpOf(e),0)} xp</span>`)}<div class="stack">${todays.map(entryCard).join("")}</div></div>`:""}
   ${planned.length?`${secTitle("в планах","planned",`<span class="small muted num">${planned.length}</span>`)}<div class="stack">${planned.slice(0,5).map(entryCard).join("")}</div>`:""}
 
   ${q?`${secTitle("текущий квест","quest",`<button class="link" data-act="tab" data-id="quests">все квесты</button>`)}<div class="stack">${questCard(q)}</div>`:""}
 
+  </div><div class="hm-b">
   ${secTitle("состояние","state",`<span class="small muted">${fmtDay(t)}</span>`)}
   <div class="card stack" id="needsCard" style="margin-top:12px;gap:0">${stateBlock(t)}</div>
 
   ${P.active.length?`${secTitle("ветки навыков","skills",`<button class="link" data-act="tab" data-id="skills">подробнее</button>`)}
-  <div class="card stack" style="gap:12px">${groupedSkills(s=>skillRow(s,d.skills[s.id]))}</div>`:""}`;
+  <div class="card stack" style="gap:12px">${groupedSkills(s=>skillRow(s,d.skills[s.id]))}</div>`:""}
+  </div></div>`;
 }
 
 const STAR='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.8l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2l-5.7 3.1 1.2-6.4L2.8 9.5l6.4-.8z"/></svg>';
@@ -1614,7 +1660,7 @@ async function weeklyRecap(){
 
 /* ================= настройки, бэкап, импорт ================= */
 function openSettings(){
-  let th="light";try{th=localStorage.getItem("prk-theme")||"light"}catch(x){}
+  let th="dark";try{th=localStorage.getItem("prk-theme")||"dark"}catch(x){}
   sheet(`<div class="sheet-h"><h2>настройки</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
   <div class="field"><span class="lbl">тема</span><div class="seg" role="group">${[["system","как в системе"],["light","светлая"],["dark","тёмная"]].map(([k,l])=>`<button data-act="theme" data-id="${k}" aria-pressed="${th===k}">${l}</button>`).join("")}</div></div>
   <div class="card stack" style="margin-top:16px;gap:10px">
@@ -1853,7 +1899,7 @@ document.addEventListener("submit",ev=>{
 });
 document.addEventListener("change",ev=>{if(ev.target.id==="thenDate"){S.thenDate=ev.target.value||null;render()}});
 document.addEventListener("keydown",ev=>{if(ev.key==="Escape"&&$("#layer").innerHTML&&!T)closeSheet()});
-function applyTheme(t){const rr=document.documentElement;if(S&&S._lv){rr.classList.add("tt");setTimeout(()=>rr.classList.remove("tt"),500)}if(!t){try{t=localStorage.getItem("prk-theme")}catch(x){}}t=t||"light";const r=document.documentElement;
+function applyTheme(t){const rr=document.documentElement;if(S&&S._lv){rr.classList.add("tt");setTimeout(()=>rr.classList.remove("tt"),500)}if(!t){try{t=localStorage.getItem("prk-theme")}catch(x){}}t=t||"dark";const r=document.documentElement;
   if(t==="system"){if(TG)r.setAttribute("data-theme",TG.colorScheme==="dark"?"dark":"light");else r.removeAttribute("data-theme")}else r.setAttribute("data-theme",t);
   paintThemeBtn();tgColors()}
 function paintThemeBtn(){const b=document.getElementById("themeBtn");if(!b)return;const dark=document.documentElement.getAttribute("data-theme")==="dark"||(!document.documentElement.getAttribute("data-theme")&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches);
