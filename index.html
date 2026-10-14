@@ -783,7 +783,7 @@ function defaultProfile(){
       {id:uid(),title:"вечер без дел и чувства вины",price:60,example:true},
       {id:uid(),title:"кино или выставка",price:150,example:true}
     ],
-    purchases:[],states:{},achEdit:{},achCustom:[],name:"",gender:"",remind:{on:false,hour:20},tourDone:false,seenLevel:null,seenSkills:null,seenAch:null,lastBackup:null};
+    purchases:[],states:{},achEdit:{},achCustom:[],name:"",gender:"",remind:{on:false,hour:20,count:1},tourDone:false,seenLevel:null,seenSkills:null,seenAch:null,lastBackup:null};
 }
 function normalize(p){
   const o=Object.assign(defaultProfile(),p||{});
@@ -912,15 +912,31 @@ const Store={
 /* напоминания в телеграме: приложение сообщает боту, когда напомнить и когда была последняя запись */
 const BOT_API="https://prokachka-bot.karolinabelikova90.workers.dev";
 let _pushT=null;
-function pushSync(now){
+function pushSync(now,cfg){
   if(!TG||!S.profile)return;clearTimeout(_pushT);
   const go=()=>{try{
-    const R=S.profile.remind||{on:false,hour:20};
+    const t=today();
     const last=S.entries.filter(e=>!e.del&&!e.planned).reduce((m,e)=>e.date>m?e.date:m,"");
-    fetch(BOT_API+"/sync",{method:"POST",headers:{"content-type":"text/plain"},body:JSON.stringify({initData:TG.initData,on:!!R.on,hour:R.hour,tz:-new Date().getTimezoneOffset(),last})}).catch(()=>{});
+    const todo=S.entries.filter(e=>!e.del&&e.planned&&e.date===t).map(e=>e.title).filter(Boolean).slice(0,3);
+    const q=(S.profile.challenges||[]).find(c=>c.status==="active"&&c.period==="day");
+    const body={initData:TG.initData,tz:-new Date().getTimezoneOffset(),last,todo,quest:q?q.title:""};
+    if(cfg){const R=S.profile.remind||{};body.cfg={on:!!R.on,hour:R.hour||20,count:R.count||1}}
+    fetch(BOT_API+"/sync",{method:"POST",headers:{"content-type":"text/plain"},body:JSON.stringify(body)}).then(r=>r.json()).then(j=>{
+      const c=j&&j.cfg;if(c&&!cfg){const R=S.profile.remind||(S.profile.remind={on:false,hour:20,count:1});
+        if(R.on!==c.on||R.hour!==c.hour||R.count!==c.count){R.on=c.on;R.hour=c.hour;R.count=c.count;Store.cache&&Store.cache()}}}).catch(()=>{});
   }catch(x){}};
   if(now)go();else _pushT=setTimeout(go,2500);
 }
+/* приложение свернули или закрыли: просим бота написать в чат (в первый раз с вопросом про напоминания) */
+let _closedAt=0;
+function pingClosed(){
+  if(!TG||!S.profile||Date.now()-_closedAt<15000)return;_closedAt=Date.now();
+  try{const b=JSON.stringify({initData:TG.initData,tz:-new Date().getTimezoneOffset()});
+    if(navigator.sendBeacon)navigator.sendBeacon(BOT_API+"/closed",new Blob([b],{type:"text/plain"}));
+    else fetch(BOT_API+"/closed",{method:"POST",body:b,keepalive:true,headers:{"content-type":"text/plain"}})}catch(x){}
+}
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")pingClosed()});
+window.addEventListener("pagehide",pingClosed);
 ["saveProfile","putEntry","delEntry"].forEach(k=>{const f=Store[k];Store[k]=function(){const r=f.apply(this,arguments);pushSync();return r}});
 function paintSync(){
   const b=$("#syncBtn");if(!b)return;const st=Store.status;b.className="sync "+st;
@@ -1704,9 +1720,11 @@ function openSettings(){
   <div class="field"><span class="lbl">тема</span><div class="seg" role="group">${[["system","как в системе"],["light","светлая"],["dark","тёмная"]].map(([k,l])=>`<button data-act="theme" data-id="${k}" aria-pressed="${th===k}">${l}</button>`).join("")}</div></div>
   ${TG?`<div class="field" style="margin-top:16px"><span class="lbl">напоминания в телеграме</span>
     <div class="seg" role="group" id="remSeg">${[[0,"выключены"],[1,"включены"]].map(([k,l])=>`<button data-rem="${k}" aria-pressed="${(S.profile.remind&&S.profile.remind.on?1:0)===k}">${l}</button>`).join("")}</div>
-    <div class="row" style="margin-top:10px;gap:10px;align-items:center"><label for="remHour" class="small muted">во сколько</label>
+    <div class="row" style="margin-top:10px;gap:10px;align-items:center"><label for="remCount" class="small muted">раз в день</label>
+    <select class="in-text" id="remCount" style="width:auto;padding:8px 12px">${[1,2,3].map(n=>`<option value="${n}" ${((S.profile.remind&&S.profile.remind.count)||1)===n?"selected":""}>${n}</option>`).join("")}</select>
+    <label for="remHour" class="small muted">с</label>
     <select class="in-text" id="remHour" style="width:auto;padding:8px 12px">${Array.from({length:16},(_,i)=>i+8).map(h=>`<option value="${h}" ${((S.profile.remind&&S.profile.remind.hour)||20)===h?"selected":""}>${String(h).padStart(2,"0")}:00</option>`).join("")}</select></div>
-    <p class="small muted" style="margin:8px 0 0">бот напишет один раз в день, только если за день у тебя ещё нет записей.</p></div>`:`<p class="small muted" style="margin-top:16px">напоминания работают, когда приложение открыто из телеграма.</p>`}
+    <p class="small muted" style="margin:8px 0 0">бот напишет в выбранное время и напомнит, что у тебя в планах на сегодня. если уже всё записано и дел нет, промолчит.</p></div>`:`<p class="small muted" style="margin-top:16px">напоминания работают, когда приложение открыто из телеграма.</p>`}
   <div class="card stack" style="margin-top:16px;gap:10px">
     <button class="btn ghost wide" data-act="meet">имя и обращение</button>
     <button class="btn ghost wide" data-act="skillCat">выбрать навыки</button>
@@ -1721,12 +1739,12 @@ function openSettings(){
   <div id="backupBox"></div>`,el=>{
     const rs=el.querySelector("#remSeg");
     if(rs){const P=S.profile;if(!P.remind)P.remind={on:false,hour:20};
-      const apply=on=>{P.remind.on=on;P.remind.hour=+el.querySelector("#remHour").value;Store.saveProfile();pushSync(true);
+      const apply=on=>{P.remind.on=on;P.remind.hour=+el.querySelector("#remHour").value;P.remind.count=+el.querySelector("#remCount").value;Store.saveProfile();pushSync(true,true);
         rs.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",String((+b.dataset.rem===1)===on)));
-        toast(on?"буду напоминать в "+String(P.remind.hour).padStart(2,"0")+":00":"напоминания выключены")};
+        toast(on?"буду напоминать "+P.remind.count+" р. в день, с "+String(P.remind.hour).padStart(2,"0")+":00":"напоминания выключены")};
       rs.querySelectorAll("button").forEach(b=>b.onclick=()=>{const on=+b.dataset.rem===1;
         if(on&&TG&&TG.requestWriteAccess){try{TG.requestWriteAccess(()=>{})}catch(x){}}apply(on)});
-      el.querySelector("#remHour").onchange=()=>{if(P.remind.on)apply(true);else{P.remind.hour=+el.querySelector("#remHour").value;Store.saveProfile()}}}
+      el.querySelector("#remHour").onchange=el.querySelector("#remCount").onchange=()=>{if(P.remind.on)apply(true);else{P.remind.hour=+el.querySelector("#remHour").value;P.remind.count=+el.querySelector("#remCount").value;Store.saveProfile()}}}
     el.querySelector("#restoreFile").onchange=ev=>{const f=ev.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{let data;try{data=JSON.parse(rd.result)}catch(x){toast("это не файл копии прокачки");return}
       if(!data||!data.profile||!Array.isArray(data.entries)){toast("в файле нет данных прокачки");return}
       confirmSheet("заменить данные?","сейчас записей: "+live().length+". в копии: "+data.entries.filter(e=>!e.del).length+". текущие данные заменятся копией.","заменить",()=>restore(data))};rd.readAsText(f)};
@@ -1965,6 +1983,7 @@ function tgColors(){if(!TG)return;requestAnimationFrame(()=>{const rgb=getComput
 if(TG){try{TG.ready();TG.expand();if(TG.disableVerticalSwipes)TG.disableVerticalSwipes();TG.onEvent("themeChanged",()=>applyTheme());TG.BackButton.onClick(()=>{if(T)return;const ov=[...document.querySelectorAll("body>.shade")].pop();if(ov){ov.remove();return}closeSheet()})}catch(x){}}
 applyTheme();
 setTimeout(()=>pushSync(true),5000);
+try{if(TG&&TG.requestWriteAccess&&!localStorage.getItem("prk-wa")){localStorage.setItem("prk-wa","1");setTimeout(()=>{try{TG.requestWriteAccess(()=>{})}catch(x){}},6000)}}catch(x){}
 const loc=Store.loadLocal();
 S.profile=loc.p?normalize(loc.p):defaultProfile();
 if(loc.p&&loc.p.v!==2)S.profile.upd=Date.now(); // переезд считается свежим изменением
