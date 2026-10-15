@@ -1151,7 +1151,6 @@ function vHome(d){
   <div class="addrow" id="addRow"><button class="btn accent" data-act="add" id="addBtn">${IC.plus} записать действие</button><button class="btn ghost" data-act="add" data-plan="1">запланировать</button></div>
 
   ${routineCard()}
-  ${ownerCard()}
   <div class="hm-cols"><div class="hm-a">
   ${!todays.length?`<div class="remind" style="margin-top:8px">${IC.bell}<div>${esc(reminder)}</div></div>`:""}
   ${todays.length?`<div id="todaySec">${secTitle("сделано сегодня","today",`<span class="small muted num">+${todays.reduce((a,e)=>a+xpOf(e),0)} xp</span>`)}<div class="stack">${todayCards(todays)}</div></div>`:""}
@@ -1919,6 +1918,7 @@ function openSettings(){
         <button class="btn ghost wide" data-act="importPast">перенести данные из claude</button>
     <button class="btn ghost wide" data-act="tourStart">пройти обучение</button>
     <button class="btn ghost wide" data-act="rules">правила игры</button>
+    ${OWN&&OWN.url?`<button class="btn ghost wide" data-act="ownerOpen">статистика (только для тебя)</button>`:""}
   </div>
   ${secTitle("резервная копия")}
   <p class="small muted" style="margin:10px 0 0">в резервной копии все твои данные одним файлом. пригодится на всякий случай и при переезде в телеграм.${S.profile.lastBackup?" последняя: "+fmtD(S.profile.lastBackup)+".":""}</p>
@@ -2131,6 +2131,7 @@ document.addEventListener("click",ev=>{
     case"rewardEdit":rewardForm(P.rewards.find(x=>x.id===id));break;
     case"settings":openSettings();break;
     case"ownerRef":ownerLoad();toast("обновляю");break;
+    case"ownerOpen":try{TG.openLink(OWN.url)}catch(x){window.open(OWN.url,"_blank")}break;
     case"theme":try{localStorage.setItem("prk-theme",id)}catch(x){}applyTheme(id);document.querySelectorAll('[data-act="theme"]').forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.id===id)));break;
     case"themeToggle":{const isDark=document.documentElement.getAttribute("data-theme")==="dark";const n=isDark?"light":"dark";try{localStorage.setItem("prk-theme",n)}catch(x){}applyTheme(n);break}
     case"backup":backup();break;
