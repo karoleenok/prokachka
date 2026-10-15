@@ -1761,8 +1761,8 @@ function rewardForm(r0){
   const isEdit=!!r0;const r=r0?clone(r0):{id:uid(),title:"",price:50,link:"",imgs:[]};
   if(!Array.isArray(r.imgs))r.imgs=r.img?[r.img]:[];delete r.img;
   sheet(`<div class="sheet-h"><h2>${isEdit?"хотелка":"новая хотелка"}</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
-  <div class="field" style="margin-top:0"><label for="rU">вставь ссылку на вещь, я заполню сама</label>
-  <div class="row" style="gap:8px;flex-wrap:nowrap"><input class="in-text" id="rU" type="url" inputmode="url" autocomplete="off" placeholder="ссылка или текст из магазина" style="flex:1;min-width:0"><button type="button" class="btn accent" id="rUgo" style="flex:none">заполнить</button></div>
+  <div class="field" style="margin-top:0"><label for="rU">вставь ссылку или артикул wildberries, я заполню сама</label>
+  <div class="row" style="gap:8px;flex-wrap:nowrap"><input class="in-text" id="rU" type="url" inputmode="url" autocomplete="off" placeholder="ссылка, артикул wb или текст" style="flex:1;min-width:0"><button type="button" class="btn accent" id="rUgo" style="flex:none">заполнить</button></div>
   <p class="small muted" id="rUn" style="margin-top:6px"></p>
   <label class="btn ghost" for="rShot" style="margin-top:8px;cursor:pointer;width:100%">или добавь скриншот карточки как фото</label><input type="file" id="rShot" accept="image/*" hidden></div>
   <div class="field"><span class="lbl">фото: первое будет обложкой</span><div class="gal" id="rGal"></div>
@@ -1801,6 +1801,27 @@ function rewardForm(r0){
         if(tx&&tx.length>2){el.querySelector("#rT").value=tx.slice(0,140);got.push("название")}
         if(pm){const a=parseInt(pm[1].replace(/[\s\u00a0]/g,""),10);if(a>0){shop={amount:a,cur:"₽",ru:true};recalc();got.push("цену")}}
         return got};
+      const wbm=link.match(/wildberries\.[a-z]+\/catalog\/(\d{5,12})/i)||(/^\d{6,12}$/.test(raw)?[0,raw]:null);
+      if(wbm){
+        const nm=+wbm[1],vol=Math.floor(nm/1e5),part=Math.floor(nm/1e3);
+        UB.disabled=true;UB.innerHTML='<span class="spin"></span> ищу…';UN.textContent="";
+        try{
+          const hosts=Array.from({length:40},(_,i)=>"https://basket-"+String(i+1).padStart(2,"0")+".wbbasket.ru/vol"+vol+"/part"+part+"/"+nm+"/");
+          const ask=(b)=>{const ac=new AbortController();const t=setTimeout(()=>ac.abort(),9000);return fetch(b+"info/ru/card.json",{signal:ac.signal}).then(x=>{clearTimeout(t);if(!x.ok)throw 0;return x.json().then(j=>({b,j}))})};
+          const hit=await Promise.any(hosts.map(ask));
+          const j=hit.j;el.querySelector("#rL").value="https://www.wildberries.ru/catalog/"+nm+"/detail.aspx";UI.value=el.querySelector("#rL").value;
+          const nmTitle=String(j.imt_name||"").trim();
+          if(nmTitle)el.querySelector("#rT").value=nmTitle.slice(0,140);
+          const g0=fromText();
+          const cnt=Math.min(4,(j.media&&j.media.photo_count)||1);let added=0;
+          for(let i=1;i<=cnt;i++){
+            if(r.imgs.length>=8)break;
+            try{const ir=await fetch(hit.b+"images/big/"+i+".webp");if(!ir.ok)continue;const blob=await ir.blob();r.imgs.push(await pickImage(new File([blob],"photo.webp",{type:blob.type||"image/webp"})));added++;paintG()}catch(x){}
+          }
+          UN.textContent="нашла в wildberries: название"+(added?" и фото"+(added>1?" ("+added+")":""):"")+". цену wb не отдаёт, впиши сама. проверь и поправь, что нужно.";
+        }catch(x){UN.textContent="по этому артикулу не нашла товар. проверь номер или вставь ссылку целиком."}
+        finally{UB.disabled=false;UB.textContent="заполнить"}
+        return}
       if(!TG){UN.textContent="заполнение по ссылке работает только внутри телеграма.";return}
       UB.disabled=true;UB.innerHTML='<span class="spin"></span> ищу…';UN.textContent="";
       const post=(path,o)=>fetch(BOT_API+path,{method:"POST",headers:{"content-type":"text/plain"},body:JSON.stringify(Object.assign({initData:TG.initData},o))});
