@@ -665,8 +665,8 @@ function ideaFor(skill,per){
 const RANKS=[[1,"стажёр"],[4,"оператор"],[8,"{изобретательница|изобретатель}"],[13,"архитектор"],[19,"{основательница|основатель}"],[25,"легенда"]];
 const STATES=[
   {k:"health",n:"энергия",labels:["нет сил","мало сил","нормально","бодро","полно сил"]},
-  {k:"mood",n:"настроение",labels:["тяжело","грустно","ровно","хорошо","кайф"]},
-  {k:"bright",n:"яркость жизни",labels:["ливень","лужи","пасмурно","проясняется","сияет"]}
+  {k:"mood",n:"настроение",labels:["тяжело","так себе","ровно","хорошо","прекрасно"]},
+  {k:"bright",n:"яркость жизни",labels:["пусто","скучно","обычно","интересно","насыщенно"]}
 ];
 /* идеи целей сезона с первыми шагами */
 const GOAL_LIB=[
@@ -780,7 +780,7 @@ const IC={
   gift:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3.5" y="8" width="17" height="5" rx="1"/><path d="M5 13v8h14v-8M12 8v13M12 8c-2-4-6-4-6-1.5S9 8 12 8c3 0 6-.5 6-1.5S14 4 12 8z"/></svg>',
   camera:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" width="28" height="28"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>'
 };
-/* иконки состояния: 1 — слабее, 5 — ярче */
+/* иконки состояния: 1 — слабее, 5 — сильнее */
 function stateIcon(k,n){
   const W='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">',E="</svg>";
   const heart=(x,y,z)=>`<path d="M${x} ${y+z*.9}C${x-z*1.6} ${y-z*.2} ${x-z*.7} ${y-z*1.3} ${x} ${y-z*.4}C${x+z*.7} ${y-z*1.3} ${x+z*1.6} ${y-z*.2} ${x} ${y+z*.9}Z" fill="currentColor" stroke="none"/>`;
@@ -793,14 +793,9 @@ function stateIcon(k,n){
     const c=[11.5,13.2,15,16.8][n-1];const ey=n===1?"M8.3 9.6l2 .8M15.7 9.6l-2 .8":"";
     return W+`<circle cx="12" cy="12" r="9"/><circle cx="9" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="10" r="1" fill="currentColor" stroke="none"/>${ey?`<path d="${ey}"/>`:""}<path d="M8 15.5Q12 ${c} 16 15.5"/>`+E;
   }
-  // яркость жизни: погода от ливня до солнца
-  const cloud='<path d="M7 16.5h9.5a3.5 3.5 0 0 0 .4-7 5 5 0 0 0-9.6 1.2A3 3 0 0 0 7 16.5z"/>';
-  const ray=(r,cnt,start)=>{let o="";for(let i=0;i<cnt;i++){const a=start+(Math.PI*2/cnt)*i;o+=`<path d="M${(12+Math.cos(a)*r).toFixed(1)} ${(12+Math.sin(a)*r).toFixed(1)}L${(12+Math.cos(a)*(r+2.6)).toFixed(1)} ${(12+Math.sin(a)*(r+2.6)).toFixed(1)}"/>`}return o};
-  if(n===1)return W+`<g transform="translate(0 -4)">${cloud}</g><path d="M8.5 15.5l-1 3M12.5 15.5l-1 4M16.5 15.5l-1 3"/>`+E;
-  if(n===2)return W+`<path d="M12 3.6c-1.9 2.8-3 4.4-3 5.9a3 3 0 0 0 6 0c0-1.5-1.1-3.1-3-5.9z"/><ellipse cx="12" cy="18.4" rx="8.4" ry="2.8"/><ellipse cx="12" cy="18.4" rx="3.6" ry="1.1"/>`+E;
-  if(n===3)return W+`<g transform="translate(0 1.5)">${cloud}</g>`+E;
-  if(n===4)return W+`<circle cx="9" cy="9" r="3.4"/><path d="M9 2.8v1.4M2.8 9h1.4M4.6 4.6l1 1M13.4 4.6l-1 1"/><g transform="translate(3 3.5)">${cloud}</g>`+E;
-  return W+`<circle cx="12" cy="12" r="4.6" fill="currentColor"/>${ray(7.4,8,-Math.PI/2)}`+E;
+  // яркость жизни: кольцо наполняется от пустого до полного
+  const C=2*Math.PI*8;
+  return W+`<circle cx="12" cy="12" r="8" opacity=".28"/><circle cx="12" cy="12" r="8" stroke-width="2.8" stroke-dasharray="${(C*n/5).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 12 12)"/>${n===5?'<circle cx="12" cy="12" r="3.2" fill="currentColor" stroke="none"/>':""}`+E;
 }
 
 /* ================= профиль ================= */
