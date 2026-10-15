@@ -150,8 +150,8 @@ button{cursor:pointer;border:0;background:none;-webkit-tap-highlight-color:trans
 .skill{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:center}
 .skill .nm{font-weight:600;font-size:14px;min-width:0}
 .skill .lv{font-family:var(--f-display);font-weight:400;font-size:28px;line-height:1}
-.segs{grid-column:1/-1;display:grid;grid-template-columns:repeat(10,1fr);gap:3px;margin-top:5px}
-.segs i{height:8px;border-radius:3px;background:var(--seg-off)}
+.segs{grid-column:1/-1;display:grid;grid-template-columns:repeat(20,1fr);gap:2px;margin-top:5px}
+.segs i{height:8px;border-radius:2px;background:var(--seg-off)}
 .segs i.on{background:var(--seg-on)}
 .segs i.part{background:linear-gradient(90deg,var(--seg-on) var(--p),var(--seg-off) var(--p))}
 
@@ -545,6 +545,7 @@ const CATALOG=[
 
   {id:"sales",g:"sales",name:"продажи",d:"созвоны, офферы, сделки",t:["practice|{провела|провёл} продающий созвон","sell|закрыл{а|} сделку","practice|разобрал{а|} запись своего созвона"],c:"провести 5 продающих созвонов за неделю"},
   {id:"leads",g:"sales",name:"поиск клиентов",d:"холодные касания, лидогенерация",t:["practice|написал{а|} 10 потенциальным клиентам","practice|сделал{а|} холодные звонки","practice|собрал{а|} базу контактов"],c:"сделать 50 касаний за неделю"},
+  {id:"realty",g:"sales",name:"недвижимость",d:"показы, объекты, сделки",t:["practice|{провела|провёл} показ","create|подготовил{а|} объект к продаже","sell|закрыл{а|} сделку"],c:"провести 5 показов за неделю и разобрать, что мешает решению"},
   {id:"nego",g:"sales",name:"переговоры",d:"условия, возражения, цена",t:["practice|{провела|провёл} переговоры","practice|отработал{а|} возражение","sell|договорил{ась|ся} о лучших условиях"],c:"попросить цену выше обычной хотя бы у одного клиента"},
   {id:"service",g:"sales",name:"работа с клиентами",d:"сервис, удержание, отзывы",t:["practice|помог{ла|} клиенту","practice|собрал{а|} отзыв","sell|продал{а|} повторно"],c:"собрать 5 отзывов за неделю"},
   {id:"marketplace",g:"sales",name:"маркетплейсы",d:"карточки, аналитика, поставки",t:["create|оформил{а|} карточку товара","practice|разобрал{а|} аналитику продаж","ship|запустил{а|} новый товар"],c:"переделать карточку самого слабого товара и сравнить продажи"},
@@ -554,6 +555,8 @@ const CATALOG=[
   {id:"lead",g:"biz",name:"лидерство и команда",d:"делегирование, обратная связь",t:["practice|дал{а|} обратную связь","practice|делегировал{а|} задачу","practice|{провела|провёл} встречу один на один"],c:"отдать другому задачу, которую привык{ла|} делать сам{а|}"},
   {id:"hr",g:"biz",name:"найм и hr",d:"вакансии, собеседования, адаптация",t:["practice|{провела|провёл} собеседование","create|написал{а|} вакансию","practice|помог{ла|} новичку освоиться"],c:"переписать вакансию так, чтобы её хотелось прочитать"},
   {id:"account",g:"biz",name:"бухгалтерия и учёт",d:"отчёты, налоги, документы",t:["practice|{свела|свёл} отчёт","learn|разобрал{а|} изменения в правилах","practice|закрыл{а|} период"],c:"навести порядок в документах за квартал"},
+  {id:"logi",g:"biz",name:"логистика и закупки",d:"поставки, склад, поставщики",t:["practice|согласовал{а|} поставку","create|наладил{а|} процесс на складе","sell|договорил{ась|ся} с поставщиком о лучшей цене"],c:"найти и сравнить трёх новых поставщиков по одной позиции"},
+  {id:"office",g:"biz",name:"офис и администрирование",d:"документы, организация, порядок",t:["practice|закрыл{а|} поток задач","create|настроил{а|} шаблон или регламент","practice|навёл{а|} порядок в документах"],c:"описать один рабочий процесс так, чтобы его мог повторить любой"},
   {id:"money",g:"biz",name:"личные финансы",d:"бюджет, долги, накопления",t:["practice|записал{а|} траты","practice|отложил{а|} деньги","practice|закрыл{а|} часть долга"],c:"месяц записывать все траты"},
   {id:"invest",g:"biz",name:"инвестиции",d:"инструменты, портфель",t:["learn|разобрал{а|} инструмент","practice|пополнил{а|} счёт","practice|пересмотрел{а|} портфель"],c:"разобраться в одном инструменте и объяснить его другу"},
 
@@ -565,12 +568,19 @@ const CATALOG=[
   {id:"psych",g:"work",name:"психология и помощь людям",d:"консультации, практика, супервизии",t:["teach|{провела|провёл} сессию","learn|разобрал{а|} случай","practice|сходил{а|} на супервизию"],c:"провести 3 бесплатные сессии для практики и собрать обратную связь"},
   {id:"beauty",g:"work",name:"бьюти-услуги",d:"маникюр, визаж, массаж, волосы",t:["sell|принял{а|} клиента","practice|отработал{а|} технику","ship|выложил{а|} работу в портфолио"],c:"освоить одну новую технику и сделать 3 модели"},
   {id:"coach",g:"work",name:"тренер и коуч",d:"фитнес, коучинг, сопровождение",t:["teach|{провела|провёл} тренировку","create|составил{а|} программу","sell|взял{а|} нового клиента"],c:"запустить мини-марафон для 5 человек"},
+  {id:"law",g:"work",name:"юриспруденция",d:"договоры, споры, консультации",t:["practice|разобрал{а|} дело или договор","create|подготовил{а|} документ","teach|{провела|провёл} консультацию"],c:"составить шаблон договора, который закроет самые частые вопросы клиентов"},
+  {id:"med",g:"work",name:"медицина и уход",d:"приём, диагностика, пациенты",t:["practice|{провела|провёл} приём","learn|разобрал{а|} клинический случай","teach|объяснил{а|} пациенту план лечения"],c:"разобрать три сложных случая за месяц и записать выводы"},
+  {id:"eng",g:"work",name:"инженерия и производство",d:"расчёты, чертежи, цех, стройка",t:["create|сделал{а|} расчёт или чертёж","practice|{провела|провёл} проверку на объекте","ship|сдал{а|} этап проекта"],c:"улучшить один рабочий процесс так, чтобы он стал быстрее"},
+  {id:"horeca",g:"work",name:"кухня, зал, гостеприимство",d:"повар, бариста, администратор",t:["practice|отработал{а|} смену на отлично","create|придумал{а|} новое блюдо или позицию","teach|{провела|провёл} обучение для новичка"],c:"ввести в меню или сервис одну новую вещь и собрать отзывы гостей"},
+  {id:"transl",g:"work",name:"переводы и редактура",d:"тексты, субтитры, устный перевод",t:["create|{перевела|перевёл} текст","practice|отредактировал{а|} чужой текст","ship|сдал{а|} перевод"],c:"сделать пробный перевод для нового клиента"},
 
   {id:"lang",g:"mind",name:"иностранные языки",d:"английский и другие",t:["practice|позанимал{ась|ся} языком","practice|поговорил{а|} с носителем","learn|посмотрел{а|} фильм в оригинале"],c:"30 дней заниматься языком по 15 минут"},
   {id:"read",g:"mind",name:"чтение и насмотренность",d:"книги, кейсы, референсы",t:["learn|прочитал{а|} главу","learn|посмотрел{а|} 20 референсов","create|записал{а|} мысли из книги"],c:"дочитать одну книгу за месяц и пересказать главное"},
   {id:"study",g:"mind",name:"учёба и экзамены",d:"вуз, школа, курсы",t:["learn|{прошла|прошёл} тему","practice|решил{а|} вариант","ship|сдал{а|} экзамен или зачёт"],c:"закрыть все долги по учёбе за неделю"},
   {id:"think",g:"mind",name:"мышление и решения",d:"анализ, критическое мышление",t:["practice|разложил{а|} проблему на части","practice|принял{а|} решение по списку за и против","create|записал{а|} выводы недели"],c:"неделю каждый вечер записывать одно решение дня и почему оно такое"},
+
   {id:"focus",g:"mind",name:"дисциплина и фокус",d:"доводить до конца, без прокрастинации",t:["practice|сделал{а|} главное дело дня первым","practice|поработал{а|} 2 часа без отвлечений","practice|{довела|довёл} дело до конца"],c:"неделю начинать день с самого важного дела"},
+  {id:"science",g:"mind",name:"наука и исследования",d:"статьи, эксперименты, данные",t:["learn|прочитал{а|} статью","practice|{провела|провёл} эксперимент или расчёт","create|написал{а|} раздел работы"],c:"написать краткий обзор одной темы и показать научному руководителю или коллеге"},
 
   {id:"sport",g:"body",name:"спорт и движение",d:"тренировки, шаги, активность",t:["practice|потренировал{ась|ся}","practice|{прошла|прошёл} 10 000 шагов","try|попробовал{а|} новый вид спорта"],c:"3 тренировки в неделю, 4 недели подряд"},
   {id:"yoga",g:"body",name:"йога и растяжка",d:"практики, гибкость",t:["practice|сделал{а|} практику","practice|потянул{ась|ся} 15 минут","try|сходил{а|} на новое занятие"],c:"растягиваться по 10 минут каждый день 2 недели"},
@@ -591,9 +601,10 @@ const CATALOG=[
   {id:"handmade",g:"craft",name:"рукоделие и хендмейд",d:"изделия руками, мастерская",t:["create|сделал{а|} изделие","practice|отработал{а|} технику","sell|продал{а|} изделие"],c:"сделать мини-коллекцию из 5 изделий"},
   {id:"writing",g:"craft",name:"писательство",d:"рассказы, книга, эссе",t:["create|написал{а|} страницу","practice|писал{а|} 20 минут без остановки","ship|опубликовал{а|} текст"],c:"написать рассказ от начала до конца"}
 ];
-const GEN_T=["learn|изучил{а|} урок или статью","try|попробовал{а|} новый приём или инструмент","teach|помог{ла|} кому-то разобраться"];
+const GEN_T=["routine|закрыл{а|} рабочие мелочи","routine|ответил{а|} на письма и сообщения","routine|заполнил{а|} отчёты и документы","learn|изучил{а|} урок или статью","try|попробовал{а|} новый приём или инструмент","teach|помог{ла|} кому-то разобраться"];
 const LEGACY_ACTIVE=["ai","auto","code","gamedev","product","sales","market","brand","teach","content","design","job"];
 const TYPES=[
+  {id:"routine",label:"закрыл{а|} рутину",hint:"будничные дела без нового: письма, отчёты, смена, быт. опыта мало, до 4 в день",xp:5},
   {id:"learn",label:"изучил{а|}",hint:"урок, видео, статья, книга",xp:10},
   {id:"practice",label:"потренировал{ась|ся}",hint:"повторение, отработка, привычка",xp:20},
   {id:"try",label:"попробовал{а|} новое",hint:"новый инструмент, приём, опыт",xp:25},
@@ -659,7 +670,7 @@ const REMINDERS=[
 ];
 const ACH=[
   {id:"first",ic:"1",n:"первый шаг",d:"первое действие",f:d=>d.done.length>=1},
-  {id:"thirty",ic:"30",n:"в деле",d:"30 действий",f:d=>d.done.length>=30},
+  {id:"thirty",ic:"30",n:"в деле",d:"30 действий",f:d=>d.done.length-(d.byType.routine||0)>=30},
   {id:"ship",ic:"В",n:"выпустил{а|}",d:"первый выпуск или показ",f:d=>d.byType.ship>=1},
   {id:"client",ic:"К",n:"первый клиент",d:"первые заработанные деньги",f:d=>d.byType.sell>=1},
   {id:"deal10",ic:"10К",n:"поток",d:"10 раз заработал{а|}",f:d=>d.byType.sell>=10},
@@ -697,7 +708,7 @@ const HELP={
   planned:["в планах","то, что ты собирал{ась|ся} сделать. как сделаешь, нажми «сделал{а|}», и опыт засчитается сегодняшним днём."],
   quest:["квесты","квест посложнее обычного дела. лучше всего брать то, чего немного боишься. бывают на день, на неделю и на месяц, месячный называется боссом.\n\nсправил{ась|ся}, жми «выполнил{а|}» и получай опыт и монеты.\nне успеваешь, жми «перенести».\nне получилось, жми «разбор» и напиши, что помешало. за это тоже дадут 10 xp."],
   state:["состояние","раз в день отмечай, как ты. слева слабее, справа лучше. если нажать ещё раз, отметка снимется. потом в «пути» будет видно, в какие дни ты был{а|} на подъёме."],
-  skills:["навыки","это то, что ты качаешь. у каждого навыка 10 уровней. основной навык действия получает весь опыт, дополнительные получают по 40%. набор навыков меняется в разделе «навыки», кнопка «выбрать навыки»."],
+  skills:["навыки","это то, что ты качаешь. у каждого навыка 20 уровней. основной навык действия получает весь опыт, дополнительные получают по 40%. набор навыков меняется в разделе «навыки», кнопка «выбрать навыки»."],
   feed:["лента","все твои действия по дням, свежие сверху. если нажать на навык сверху, останутся только его записи."],
   chart:["график","линия показывает, сколько опыта ты набрал{а|} с начала сезона. ниже видно, сколько ты делаешь {сама|сам}, а сколько смотришь и читаешь."],
   compare:["до и после","выбери день в прошлом и посмотри, какие уровни были тогда и какие сейчас. ниже появятся записи той недели."],
@@ -705,7 +716,7 @@ const HELP={
   wish:["хотелки","то, что хочешь себе позволить. добавь фото и цену в монетах, полоска покажет, сколько осталось накопить. когда хватит, жми «взять»."],
   ach:["ачивки","значки за особые моменты: первый выпуск, первая продажа, шаги в страх, долгие серии. открываются сами."],
   skillcat:["выбор навыков","отметь то, что хочешь качать сейчас. лучше 5–12, иначе силы распылятся. если чего-то нет в списке, добавь свой навык, например «вокал» или «холодные звонки»."],
-  start:["стартовые уровни","на каком уровне ты был{а|} до начала сезона. 1 значит только начинаю, 5 уверенно, 8–9 эксперт. сохраняется сразу."]
+  start:["стартовые уровни","на каком уровне ты был{а|} до начала сезона. 1 значит только начинаю, 5 уверенно, 10 сильный профи, 15 и выше топ в своём деле. всего уровней 20. сохраняется сразу."]
 };
 
 /* ================= утилиты ================= */
@@ -967,10 +978,15 @@ async function allowCloud(){closeSheet();await Store.connect()}
 async function managePerms(){}
 
 /* ================= расчёты ================= */
-const xpOf=e=>{if(e.type==="bonus")return e.xp||25;const t=TY[e.type];if(!t)return 0;return Math.round(t.xp*(e.first?FIRST_MULT:1)+(e.fear?FEAR_XP:0))};
+const ROUTINE_CAP=4;
+const routineCount=(date,skipId)=>live().filter(x=>!x.planned&&x.type==="routine"&&!x.nox&&x.date===date&&x.id!==skipId).length;
+const setNox=e=>{if(e.type==="routine"&&!e.planned)e.nox=routineCount(e.date,e.id)>=ROUTINE_CAP;else delete e.nox};
+const xpOf=e=>{if(e.type==="bonus")return e.xp||25;if(e.type==="routine")return e.nox?0:TY.routine.xp;const t=TY[e.type];if(!t)return 0;return Math.round(t.xp*(e.first?FIRST_MULT:1)+(e.fear?FEAR_XP:0))};
 const coinsOf=x=>Math.round(x/10);
-const skillCum=L=>30*L*(L-1);
-function skillLevel(total){let L=1;while(L<10&&skillCum(L+1)<=total)L++;const cur=skillCum(L),nxt=L<10?skillCum(L+1):cur;return{level:L,into:total-cur,need:nxt-cur,frac:L<10?(total-cur)/(nxt-cur):1}}
+const MAXL=20;
+/* уровни 1–10 как раньше (30·L·(L-1)), с 11-го каждый следующий стоит ровно 600 xp */
+const skillCum=L=>L<=10?30*L*(L-1):2700+600*(L-10);
+function skillLevel(total){let L=1;while(L<MAXL&&skillCum(L+1)<=total)L++;const cur=skillCum(L),nxt=L<MAXL?skillCum(L+1):cur;return{level:L,into:total-cur,need:nxt-cur,frac:L<MAXL?(total-cur)/(nxt-cur):1}}
 const seasonCum=n=>{let s=0;for(let k=1;k<n;k++)s+=100+40*(k-1);return s};
 function seasonLevel(xp){let L=1;while(seasonCum(L+1)<=xp)L++;const cur=seasonCum(L),nxt=seasonCum(L+1);return{level:L,into:xp-cur,need:nxt-cur,frac:(xp-cur)/(nxt-cur)}}
 const rankOf=L=>{let r=RANKS[0][1];RANKS.forEach(([l,n])=>{if(L>=l)r=n});return r};
@@ -1044,7 +1060,7 @@ function render(d){
 }
 const PLAIN_SEC=new Set(["сделано сегодня","в планах","состояние","ветки навыков","цели сезона","ачивки","закрытые"]);
 const secTitle=(t,k,right)=>{const pl=" plain";t=t.charAt(0).toUpperCase()+t.slice(1);return`<div class="sec"><div class="sec-l">${k&&HELP[k]?`<button class="sel sel-b${pl}" data-act="hint" data-k="${k}" aria-label="что это: ${esc(HELP[k][0])}">${t}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5v.1"/></svg></button>`:`<span class="sel${pl}">${t}</span>`}</div>${right||""}</div>`};
-function segs(frac,level){let h="";for(let i=1;i<=10;i++){if(i<level)h+='<i class="on"></i>';else if(i===level&&level<10)h+=`<i class="part" style="--p:${Math.round(frac*100)}%"></i>`;else if(i===level)h+='<i class="on"></i>';else h+="<i></i>"}return`<div class="segs" aria-hidden="true">${h}</div>`}
+function segs(frac,level){let h="";for(let i=1;i<=MAXL;i++){if(i<level)h+='<i class="on"></i>';else if(i===level&&level<MAXL)h+=`<i class="part" style="--p:${Math.round(frac*100)}%"></i>`;else if(i===level)h+='<i class="on"></i>';else h+="<i></i>"}return`<div class="segs" aria-hidden="true">${h}</div>`}
 function skillRow(s,k){return`<div class="skill"><div class="nm">${esc(s.name)}</div><div class="lv num" aria-label="уровень">${k.level}</div>${segs(k.frac,k.level)}</div>`}
 function fmt1(x){return(Math.round(x*10)/10).toFixed(1).replace(".",",")}
 function branchBlock(d){
@@ -1244,7 +1260,7 @@ function vSkills(d){
   <div class="stack">${groupedSkills(s=>{const k=d.skills[s.id];const n=d.done.filter(e=>e.primary===s.id).length;const last=d.done.filter(e=>e.primary===s.id||(e.secondary||[]).includes(s.id)).sort((a,b)=>a.date<b.date?1:-1)[0];
     return`<div class="card"><div class="row" style="justify-content:space-between;flex-wrap:nowrap"><div style="min-width:0"><div style="font-weight:700">${esc(s.name)}</div><div class="small muted">${esc(s.d)}</div></div><div class="big num" style="font-size:38px">${k.level}</div></div>
     ${segs(k.frac,k.level)}
-    <div class="row small muted num" style="justify-content:space-between;margin-top:6px"><span>${k.level<10?k.into+" / "+k.need+" xp до "+(k.level+1)+" ур.":"максимум"}</span><span>${n} ${plural(n,"действие","действия","действий")}</span></div>
+    <div class="row small muted num" style="justify-content:space-between;margin-top:6px"><span>${k.level<MAXL?k.into+" / "+k.need+" xp до "+(k.level+1)+" ур.":"максимум"}</span><span>${n} ${plural(n,"действие","действия","действий")}</span></div>
     ${last?`<div class="small" style="margin-top:6px">последнее: ${esc(last.title)} · ${fmtDay(last.date)}</div>`:""}
     <div class="row" style="margin-top:8px"><button class="btn sm ghost" data-act="add" data-skill="${s.id}">${IC.plus} действие</button><button class="btn sm ghost" data-act="pfilterGo" data-id="${s.id}">путь навыка</button></div></div>`})}</div>`;
 }
@@ -1375,9 +1391,9 @@ function openEntry(e,opts){
   ${sampleNs?`<div class="field"><label for="fAi">или расскажи словами, claude разложит</label><div class="row" style="flex-wrap:nowrap"><input class="in-text" id="fAi" placeholder="например: впервые собрал{а|} бота для заявок"><button class="btn sm" type="button" data-f="ai" aria-label="разобрать">${IC.spark}</button></div></div>`:""}
   <div id="fCore">
   <div class="field"><label for="fTitle">${isEdit?"":"1. "}напиши своё или выбери ниже</label><input class="in-text" id="fTitle" value="${esc(F.title)}" placeholder="например: записал{а|} рилс про свой процесс"></div>
-  <div class="field"><span class="lbl">${isEdit?"":"2. "}категория (от неё зависит опыт)</span><div class="chips" id="fTypes"></div></div>
+  <div class="field"><span class="lbl">${isEdit?"":"2. "}что это было (от этого зависит опыт)</span><div class="chips" id="fTypes"></div><div class="small muted" id="fTypeHint" style="margin-top:6px"></div></div>
   </div>
-  <div class="field" id="fSkillField"><span class="lbl">${isEdit?"":"3. "}какой навык качаешь</span><div class="chips" id="fPrim"></div></div>
+  <div class="field" id="fSkillField"><span class="lbl">${isEdit?"":"3. "}к какому навыку это относится</span><div class="chips" id="fPrim"></div></div>
   <div class="field" id="fTplField"><span class="lbl">${isEdit?"":"4. "}или выбери готовое</span><div class="chips" id="fTpls"></div></div>
   <details id="fMore" ${isEdit&&(F.secondary.length||F.first||F.fear||F.date!==today())?"open":""}><summary>ещё: доп. навыки, впервые, шаг в страх, дата</summary>
   <div class="field"><span class="lbl">ещё качает (до двух, получат 40%)</span><div class="chips" id="fSec"></div></div>
@@ -1406,9 +1422,11 @@ function paintForm(){
   el.querySelector("#fSec").innerHTML=ch.filter(s=>s.id!==F.primary).map(s=>`<button type="button" class="chip sec2" data-f="sec" data-id="${s.id}" aria-pressed="${F.secondary.includes(s.id)}">${esc(s.name)}</button>`).join("");
   el.querySelectorAll('[data-f="plannedNo"],[data-f="plannedYes"]').forEach(b=>b.setAttribute("aria-pressed",String((b.dataset.f==="plannedYes")===!!F.planned)));
   const fd=el.querySelector("#fDate");if(!F.planned)fd.max=today();else fd.removeAttribute("max");
+  if(F.type==="routine"&&!F.planned)setNox(F);else if(F.type!=="routine")delete F.nox;
   const x=F.type?xpOf(F):0;
+  {const th=el.querySelector("#fTypeHint");if(th){const t=TY[F.type];th.textContent=t?gx(t.hint):"выбери, что ближе всего. от этого зависит опыт."}}
   el.querySelector("#fXp").textContent=F.planned?"в планы":"+"+x+" xp";
-  el.querySelector("#fXpSub").textContent=F.planned?gx("опыт придёт, когда отметишь «сделал{а|}»"):(x?"+"+coinsW(coinsOf(x)):"выбери тип действия");
+  el.querySelector("#fXpSub").textContent=F.planned?gx("опыт придёт, когда отметишь «сделал{а|}»"):(x?"+"+coinsW(coinsOf(x)):F.type==="routine"?"лимит опыта по рутине на сегодня выбран, но серия засчитается":"выбери тип действия");
 }
 function formSync(){const el=$(".sheet");if(!el||!F||!el.querySelector("#fTitle"))return;F.title=el.querySelector("#fTitle").value;F.first=el.querySelector("#fFirst").checked;F.fear=el.querySelector("#fFear").checked;F.date=el.querySelector("#fDate").value||today();
   F.note=el.querySelector("#fNote").value;F.link=el.querySelector("#fLink").value.trim();F.money=el.querySelector("#fMoney").value;paintForm()}
@@ -1437,10 +1455,10 @@ function saveEntry(){
   if(!F.title.trim()){toast("напиши, что ты сделал{а|}");$("#fTitle").focus();return}
   if(!F.type){toast("выбери тип действия");$("#fTypes").scrollIntoView({block:"center"});return}
   const isNew=!S.entries.some(e=>e.id===F.id);
-  const e=clone(F);e.title=e.title.trim();
+  const e=clone(F);e.title=e.title.trim();setNox(e);
   if(!e.planned&&isNew&&e.date===today())maybeComeback();
   Store.putEntry(e);closeSheet();F=null;
-  toast(e.planned?"добавлено в планы":"сохранено: +"+xpOf(e)+" xp · +"+coinsW(coinsOf(xpOf(e))));
+  toast(e.planned?"добавлено в планы":e.nox?"записано. на сегодня 4 рутины уже дали опыт, серия идёт":"сохранено: +"+xpOf(e)+" xp · +"+coinsW(coinsOf(xpOf(e))));
   afterChange();
 }
 function maybeComeback(){
@@ -1631,9 +1649,9 @@ function skillCatalog(fromEntry){
 function openStartLevels(){
   const P=S.profile;const act=activeSkills();
   sheet(`<div class="sheet-h"><h2>стартовые уровни</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
-  <p class="small muted" style="margin:0">на каком уровне ты был{а|} до начала сезона. 1 значит только начинаю, 5 уверенно, 8–9 эксперт.</p>
+  <p class="small muted" style="margin:0">на каком уровне ты был{а|} до начала сезона. 1 значит только начинаю, 5 уверенно, 10 сильный профи, 15 и выше топ в своём деле.</p>
   <p class="small" style="font-weight:600">сохраняется, как только нажмёшь цифру.</p>
-  <div class="stack" id="slList">${act.length?act.map(s=>`<div class="card"><div style="font-weight:600">${esc(s.name)}</div><div class="chips" style="margin-top:8px" role="group" aria-label="уровень: ${esc(s.name)}">${[1,2,3,4,5,6,7,8,9].map(n=>`<button type="button" class="chip num" data-sl="${s.id}" data-n="${n}" aria-pressed="${(P.startLevels[s.id]||1)===n}" style="min-width:38px">${n}</button>`).join("")}</div></div>`).join(""):`<div class="card small muted">сначала выбери навыки.</div><div class="ghost-v" aria-hidden="true">${[["дизайн",3],["нейросети",5]].map(x=>`<div class="g"><div style="flex:1;font-weight:600;font-size:14px">${x[0]}</div><div class="chips" style="gap:4px">${[1,2,3,4,5,6].map(n=>`<span class="chip num" style="min-width:30px;${n===x[1]?"background:var(--panel);color:#fff":""}">${n}</span>`).join("")}</div></div>`).join("")}<div class="gd" style="text-align:center">так будет выглядеть, когда выберешь навыки</div></div>`}</div>
+  <div class="stack" id="slList">${act.length?act.map(s=>`<div class="card"><div style="font-weight:600">${esc(s.name)}</div><div class="chips" style="margin-top:8px;display:grid;grid-template-columns:repeat(8,1fr);gap:6px" role="group" aria-label="уровень: ${esc(s.name)}">${[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15].map(n=>`<button type="button" class="chip num" data-sl="${s.id}" data-n="${n}" aria-pressed="${(P.startLevels[s.id]||1)===n}" style="min-width:0;padding:9px 0;text-align:center">${n}</button>`).join("")}</div></div>`).join(""):`<div class="card small muted">сначала выбери навыки.</div><div class="ghost-v" aria-hidden="true">${[["дизайн",3],["нейросети",5]].map(x=>`<div class="g"><div style="flex:1;font-weight:600;font-size:14px">${x[0]}</div><div class="chips" style="gap:4px">${[1,2,3,4,5,6].map(n=>`<span class="chip num" style="min-width:30px;${n===x[1]?"background:var(--panel);color:#fff":""}">${n}</span>`).join("")}</div></div>`).join("")}<div class="gd" style="text-align:center">так будет выглядеть, когда выберешь навыки</div></div>`}</div>
   <button class="btn accent wide" style="margin-top:16px" data-act="close">готово</button>`,el=>{
     el.addEventListener("click",ev=>{const b=ev.target.closest("[data-sl]");if(!b)return;const id=b.dataset.sl,n=+b.dataset.n;
       P.startLevels[id]=n;P.seenSkills=null;Store.saveProfile();
@@ -1785,8 +1803,8 @@ function rulesSheet(){
   sheet(`<div class="sheet-h"><h2>правила игры</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
   <div class="stack" style="margin-top:0">
   <div class="card"><b>сезон и уровни</b><p class="small" style="margin:6px 0 0">сезон длится 90 дней. опыт поднимает уровень, а на некоторых уровнях дают звание: ${RANKS.map(r=>r[1]).join(" → ")}.</p></div>
-  <div class="card"><b>сколько опыта за что</b><div class="xptable">${TYPES.map(t=>`<span>${t.label} <span class="muted small">${t.hint}</span></span><b>${t.xp}</b>`).join("")}<span>делаю впервые</span><b>×1.5</b><span>шаг в страх</span><b>+${FEAR_XP}</b><span>квест дня / недели / босс</span><b>30 / 80 / 250</b><span>шаг к цели сезона</span><b>40</b></div></div>
-  <div class="card"><b>навыки</b><p class="small" style="margin:6px 0 0">у каждого навыка 10 уровней. основной навык получает весь опыт за действие, дополнительные (их можно выбрать до двух) получают по 40%.</p></div>
+  <div class="card"><b>сколько опыта за что</b><div class="xptable">${TYPES.map(t=>`<span>${t.label} <span class="muted small">${t.hint}</span></span><b>${t.xp}</b>`).join("")}<span>рутина: не больше 4 в день дают опыт, остальные просто идут в серию</span><b>5</b><span>делаю впервые</span><b>×1.5</b><span>шаг в страх</span><b>+${FEAR_XP}</b><span>квест дня / недели / босс</span><b>30 / 80 / 250</b><span>шаг к цели сезона</span><b>40</b></div></div>
+  <div class="card"><b>навыки</b><p class="small" style="margin:6px 0 0">у каждого навыка 20 уровней. основной навык получает весь опыт за действие, дополнительные (их можно выбрать до двух) получают по 40%.</p></div>
   <div class="card"><b>монеты</b><p class="small" style="margin:6px 0 0">за каждые 10 xp дают монету. их можно потратить на хотелки из вишлиста.</p></div>
   <div class="card"><b>мягкая серия</b><p class="small" style="margin:6px 0 0">за неделю без пропусков дают заморозку, максимум три. если пропустишь день, сгорит заморозка, а серия останется. если вернёшься после перерыва в пару дней, получишь 25 xp бонусом.</p></div>
   <div class="card"><b>где хранятся данные</b><p class="small" style="margin:6px 0 0">всё сразу сохраняется на телефоне, а потом уходит в облако. значок сверху показывает, дошло или нет.</p></div>
@@ -1909,7 +1927,7 @@ document.addEventListener("click",ev=>{
     case"tab":S.view=id;closeSheet();render();window.scrollTo(0,0);break;
     case"add":openEntry(null,{plan:b.dataset.plan==="1",skill:b.dataset.skill});break;
     case"editEntry":{const e=S.entries.find(x=>x.id===id);if(e)openEntry(e);break}
-    case"markDone":{const e=S.entries.find(x=>x.id===id);if(!e)break;const n=clone(e);n.planned=false;n.date=today();maybeComeback();Store.putEntry(n);toast("сделано: +"+xpOf(n)+" xp");afterChange();break}
+    case"markDone":{const e=S.entries.find(x=>x.id===id);if(!e)break;const n=clone(e);n.planned=false;n.date=today();setNox(n);maybeComeback();Store.putEntry(n);toast("сделано: +"+xpOf(n)+" xp");afterChange();break}
     case"needOpen":S.needOpen=S.needOpen===b.dataset.k?null:b.dataset.k;$("#needsCard").innerHTML=stateBlock(today());break;
     case"need":{const t=today();S.needOpen=null;const st=Object.assign({},P.states[t]||{});const n=+b.dataset.n;st[b.dataset.k]=st[b.dataset.k]===n?0:n;P.states[t]=st;Store.saveProfile();render();
       const s=STATES.find(x=>x.k===b.dataset.k);toast(st[b.dataset.k]?s.n+": "+s.labels[n-1]:s.n+": снято");break}
