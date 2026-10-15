@@ -220,7 +220,6 @@ button{cursor:pointer;border:0;background:none;-webkit-tap-highlight-color:trans
 .check svg{width:15px;height:15px}
 
 /* wishlist */
-#rUn:empty,#rShop:empty{display:none}
 .coin{width:16px;height:16px;border-radius:50%;background:var(--accent-t);display:inline-block;flex:none;box-shadow:inset 0 0 0 1.5px rgba(23,28,36,.22)}
 .price{display:inline-flex;align-items:center;gap:5px;font-weight:700}
 .wish-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
@@ -1366,54 +1365,6 @@ function showLevelUp(c){
 let assetsNs=null,sampleNs=null,downloadsNs=null;
 const readURL=f=>new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>res(fr.result);fr.onerror=rej;fr.readAsDataURL(f)});
 const loadImg=u=>new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=u});
-/* чтение скриншота карточки товара на телефоне (tesseract.js подгружается только при первом использовании) */
-function parseShot(raw){
-  const L=raw.map(l=>({t:String(l.text||"").replace(/\s+/g," ").trim(),y:l.bbox.y0,b:l.bbox.y1,h:l.bbox.y1-l.bbox.y0,c:l.confidence==null?80:l.confidence})).filter(l=>l.t&&l.h>6).sort((a,b)=>a.y-b.y);
-  const priceRe=/(\d{1,3}(?:[  ]\d{3})+|\d{2,7})\s*(?:₽|руб[а-яё.]*|р|P)(?![а-яёa-z])/i;
-  const skipP=/мес|рассрочк|×|\d\s?x\s?\d|%|кэшбэк|баллов|отзыв|оценк/i;
-  let price=0,pl=null;
-  const val=s=>parseInt(s.replace(/[\s ]/g,""),10);
-  for(const l of L){
-    if(skipP.test(l.t))continue;
-    const m=l.t.match(priceRe);if(!m)continue;
-    const v=val(m[1]);if(!(v>=10&&v<=5e6))continue;
-    if(!pl||l.h>pl.h*1.05){pl=l;price=v}
-  }
-  if(!pl){ // знак рубля не прочитался: берём крупное число
-    for(const l of L){
-      if(skipP.test(l.t))continue;
-      const m=l.t.match(/^(\d{1,3}(?:[  ]\d{3})+|\d{4,7})\s*\S?$/);if(!m)continue;
-      const v=val(m[1]);if(!(v>=10&&v<=5e6))continue;
-      if(!pl||l.h>pl.h*1.05){pl=l;price=v}
-    }
-  }
-  const junk=/^(поделиться|в корзину|купить|избранн|отзыв|оценк|рейтинг|доставка|продавец|описание|характеристик|скидк|акци|цена|ещё|назад|поиск|ozon|wildberries|яндекс|маркет|все |о товаре|добавить|войти)/i;
-  const ok=l=>{if(l===pl||junk.test(l.t)||priceRe.test(l.t)||l.c<35)return false;const letters=(l.t.match(/[a-zа-яё]/gi)||[]).length;return letters>=6&&letters/l.t.length>=.6};
-  let bi=-1,bs=0;
-  L.forEach((l,i)=>{if(!ok(l))return;const s=l.h*Math.min(l.t.length,40)*(l.c/100);if(s>bs){bs=s;bi=i}});
-  let title="";
-  if(bi>=0){
-    const bl=L[bi];let a=bi,e=bi;
-    while(e+1<L.length&&e-a<2){const n=L[e+1];if(ok(n)&&Math.abs(n.h-bl.h)<=bl.h*.35&&n.y-L[e].b<bl.h*.9)e++;else break}
-    while(a>0&&e-a<2){const n=L[a-1];if(ok(n)&&Math.abs(n.h-bl.h)<=bl.h*.35&&L[a].y-n.b<bl.h*.9)a--;else break}
-    title=L.slice(a,e+1).map(l=>l.t).join(" ").replace(/^[\s\-–—:,.|]+|[\s\-–—:,.|]+$/g,"").slice(0,140);
-  }
-  return{title,price};
-}
-async function ocrShot(file,say){
-  if(!window.Tesseract){
-    say("загружаю модуль чтения…");
-    await new Promise((res,rej)=>{const s=document.createElement("script");s.src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js";s.onload=res;s.onerror=()=>rej(new Error("load"));document.head.appendChild(s)});
-  }
-  const u=await readURL(file);const im=await loadImg(u);
-  const k=Math.min(1,1600/Math.max(im.naturalWidth,im.naturalHeight));
-  const c=document.createElement("canvas");c.width=Math.round(im.naturalWidth*k);c.height=Math.round(im.naturalHeight*k);
-  c.getContext("2d").drawImage(im,0,0,c.width,c.height);
-  const w=await Tesseract.createWorker("rus+eng",1,{logger:m=>{if(m.status==="recognizing text")say("читаю текст… "+Math.round((m.progress||0)*100)+"%");else if(/load|init/.test(m.status||""))say("готовлю словарь… (в первый раз до минуты)")}});
-  try{const {data}=await w.recognize(c);return parseShot(data.lines||[])}
-  finally{try{await w.terminate()}catch(x){}}
-}
-async function shrinkShot(file){const u=await readURL(file);const im=await loadImg(u);const k=Math.min(1,1024/Math.max(im.naturalWidth,im.naturalHeight));const c=document.createElement("canvas");c.width=Math.round(im.naturalWidth*k);c.height=Math.round(im.naturalHeight*k);c.getContext("2d").drawImage(im,0,0,c.width,c.height);return c.toDataURL("image/jpeg",.8)}
 const shopFmt=sh=>sh.amount.toLocaleString("ru-RU")+" "+(sh.cur||(sh.ru?"₽":""));
 async function pickImage(file){
   const u0=await readURL(file);const im=await loadImg(u0);const w=im.naturalWidth,h=im.naturalHeight;
@@ -1808,18 +1759,13 @@ function rewardForm(r0){
   const isEdit=!!r0;const r=r0?clone(r0):{id:uid(),title:"",price:50,link:"",imgs:[]};
   if(!Array.isArray(r.imgs))r.imgs=r.img?[r.img]:[];delete r.img;
   sheet(`<div class="sheet-h"><h2>${isEdit?"хотелка":"новая хотелка"}</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
-  <div class="field" style="margin-top:0"><label for="rU">вставь ссылку или артикул wb, я заполню сама</label>
-  <div class="row" style="gap:8px;flex-wrap:nowrap"><input class="in-text" id="rU" type="url" inputmode="url" autocomplete="off" placeholder="ссылка, артикул или текст" style="flex:1;min-width:0"><button type="button" class="btn accent" id="rUgo" style="flex:none">заполнить</button></div>
-  <p class="small muted" id="rUn" style="margin-top:6px"></p>
-  <label class="btn ghost" for="rShot" style="margin-top:8px;cursor:pointer;width:100%">заполнить по скриншоту</label><input type="file" id="rShot" accept="image/*" hidden>
-  <p class="small muted" style="margin-top:6px">как это работает: открой товар в магазине и сделай скриншот так, чтобы на нём были название и цена. загрузи его сюда, и я прочитаю текст прямо на телефоне, никуда его не отправляя. в первый раз скачается словарь (около 10 мб), это до минуты. после чтения проверь название и цену: цифры иногда читаются криво.</p></div>
-  <div class="field"><span class="lbl">фото: первое будет обложкой</span><div class="gal" id="rGal"></div>
+  <div class="field" style="margin-top:0"><span class="lbl">фото: первое будет обложкой</span><div class="gal" id="rGal"></div>
   <label class="btn ghost" for="rImg" style="margin-top:8px;cursor:pointer">${IC.plus} добавить фото</label><input type="file" id="rImg" accept="image/*" multiple hidden></div>
-  <div class="field"><label for="rT">что хочу себе позволить</label><input class="in-text" id="rT" value="${esc(r.title)}"></div>
-  <div class="field"><label for="rP">цена в монетах</label><input class="in-text" id="rP" type="number" min="1" inputmode="numeric" value="${r.price}"></div>
-  <p class="small muted">для ориентира: за активный день выходит 5–20 монет.</p>
-  <p class="small muted" id="rShop">${r.shop?"цена в магазине: "+esc(shopFmt(r.shop))+" (просто для справки)":""}</p>
-  <div class="field"><label for="rL">ссылка, если хочешь</label><input class="in-text" id="rL" value="${esc(r.link||"")}" placeholder="где купить или посмотреть"></div>
+  <div class="field"><label for="rT">название</label><input class="in-text" id="rT" value="${esc(r.title)}" placeholder="что хочу себе позволить"></div>
+  <div class="field"><label for="rDs">описание, если хочешь</label><textarea class="in-text" id="rDs" rows="3" maxlength="400" placeholder="размер, цвет, чем нравится" style="resize:vertical">${esc(r.desc||"")}</textarea></div>
+  <div class="field"><label for="rP">цена в монетах</label><input class="in-text" id="rP" type="number" min="1" inputmode="numeric" value="${r.price}"><p class="small muted" style="margin-top:6px">сколько монет нужно заработать, чтобы забрать это себе. для ориентира: за активный день выходит 5–20 монет.</p></div>
+  <div class="field"><label for="rM">цена в магазине, ₽</label><input class="in-text" id="rM" type="number" min="0" inputmode="numeric" value="${r.shop&&r.shop.amount?r.shop.amount:""}" placeholder="сколько стоит в магазине"><p class="small muted" style="margin-top:6px">просто для справки, на монеты не влияет.</p></div>
+  <div class="field"><label for="rL">ссылка на магазин</label><input class="in-text" id="rL" type="url" inputmode="url" value="${esc(r.link||"")}" placeholder="где купить или посмотреть"></div>
   <div class="row" style="margin-top:14px"><button class="btn accent" id="rS">сохранить</button>${isEdit?`<button class="btn ghost" id="rD">удалить</button>`:""}</div>`,el=>{
     const gal=el.querySelector("#rGal");
     const paintG=()=>{gal.innerHTML=r.imgs.length?r.imgs.map((m,i)=>`<div class="gi"><div class="th" style="${coverCSS(m,4/5)}">${i===0?'<span class="tag navy cov">обложка</span>':""}</div>
@@ -1834,77 +1780,12 @@ function rewardForm(r0){
       gal.insertAdjacentHTML("beforeend",'<div class="small"><span class="spin"></span> загружаю…</div>');
       for(const f of files){try{r.imgs.push(await pickImage(f))}catch(x){toast("одно фото не загрузилось")}}
       paintG();if(was===0&&r.imgs.length)cropper(r.imgs[0],4/5,c=>{r.imgs[0]=c;paintG()})};
-    let shop=r.shop||null;
-    const shopEl=el.querySelector("#rShop");
-    const recalc=()=>{shopEl.textContent=shop?"цена в магазине: "+shopFmt(shop)+" (просто для справки, монеты ставь сама)":""};
-    const UN=el.querySelector("#rUn"),UB=el.querySelector("#rUgo"),UI=el.querySelector("#rU");
-    UB.onclick=async()=>{
-      const raw=UI.value.trim();if(!raw){toast("вставь ссылку");return}
-      const um=raw.match(/https?:\/\/[^\s<>"]+/i);const link=um?um[0].replace(/[).,;»]+$/,""):raw;
-      const rest=um?raw.replace(um[0],"").replace(/\s+/g," ").trim():"";
-      const pm=rest.match(/(\d[\d\s\u00a0]{0,9}\d|\d)\s*(₽|руб\.?|р\.|р\b)/i);
-      let tx=rest;if(pm)tx=tx.replace(pm[0],"");tx=tx.replace(/[«»"]/g,"").replace(/^[\s—–\-:,.]+|[\s—–\-:,.]+$/g,"").trim();
-      if(um)UI.value=link;
-      const fromText=()=>{let got=[];
-        if(tx&&tx.length>2){el.querySelector("#rT").value=tx.slice(0,140);got.push("название")}
-        if(pm){const a=parseInt(pm[1].replace(/[\s\u00a0]/g,""),10);if(a>0){shop={amount:a,cur:"₽",ru:true};recalc();got.push("цену")}}
-        return got};
-      const wbm=link.match(/wildberries\.[a-z]+\/catalog\/(\d{5,12})/i)||(/^\d{6,12}$/.test(raw)?[0,raw]:null);
-      if(wbm){
-        const nm=+wbm[1],vol=Math.floor(nm/1e5),part=Math.floor(nm/1e3);
-        UB.disabled=true;UB.innerHTML='<span class="spin"></span> ищу…';UN.textContent="";
-        try{
-          const hosts=Array.from({length:40},(_,i)=>"https://basket-"+String(i+1).padStart(2,"0")+".wbbasket.ru/vol"+vol+"/part"+part+"/"+nm+"/");
-          const ask=(b)=>{const ac=new AbortController();const t=setTimeout(()=>ac.abort(),9000);return fetch(b+"info/ru/card.json",{signal:ac.signal}).then(x=>{clearTimeout(t);if(!x.ok)throw 0;return x.json().then(j=>({b,j}))})};
-          const hit=await Promise.any(hosts.map(ask));
-          const j=hit.j;el.querySelector("#rL").value="https://www.wildberries.ru/catalog/"+nm+"/detail.aspx";UI.value=el.querySelector("#rL").value;
-          const nmTitle=String(j.imt_name||"").trim();
-          if(nmTitle)el.querySelector("#rT").value=nmTitle.slice(0,140);
-          const g0=fromText();
-          const cnt=Math.min(4,(j.media&&j.media.photo_count)||1);let added=0;
-          for(let i=1;i<=cnt;i++){
-            if(r.imgs.length>=8)break;
-            try{const ir=await fetch(hit.b+"images/big/"+i+".webp");if(!ir.ok)continue;const blob=await ir.blob();r.imgs.push(await pickImage(new File([blob],"photo.webp",{type:blob.type||"image/webp"})));added++;paintG()}catch(x){}
-          }
-          UN.textContent="нашла в wildberries: название"+(added?" и фото"+(added>1?" ("+added+")":""):"")+". цену wb не отдаёт, впиши сама. проверь и поправь, что нужно.";
-        }catch(x){UN.textContent="по этому артикулу не нашла товар. проверь номер или вставь ссылку целиком."}
-        finally{UB.disabled=false;UB.textContent="заполнить"}
-        return}
-      if(!TG){UN.textContent="заполнение по ссылке работает только внутри телеграма.";return}
-      UB.disabled=true;UB.innerHTML='<span class="spin"></span> ищу…';UN.textContent="";
-      const post=(path,o)=>fetch(BOT_API+path,{method:"POST",headers:{"content-type":"text/plain"},body:JSON.stringify(Object.assign({initData:TG.initData},o))});
-      try{
-        const d=await post("/unfurl",{url:link}).then(x=>x.json());
-        el.querySelector("#rL").value=link;
-        if(!d.ok){const g=fromText();UN.textContent=d.reason==="link"?"не похоже на ссылку. вставь адрес страницы целиком.":"сайт не отдал данные (так бывает у ozon, wildberries и яндекс маркета). ссылку сохранила"+(g.length?", из текста взяла: "+g.join(" и ")+".":". впиши название и цену руками или скопируй в магазине название с ценой и вставь сюда вместе со ссылкой.")+"";return}
-        const g0=fromText();
-        if(d.title)el.querySelector("#rT").value=d.title;
-        if(d.price){let ru=false;try{ru=/\.ru$/i.test(new URL(d.final||link).hostname)}catch(x){}shop={amount:d.price,cur:d.cur||"",ru};recalc()}
-        let added=0;
-        for(const u of (d.images||[]).slice(0,4)){
-          if(r.imgs.length>=8)break;
-          try{const ir=await post("/img",{url:u,ref:d.final});if(!ir.ok)continue;const blob=await ir.blob();r.imgs.push(await pickImage(new File([blob],"photo",{type:blob.type||"image/jpeg"})));added++;paintG()}catch(x){}
-        }
-        const bits=[];if(d.title)bits.push("название");if(d.price)bits.push("цену");if(added)bits.push(added===1?"фото":"фото: "+added);
-        UN.textContent=bits.length?"заполнила: "+bits.join(", ")+". проверь и поправь, что нужно.":"нашла страницу, но данных товара там нет. заполни руками.";
-        if(d.title&&!d.price)UN.textContent+=" цену сайт не показал.";
-      }catch(x){UN.textContent="не получилось, проверь интернет и попробуй ещё раз."}
-      finally{UB.disabled=false;UB.textContent="заполнить"}
-    };
-    el.querySelector("#rShot").onchange=async ev=>{
-      const f=ev.target.files[0];ev.target.value="";if(!f)return;
-      const say=t=>{UN.innerHTML='<span class="spin"></span> '+t};
-      say("читаю скриншот…");
-      try{
-        const d=await ocrShot(f,say);
-        if(d.title)el.querySelector("#rT").value=d.title;
-        if(d.price){shop={amount:d.price,cur:"₽",ru:true};recalc()}
-        const bits=[];if(d.title)bits.push("название");if(d.price)bits.push("цену");
-        UN.textContent=bits.length?"прочитала: "+bits.join(" и ")+". проверь и поправь, что нужно."+(d.title?"":" название не разобрала, впиши сама.")+(d.price?"":" цену не нашла."):"текст на скриншоте разобрать не вышло. попробуй скриншот поближе, где крупно видны название и цена, или впиши руками.";
-      }catch(x){UN.textContent=x&&x.message==="load"?"не загрузился модуль чтения (нужен интернет, возможно, мешает блокировка). впиши название и цену руками.":"не получилось прочитать скриншот. впиши название и цену руками."}
-    };
-    el.querySelector("#rS").onclick=()=>{const t=el.querySelector("#rT").value.trim();const p=Math.max(1,parseInt(el.querySelector("#rP").value,10)||1);if(!t){toast("напиши хотелку");return}
-      const list=S.profile.rewards;const i=list.findIndex(x=>x.id===r.id);const nr={id:r.id,title:t,price:p,link:el.querySelector("#rL").value.trim(),imgs:r.imgs};if(shop)nr.shop=shop;if(i>=0)list[i]=nr;else list.push(nr);Store.saveProfile();closeSheet();toast("хотелка сохранена");afterChange()};
+    el.querySelector("#rS").onclick=()=>{const t=el.querySelector("#rT").value.trim();const p=Math.max(1,parseInt(el.querySelector("#rP").value,10)||1);if(!t){toast("напиши название");return}
+      const list=S.profile.rewards;const i=list.findIndex(x=>x.id===r.id);
+      const nr={id:r.id,title:t,price:p,link:el.querySelector("#rL").value.trim(),imgs:r.imgs};
+      const d=el.querySelector("#rDs").value.trim();if(d)nr.desc=d;
+      const m=parseInt(el.querySelector("#rM").value,10);if(m>0)nr.shop={amount:m,cur:"₽",ru:true};
+      if(i>=0)list[i]=nr;else list.push(nr);Store.saveProfile();closeSheet();toast("хотелка сохранена");afterChange()};
     const del=el.querySelector("#rD");if(del)del.onclick=()=>{S.profile.rewards=S.profile.rewards.filter(x=>x.id!==r.id);Store.saveProfile();closeSheet();afterChange()};
   });
 }
@@ -1912,6 +1793,7 @@ function wishView(id){
   const r=S.profile.rewards.find(x=>x.id===id);if(!r)return;const imgs=r.imgs||[];
   sheet(`<div class="sheet-h"><h2>${esc(r.title)}</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
   <div class="stack" style="margin-top:0">${imgs.map(m=>`<img src="${esc(m.url)}" alt="${esc(r.title)}" style="width:100%;border-radius:16px">`).join("")}</div>
+  ${r.desc?`<p style="white-space:pre-wrap;margin-top:12px">${esc(r.desc)}</p>`:""}
   ${r.link?`<p class="small" style="overflow-wrap:anywhere"><a class="link" target="_blank" rel="noopener" href="${esc(/^https?:\/\//.test(r.link)?r.link:"https://"+r.link)}">${esc(r.link)}</a></p>`:""}
   <button class="btn ghost wide" style="margin-top:12px" data-act="rewardEdit" data-id="${r.id}">изменить</button>`);
 }
