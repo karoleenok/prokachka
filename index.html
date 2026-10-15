@@ -150,6 +150,10 @@ button{cursor:pointer;border:0;background:none;-webkit-tap-highlight-color:trans
 .skill{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:center}
 .skill .nm{font-weight:600;font-size:14px;min-width:0}
 .skill .lv{font-family:var(--f-display);font-weight:400;font-size:28px;line-height:1}
+.rtn .pips{display:flex;gap:6px;margin-top:10px}.rtn .pips i{flex:1;height:8px;border-radius:3px;background:var(--chip)}.rtn .pips i.on{background:var(--accent)}
+.chip.dash{border-style:dashed;border-color:var(--accent-t)}
+.chip .cnt{background:var(--accent);color:#fff;border-radius:999px;font-size:11px;padding:1px 6px;margin-left:6px;font-weight:600}
+.rgrp .rg-l{display:none;margin-top:10px}.rgrp.open .rg-l{display:grid;gap:10px}
 .segs{grid-column:1/-1;display:grid;grid-template-columns:repeat(20,1fr);gap:2px;margin-top:5px}
 .segs i{height:8px;border-radius:2px;background:var(--seg-off)}
 .segs i.on{background:var(--seg-on)}
@@ -604,7 +608,7 @@ const CATALOG=[
 const GEN_T=["routine|закрыл{а|} рабочие мелочи","routine|ответил{а|} на письма и сообщения","routine|заполнил{а|} отчёты и документы","learn|изучил{а|} урок или статью","try|попробовал{а|} новый приём или инструмент","teach|помог{ла|} кому-то разобраться"];
 const LEGACY_ACTIVE=["ai","auto","code","gamedev","product","sales","market","brand","teach","content","design","job"];
 const TYPES=[
-  {id:"routine",label:"закрыл{а|} рутину",hint:"будничные дела без нового: письма, отчёты, смена, быт. опыта мало, до 4 в день",xp:5},
+  {id:"routine",label:"закрыл{а|} рутину",hint:"повседневное дело без нового. если сделал{а|} что-то важное, выбери другой тип",xp:5},
   {id:"learn",label:"изучил{а|}",hint:"урок, видео, статья, книга",xp:10},
   {id:"practice",label:"потренировал{ась|ся}",hint:"повторение, отработка, привычка",xp:20},
   {id:"try",label:"попробовал{а|} новое",hint:"новый инструмент, приём, опыт",xp:25},
@@ -932,7 +936,7 @@ function pushSync(now,cfg){
     const todo=pl.slice(0,3).map(e=>(e.date===t?"":(e.date===addDays(t,1)?"завтра: ":fmtD(e.date)+": "))+e.title);
     const ord={day:0,week:1,month:2};
     const q=(S.profile.challenges||[]).filter(c=>c.status==="active").sort((a,b)=>(ord[a.period]??3)-(ord[b.period]??3))[0];
-    const body={initData:TG.initData,tz:-new Date().getTimezoneOffset(),last,todo,quest:q?(q.title+(q.period==="day"?"":q.period==="week"?" (на неделе)":" (в этом месяце)")):""};
+    const body={initData:TG.initData,tz:-new Date().getTimezoneOffset(),last,todo,quest:q?(q.title+(q.period==="day"?"":q.period==="week"?" (на неделе)":" (в этом месяце)")):"",prof:(S.profile.profs||[]).slice(0,3)};
     if(cfg){const R=S.profile.remind||{};body.cfg={on:!!R.on,hour:R.hour||20,count:R.count||1}}
     fetch(BOT_API+"/sync",{method:"POST",headers:{"content-type":"text/plain"},body:JSON.stringify(body)}).then(r=>r.json()).then(j=>{
       const c=j&&j.cfg;if(c&&!cfg){const R=S.profile.remind||(S.profile.remind={on:false,hour:20,count:1});
@@ -1106,6 +1110,15 @@ function stateBlock(date){
   return head+body;
 }
 
+function todayCards(todays){
+  const rt=todays.filter(e=>e.type==="routine"),rest=todays.filter(e=>e.type!=="routine");
+  if(rt.length<2)return todays.map(entryCard).join("");
+  const o=!!S.routOpen;const xp=rt.reduce((a,e)=>a+xpOf(e),0);
+  const names={};rt.forEach(e=>{names[e.title]=(names[e.title]||0)+1});
+  const sum=Object.keys(names).map(k=>names[k]>1?k+" ×"+names[k]:k).join(", ");
+  const grp=`<div class="card rgrp ${o?"open":""}"><button class="entry-row" data-act="routTog" style="width:100%;text-align:left" aria-expanded="${o}"><div class="entry-body"><div class="row" style="justify-content:space-between;flex-wrap:nowrap;gap:10px"><div class="t">рутина ×${rt.length}</div><span class="xp num">+${xp} xp</span></div><div class="small muted" style="margin-top:2px">${esc(sum)}</div><div class="small muted" style="margin-top:4px">${o?"свернуть":"развернуть"}</div></div></button><div class="rg-l">${rt.map(entryCard).join("")}</div></div>`;
+  return rest.map(entryCard).join("")+grp;
+}
 function vHome(d){
   const P=S.profile;const t=today();const L=live();
   const todays=L.filter(e=>e.date===t&&!e.planned).sort((a,b)=>(b.ts||0)-(a.ts||0));
@@ -1132,9 +1145,10 @@ function vHome(d){
   ${noSkills?`<div class="card" style="margin-top:12px"><b>сначала выбери, что качаешь</b><p class="small muted" style="margin:6px 0 10px">пока навыки не выбраны, опыт некуда начислять.</p><button class="btn accent" data-act="skillCat">выбрать навыки</button></div>`:""}
   <div class="addrow" id="addRow"><button class="btn accent" data-act="add" id="addBtn">${IC.plus} записать действие</button><button class="btn ghost" data-act="add" data-plan="1">запланировать</button></div>
 
+  ${routineCard()}
   <div class="hm-cols"><div class="hm-a">
   ${!todays.length?`<div class="remind" style="margin-top:8px">${IC.bell}<div>${esc(reminder)}</div></div>`:""}
-  ${todays.length?`<div id="todaySec">${secTitle("сделано сегодня","today",`<span class="small muted num">+${todays.reduce((a,e)=>a+xpOf(e),0)} xp</span>`)}<div class="stack">${todays.map(entryCard).join("")}</div></div>`:""}
+  ${todays.length?`<div id="todaySec">${secTitle("сделано сегодня","today",`<span class="small muted num">+${todays.reduce((a,e)=>a+xpOf(e),0)} xp</span>`)}<div class="stack">${todayCards(todays)}</div></div>`:""}
   ${planned.length?`${secTitle("в планах","planned",`<span class="small muted num">${planned.length}</span>`)}<div class="stack">${planned.slice(0,5).map(entryCard).join("")}</div>`:""}
 
   ${q?`${secTitle("текущий квест","quest",`<button class="link" data-act="tab" data-id="quests">все квесты</button>`)}<div class="stack">${questCard(q)}</div>`:""}
@@ -1255,7 +1269,7 @@ function pathCompare(d){
 function vSkills(d){
   const act=activeSkills();
   return`${secTitle("мои навыки","skills")}
-  <div class="row" style="margin-top:12px" id="skillBtns"><button class="btn accent" data-act="skillCat" id="skillCatBtn">выбрать навыки</button><button class="btn ghost" data-act="startLevels" id="startLvlBtn">стартовые уровни</button></div>
+  <div class="row" style="margin-top:12px" id="skillBtns"><button class="btn accent" data-act="skillCat" id="skillCatBtn">выбрать навыки</button><button class="btn ghost" data-act="startLevels" id="startLvlBtn">стартовые уровни</button><button class="btn ghost" data-act="profPick">подобрать по профессии</button></div>
   ${!act.length?`<div class="card empty" style="margin-top:12px"><div class="big">пока пусто</div><p class="muted">выбери 5–12 навыков, которые хочешь качать в этом сезоне.</p></div><div class="ghost-v" aria-hidden="true">${[["дизайн",3,60],["нейросети",5,35],["съёмка",2,80]].map(x=>`<div class="g"><b>${x[1]}</b><div style="flex:1"><div style="font-weight:600;font-size:14px">${x[0]}</div><div class="bar"><u style="width:${x[2]}%"></u></div></div></div>`).join("")}<div class="gd" style="text-align:center">так будет выглядеть, когда выберешь навыки</div></div>`:""}
   <div class="stack">${groupedSkills(s=>{const k=d.skills[s.id];const n=d.done.filter(e=>e.primary===s.id).length;const last=d.done.filter(e=>e.primary===s.id||(e.secondary||[]).includes(s.id)).sort((a,b)=>a.date<b.date?1:-1)[0];
     return`<div class="card"><div class="row" style="justify-content:space-between;flex-wrap:nowrap"><div style="min-width:0"><div style="font-weight:700">${esc(s.name)}</div><div class="small muted">${esc(s.d)}</div></div><div class="big num" style="font-size:38px">${k.level}</div></div>
@@ -1467,6 +1481,64 @@ function maybeComeback(){
   const prev=done.map(e=>e.date).filter(d=>d<t).sort().pop();
   if(prev&&diffDays(prev,t)>=3){Store.putEntry({id:uid(),date:t,type:"bonus",xp:25,title:gx("с возвращением! бонус за то, что вернул{ась|ся}"),primary:null,secondary:[]});setTimeout(()=>toast("с возвращением: +25 xp"),1400)}
 }
+/* ================= рутина дня ================= */
+const RT_DEF=["письма и сообщения","отчёты и документы","рабочие мелочи"];
+let RT_LIST=[];
+function routineTpls(){
+  const P=S.profile;const freq={};
+  live().filter(e=>e.type==="routine"&&!e.planned).forEach(e=>{freq[e.title]=(freq[e.title]||0)+1});
+  const byFreq=Object.keys(freq).sort((a,b)=>freq[b]-freq[a]);
+  const out=[];[...(P.routineTpl||[]),...byFreq,...RT_DEF].forEach(t=>{if(t&&!out.includes(t))out.push(t)});
+  return out.slice(0,6);
+}
+function routineSkillFor(title){
+  const act=S.profile.active;
+  const r=live().filter(e=>e.type==="routine"&&!e.planned&&act.includes(e.primary)).sort((a,b)=>(b.ts||0)-(a.ts||0));
+  const same=r.find(e=>e.title===title);if(same)return same.primary;if(r[0])return r[0].primary;
+  return act.includes("job")?"job":act[0];
+}
+function routineAdd(title,skill){
+  const e={id:uid(),date:today(),title:title.trim(),type:"routine",primary:skill,secondary:[],first:false,fear:false,note:"",link:"",money:"",planned:false};
+  const full=routineCount(e.date,e.id)>=ROUTINE_CAP;setNox(e);maybeComeback();Store.putEntry(e);
+  toast(full?"записано: опыт за рутину на сегодня набран, день в серии":"рутина записана: +"+xpOf(e)+" xp");afterChange();
+}
+function routineCard(){
+  const P=S.profile;if(!P.active.length)return"";
+  const t=today();const n=Math.min(ROUTINE_CAP,routineCount(t));
+  const todayR=live().filter(e=>e.date===t&&!e.planned&&e.type==="routine");
+  RT_LIST=routineTpls();
+  const pips=[0,1,2,3].map(i=>`<i class="${i<n?"on":""}"></i>`).join("");
+  const chips=RT_LIST.map((x,i)=>{const c=todayR.filter(e=>e.title===x).length;return`<button type="button" class="chip" data-act="routineQuick" data-i="${i}">${esc(x)}${c?`<span class="cnt">×${c}</span>`:""}</button>`}).join("");
+  return`<section class="card rtn" id="rtnCard" style="margin-top:12px" aria-label="рутина дня">
+  <div class="row" style="justify-content:space-between;flex-wrap:nowrap"><div class="row" style="gap:6px;flex-wrap:nowrap"><b>рутина дня</b><button class="q" data-act="routineHelp" aria-label="что такое рутина">?</button></div><div class="big num" style="font-size:28px;line-height:1">${n}<span class="muted">/${ROUTINE_CAP}</span></div></div>
+  <div class="pips" aria-hidden="true">${pips}</div>
+  <div class="chips" style="margin-top:12px">${chips}<button type="button" class="chip dash" data-act="routineOwn">+ своя</button></div></section>`;
+}
+function routineOwn(){
+  const act=activeSkills();if(!act.length){toast("сначала выбери навыки");return}
+  let skill=routineSkillFor("");
+  const left=routineCount(today())>=ROUTINE_CAP;
+  sheet(`<div class="sheet-h"><h2>своя рутина</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
+  <div class="field"><label for="rtTitle">что ты сделал{а|}</label><input class="in-text" id="rtTitle" maxlength="80" placeholder="например: заказала бумагу для принтера"></div>
+  <div class="field"><span class="lbl">к какому навыку это относится</span><div class="chips" id="rtSk"></div></div>
+  <label class="toggle"><input type="checkbox" id="rtRem" checked> запомнить как быструю кнопку</label>
+  <div class="xpprev"><div><b class="num">${left?"+0 xp":"+"+TY.routine.xp+" xp"}</b> <span class="small muted">${left?"опыт за рутину на сегодня набран":"сегодня уже "+routineCount(today())+" из "+ROUTINE_CAP}</span></div><button class="btn accent" type="button" id="rtSave">записать</button></div>`,el=>{
+    const paint=()=>{el.querySelector("#rtSk").innerHTML=act.map(s=>`<button type="button" class="chip" data-sk="${s.id}" aria-pressed="${skill===s.id}">${esc(s.name)}</button>`).join("")};paint();
+    el.addEventListener("click",ev=>{const b=ev.target.closest("[data-sk]");if(b){skill=b.dataset.sk;paint()}});
+    el.querySelector("#rtSave").onclick=()=>{const v=el.querySelector("#rtTitle").value.trim();if(!v){toast(gx("напиши, что ты сделал{а|}"));el.querySelector("#rtTitle").focus();return}
+      if(el.querySelector("#rtRem").checked){const P=S.profile;P.routineTpl=[v].concat((P.routineTpl||[]).filter(x=>x!==v)).slice(0,6);Store.saveProfile()}
+      closeSheet();routineAdd(v,skill)};
+  });
+}
+function routineHelp(){
+  sheet(`<div class="sheet-h"><h2>что такое рутина</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
+  <p style="margin:4px 0 0;line-height:1.5">дела, которые может сделать любой человек, не имея особых навыков и не вкладывая в них личность: ответить на стандартное письмо, заказать бумагу, помыть посуду.</p>
+  <p class="small muted" style="margin:10px 0 0;line-height:1.5">они нужны и отнимают время, поэтому за них дают очки, но немного.</p>
+  <div class="card" style="margin-top:14px"><b>а всё остальное это прокачка</b><p class="small muted" style="margin:6px 0 0;line-height:1.45">любое дело, которое развивает тебя: учит новому, закрепляет навык, даёт результат, в котором есть твои знания и твой вкус.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px"><div style="background:var(--chip);border-radius:12px;padding:10px;font-size:13.5px"><b>рутина</b><br><span class="muted">ответила на письма, заказала бумагу, прибралась</span></div><div style="background:var(--tile);border:1px solid var(--tile-line);border-radius:12px;padding:10px;font-size:13.5px"><b>прокачка</b><br><span class="muted">составила договор, прошла урок, провела консультацию</span></div></div></div>
+  <div class="card" style="margin-top:10px"><b>сколько очков за рутину</b><div class="small" style="margin:8px 0 0;line-height:1.55">• ${TY.routine.xp} xp за каждое дело<br>• очки дают за первые ${ROUTINE_CAP} рутинных дела в день, то есть до ${TY.routine.xp*ROUTINE_CAP} xp<br>• остальные записываются без очков<br>• любое рутинное дело засчитывает день в серию</div></div>
+  <button class="btn accent wide" style="margin-top:16px" data-act="close">понятно</button>`);
+}
 const who=()=>"пользователя зовут "+(S.profile.name||"без имени")+", пиши о нём в "+(isM()?"мужском":"женском")+" роде.";
 function aiCtx(){return who()+"\nнавыки (id: название): "+activeSkills().map(s=>s.id+": "+s.name+" ("+s.d+")").join("; ")+".\nтипы действий (id: название): "+TYPES.map(t=>t.id+": "+gx(t.label)+" ("+t.hint+")").join("; ")+"."}
 async function aiParse(btn){
@@ -1623,7 +1695,8 @@ function wishView(id){
 }
 
 /* ================= навыки: каталог и уровни ================= */
-function skillCatalog(fromEntry){
+function skillCatalog(fromEntry,after){
+  window._catAfter=after||null;
   const P=S.profile;
   const paint=el=>{
     const act=new Set(P.active);
@@ -1636,7 +1709,7 @@ function skillCatalog(fromEntry){
   <div class="stack" id="catBody"></div>
   <div class="card" style="margin-top:10px"><b>свой навык</b><p class="small muted" style="margin:4px 0 8px">например: «работа: холодные звонки» или «вокал»</p>
   <form id="customForm" class="stack" style="margin-top:0"><input class="in-text" name="n" placeholder="название навыка" maxlength="40"><select class="in-text" name="g">${GROUPS.map(g=>`<option value="${g.id}">${esc(g.name)}</option>`).join("")}</select><button class="btn" type="submit">${IC.plus} добавить и выбрать</button></form></div>
-  <button class="btn accent wide" style="margin-top:14px" data-act="${fromEntry?"catThenAdd":"close"}">готово</button>`,el=>{
+  <button class="btn accent wide" style="margin-top:14px" data-act="${fromEntry?"catThenAdd":after?"catAfter":"close"}">готово</button>`,el=>{
     paint(el);
     el.addEventListener("click",ev=>{const b=ev.target.closest('[data-c="tog"]');if(!b)return;const id=b.dataset.id;
       if(P.active.includes(id))P.active=P.active.filter(x=>x!==id);else P.active.push(id);
@@ -1646,13 +1719,73 @@ function skillCatalog(fromEntry){
       const id="c"+uid();P.custom.push({id,name:n,g:f.g.value,d:"свой навык"});P.active.push(id);Store.saveProfile();f.n.value="";paint(el);afterChange();toast("добавлено: "+n)});
   });
 }
-function openStartLevels(){
+/* ================= профессии → набор навыков ================= */
+const PROFS=[
+  {id:"design",n:"дизайнер",s:["design","uiux","webdesign","motion","illus"]},
+  {id:"dev",n:"разработчик",s:["code","web","nocode","data"]},
+  {id:"ai",n:"нейросети и ии",s:["ai","aitext","agents","auto","nocode"]},
+  {id:"mkt",n:"маркетолог",s:["market","social","ads","copy","brand"]},
+  {id:"creator",n:"автор контента",s:["content","reels","video","photo","social"]},
+  {id:"biz",n:"предприниматель",s:["product","pm","lead","sales","money"]},
+  {id:"law",n:"юрист",s:["law","nego","leads","service","office"]},
+  {id:"med",n:"врач",s:["med","science","teach","service"]},
+  {id:"teach",n:"преподаватель",s:["teach","mentor","speak","content"]},
+  {id:"stud",n:"студент",s:["study","lang","read","think","career"]},
+  {id:"beauty",n:"мастер бьюти",s:["beauty","service","photo","reels","brand"]},
+  {id:"coach",n:"тренер",s:["coach","sport","food","social","mentor"]},
+  {id:"parent",n:"родитель",s:["parent","home","relations","calm","care"]},
+  {id:"other",n:"другое",s:[]}
+];
+const PROF_COMMON=["focus"];
+function profSheet(done){
+  const P=S.profile;let sel=(P.profs||[]).slice();
+  sheet(`<span class="pill">шаг 1 из 3</span><h2 style="margin-top:12px">чем занимаешься?</h2>
+  <p class="small muted" style="margin:0">выбери всё, что про тебя: основное дело и то, что делаешь в свободное время. первое нажатое станет основным.</p>
+  <div class="chips" id="pfChips" style="margin-top:14px"></div>
+  <div class="small muted" id="pfCnt" style="margin-top:12px"></div>
+  <button class="btn accent wide" style="margin-top:18px" id="pfNext">дальше: проверить набор навыков</button>
+  <button class="link" id="pfSkip" style="margin-top:10px;display:block">пропустить, выберу сам</button>`,el=>{
+    const paint=()=>{
+      el.querySelector("#pfChips").innerHTML=PROFS.map(x=>{const i=sel.indexOf(x.id);return`<button type="button" class="chip" data-pf="${x.id}" aria-pressed="${i>=0}" style="padding:10px 14px;font-size:14px">${esc(x.n)}${i>=0?`<span style="opacity:.75;font-size:11px;margin-left:6px">${i===0?"основное":"ещё"}</span>`:""}</button>`}).join("");
+      el.querySelector("#pfCnt").textContent=sel.length?"выбрано: "+sel.length:"можно выбрать несколько. не нашёл{ась|ся} себя? жми «другое», и откроется весь каталог".replace(/\{([^{}|]*)\|([^{}|]*)\}/,(m,a,b)=>isM()?b:a);
+    };paint();
+    el.addEventListener("click",ev=>{const b=ev.target.closest("[data-pf]");if(!b)return;const id=b.dataset.pf;sel=sel.includes(id)?sel.filter(x=>x!==id):sel.concat(id);paint()});
+    el.querySelector("#pfSkip").onclick=()=>{closeSheet();P.tourDone=P.tourDone;done&&done("skip")};
+    el.querySelector("#pfNext").onclick=()=>{if(!sel.length){toast("выбери хотя бы один вариант или пропусти");return}
+      P.profs=sel.slice();Store.saveProfile();closeSheet();profSet(sel,done)};
+  });
+}
+function profSet(sel,done){
+  const P=S.profile;
+  const groups=[];const used=new Set(P.active);
+  sel.forEach(id=>{const pr=PROFS.find(x=>x.id===id);if(!pr)return;const items=pr.s.filter(k=>skillById(k)&&!used.has(k));items.forEach(k=>used.add(k));groups.push({t:pr.n,items})});
+  const com=PROF_COMMON.filter(k=>skillById(k)&&!used.has(k));if(com.length)groups.push({t:"для всех",items:com});
+  const had=P.active.slice();
+  sheet(`<span class="pill">шаг 2 из 3</span><h2 style="margin-top:12px">твой набор навыков</h2>
+  <p class="small muted" style="margin:0">нажми на ✕, если что-то лишнее. добавить можно из каталога. лучше от 5 до 12, чтобы силы не распылялись.</p>
+  <div id="psBody"></div>
+  <button class="chip dash" id="psCat" style="margin-top:14px">+ добавить из каталога</button>
+  <div class="small" style="margin-top:14px;font-weight:600" id="psCnt"></div>
+  <button class="btn accent wide" style="margin-top:12px" id="psNext">дальше: стартовые уровни</button>`,el=>{
+    const paint=()=>{
+      el.querySelector("#psBody").innerHTML=groups.map((g,gi)=>`<div class="small muted" style="margin:14px 0 6px">${gi===groups.length-1&&g.t==="для всех"?"для всех":"из «"+esc(g.t)+"»"}</div><div class="chips">${g.items.length?g.items.map(k=>`<button type="button" class="chip" aria-pressed="true" data-rm="${k}">${esc(skillById(k).name)}<span style="opacity:.7;margin-left:8px">✕</span></button>`).join(""):`<span class="small muted">для этого варианта набор не готов, выбери навыки в каталоге</span>`}</div>`).join("");
+      const n=new Set(had.concat(...groups.map(g=>g.items))).size;
+      el.querySelector("#psCnt").textContent="выбрано навыков: "+n+(n>12?". многовато, лучше до 12":"");
+    };paint();
+    el.addEventListener("click",ev=>{const b=ev.target.closest("[data-rm]");if(!b)return;groups.forEach(g=>{g.items=g.items.filter(k=>k!==b.dataset.rm)});paint()});
+    const commit=()=>{groups.forEach(g=>g.items.forEach(k=>{if(!P.active.includes(k)){P.active.push(k);if(P.startLevels[k]==null&&k!=="job")P.startLevels[k]=1}}));P.seenSkills=null;Store.saveProfile();afterChange()};
+    el.querySelector("#psCat").onclick=()=>{commit();closeSheet();skillCatalog(false,()=>{closeSheet();openStartLevels(()=>done&&done("ok"))})};
+    el.querySelector("#psNext").onclick=()=>{if(!new Set(had.concat(...groups.map(g=>g.items))).size){toast("выбери хотя бы один навык в каталоге");return}commit();closeSheet();openStartLevels(()=>done&&done("ok"))};
+  });
+}
+function openStartLevels(onDone){
+  window._slDone=onDone||null;
   const P=S.profile;const act=activeSkills();
   sheet(`<div class="sheet-h"><h2>стартовые уровни</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
   <p class="small muted" style="margin:0">на каком уровне ты был{а|} до начала сезона. 1 значит только начинаю, 5 уверенно, 10 сильный профи, 15 и выше топ в своём деле.</p>
   <p class="small" style="font-weight:600">сохраняется, как только нажмёшь цифру.</p>
   <div class="stack" id="slList">${act.length?act.map(s=>`<div class="card"><div style="font-weight:600">${esc(s.name)}</div><div class="chips" style="margin-top:8px;display:grid;grid-template-columns:repeat(8,1fr);gap:6px" role="group" aria-label="уровень: ${esc(s.name)}">${[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15].map(n=>`<button type="button" class="chip num" data-sl="${s.id}" data-n="${n}" aria-pressed="${(P.startLevels[s.id]||1)===n}" style="min-width:0;padding:9px 0;text-align:center">${n}</button>`).join("")}</div></div>`).join(""):`<div class="card small muted">сначала выбери навыки.</div><div class="ghost-v" aria-hidden="true">${[["дизайн",3],["нейросети",5]].map(x=>`<div class="g"><div style="flex:1;font-weight:600;font-size:14px">${x[0]}</div><div class="chips" style="gap:4px">${[1,2,3,4,5,6].map(n=>`<span class="chip num" style="min-width:30px;${n===x[1]?"background:var(--panel);color:#fff":""}">${n}</span>`).join("")}</div></div>`).join("")}<div class="gd" style="text-align:center">так будет выглядеть, когда выберешь навыки</div></div>`}</div>
-  <button class="btn accent wide" style="margin-top:16px" data-act="close">готово</button>`,el=>{
+  <button class="btn accent wide" style="margin-top:16px" data-act="${onDone?"slDone":"close"}">${onDone?"готово, начинаем":"готово"}</button>`,el=>{
     el.addEventListener("click",ev=>{const b=ev.target.closest("[data-sl]");if(!b)return;const id=b.dataset.sl,n=+b.dataset.n;
       P.startLevels[id]=n;P.seenSkills=null;Store.saveProfile();
       el.querySelectorAll(`[data-sl="${id}"]`).forEach(x=>x.setAttribute("aria-pressed",String(+x.dataset.n===n)));
@@ -1803,7 +1936,7 @@ function rulesSheet(){
   sheet(`<div class="sheet-h"><h2>правила игры</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
   <div class="stack" style="margin-top:0">
   <div class="card"><b>сезон и уровни</b><p class="small" style="margin:6px 0 0">сезон длится 90 дней. опыт поднимает уровень, а на некоторых уровнях дают звание: ${RANKS.map(r=>r[1]).join(" → ")}.</p></div>
-  <div class="card"><b>сколько опыта за что</b><div class="xptable">${TYPES.map(t=>`<span>${t.label} <span class="muted small">${t.hint}</span></span><b>${t.xp}</b>`).join("")}<span>рутина: не больше 4 в день дают опыт, остальные просто идут в серию</span><b>5</b><span>делаю впервые</span><b>×1.5</b><span>шаг в страх</span><b>+${FEAR_XP}</b><span>квест дня / недели / босс</span><b>30 / 80 / 250</b><span>шаг к цели сезона</span><b>40</b></div></div>
+  <div class="card"><b>сколько опыта за что</b><div class="xptable">${TYPES.map(t=>`<span>${t.label} <span class="muted small">${t.hint}</span></span><b>${t.xp}</b>`).join("")}<span>рутина сверх четырёх в день, день остаётся в серии</span><b>0</b><span>делаю впервые</span><b>×1.5</b><span>шаг в страх</span><b>+${FEAR_XP}</b><span>квест дня / недели / босс</span><b>30 / 80 / 250</b><span>шаг к цели сезона</span><b>40</b></div></div>
   <div class="card"><b>навыки</b><p class="small" style="margin:6px 0 0">у каждого навыка 20 уровней. основной навык получает весь опыт за действие, дополнительные (их можно выбрать до двух) получают по 40%.</p></div>
   <div class="card"><b>монеты</b><p class="small" style="margin:6px 0 0">за каждые 10 xp дают монету. их можно потратить на хотелки из вишлиста.</p></div>
   <div class="card"><b>мягкая серия</b><p class="small" style="margin:6px 0 0">за неделю без пропусков дают заморозку, максимум три. если пропустишь день, сгорит заморозка, а серия останется. если вернёшься после перерыва в пару дней, получишь 25 xp бонусом.</p></div>
@@ -1827,7 +1960,7 @@ async function introGo(){
   closeSheet();
   if(!S.profile.name||!S.profile.gender){meetSheet(introGo);return}
 
-  if(!S.profile.active.length){S.view="skills";render();tourStart(true);return}
+  if(!S.profile.active.length){profSheet(r=>{if(r==="skip"){S.view="skills";render();tourStart(true)}else tourStart()});return}
   tourStart();
 }
 const TOUR=[
@@ -1847,7 +1980,7 @@ const TOUR=[
   {id:"seg",v:"path",t:"#pathSeg",h:"три вида",p:"в ленте все действия по дням. на графике видно, как растёт опыт. «до и после» сравнивает тебя сейчас и в любой прошлый день."},
   {id:"skills",t:".nav [data-id='skills']",h:"навыки",p:"здесь все твои навыки.",tap:"нажми «навыки»",until:()=>S.view==="skills"},
   {id:"lvl",v:"skills",t:"#startLvlBtn",h:"с чего начинаешь",p:"укажи, на каком уровне ты уже сейчас, чтобы не начинать с нуля там, где давно умеешь.",tap:"нажми «стартовые уровни»",until:()=>!!$("#slList")},
-  {id:"lvlpick",t:"#slList",h:"нажимай цифры",p:"1 значит только начинаю, 5 уверенно, 8–9 эксперт. всё сохраняется сразу.",free:true,back:"lvl",leave:()=>closeSheet()},
+  {id:"lvlpick",t:"#slList",h:"нажимай цифры",p:"1 значит только начинаю, 5 уверенно, 10 сильный профи, 15 и выше топ. всё сохраняется сразу.",free:true,back:"lvl",leave:()=>closeSheet()},
   {id:"quests",t:".nav [data-id='quests']",h:"квесты",p:"здесь задания посложнее.",tap:"нажми «квесты»",until:()=>S.view==="quests"},
   {id:"qa",v:"quests",t:"#questAdd",h:"как взять квест",p:"по кнопке «предложи квест» приложение подберёт задание для навыка, который сейчас отстаёт, и объяснит зачем. а можно придумать своё."},
   {id:"goals",v:"quests",t:"#goalsSec",h:"цели сезона",p:"тут большие цели. впиши маленький шаг и нажми «добавить». за каждую галочку дают 40 xp."},
@@ -1977,6 +2110,13 @@ document.addEventListener("click",ev=>{
     case"skillCat":skillCatalog();break;
     case"catThenAdd":closeSheet();if(S.profile.active.length)openEntry(null,{});break;
     case"startLevels":openStartLevels();break;
+    case"slDone":{closeSheet();const f=window._slDone;window._slDone=null;if(f)f();break}
+    case"catAfter":{closeSheet();const f=window._catAfter;window._catAfter=null;if(f)f();break}
+    case"profPick":profSheet(r=>{if(r!=="skip")render()});break;
+    case"routineHelp":routineHelp();break;
+    case"routineOwn":routineOwn();break;
+    case"routineQuick":{const tt=RT_LIST[+b.dataset.i];if(tt)routineAdd(tt,routineSkillFor(tt));break}
+    case"routTog":S.routOpen=!S.routOpen;render();break;
     case"importPast":importPast();break;
     case"tourStart":tourStart();break;
     case"tourSkip":tourSkip();break;
