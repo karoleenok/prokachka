@@ -1364,6 +1364,7 @@ function showLevelUp(c){
 let assetsNs=null,sampleNs=null,downloadsNs=null;
 const readURL=f=>new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>res(fr.result);fr.onerror=rej;fr.readAsDataURL(f)});
 const loadImg=u=>new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=u});
+async function shrinkShot(file){const u=await readURL(file);const im=await loadImg(u);const k=Math.min(1,1024/Math.max(im.naturalWidth,im.naturalHeight));const c=document.createElement("canvas");c.width=Math.round(im.naturalWidth*k);c.height=Math.round(im.naturalHeight*k);c.getContext("2d").drawImage(im,0,0,c.width,c.height);return c.toDataURL("image/jpeg",.8)}
 const shopFmt=sh=>sh.amount.toLocaleString("ru-RU")+" "+(sh.cur||(sh.ru?"₽":""));
 async function pickImage(file){
   const u0=await readURL(file);const im=await loadImg(u0);const w=im.naturalWidth,h=im.naturalHeight;
@@ -1760,7 +1761,8 @@ function rewardForm(r0){
   sheet(`<div class="sheet-h"><h2>${isEdit?"хотелка":"новая хотелка"}</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
   <div class="field" style="margin-top:0"><label for="rU">вставь ссылку на вещь, я заполню сама</label>
   <div class="row" style="gap:8px;flex-wrap:nowrap"><input class="in-text" id="rU" type="url" inputmode="url" autocomplete="off" placeholder="ссылка из магазина или с маркетплейса" style="flex:1;min-width:0"><button type="button" class="btn accent" id="rUgo" style="flex:none">заполнить</button></div>
-  <p class="small muted" id="rUn" style="margin-top:6px"></p></div>
+  <p class="small muted" id="rUn" style="margin-top:6px"></p>
+  <label class="btn ghost" for="rShot" style="margin-top:8px;cursor:pointer;width:100%">или загрузи скриншот карточки</label><input type="file" id="rShot" accept="image/*" hidden></div>
   <div class="field"><span class="lbl">фото: первое будет обложкой</span><div class="gal" id="rGal"></div>
   <label class="btn ghost" for="rImg" style="margin-top:8px;cursor:pointer">${IC.plus} добавить фото</label><input type="file" id="rImg" accept="image/*" multiple hidden></div>
   <div class="field"><label for="rT">что хочу себе позволить</label><input class="in-text" id="rT" value="${esc(r.title)}"></div>
@@ -1797,7 +1799,7 @@ function rewardForm(r0){
       try{
         const d=await post("/unfurl",{url:link}).then(x=>x.json());
         el.querySelector("#rL").value=link;
-        if(!d.ok){UN.textContent=d.reason==="link"?"не похоже на ссылку. вставь адрес страницы целиком.":"сайт не отдал данные (так бывает у ozon, wildberries и яндекс маркета). ссылку сохранила, название, фото и цену добавь руками.";return}
+        if(!d.ok){UN.textContent=d.reason==="link"?"не похоже на ссылку. вставь адрес страницы целиком.":"сайт не отдал данные (так бывает у ozon, wildberries и яндекс маркета). ссылку сохранила. нажми «загрузи скриншот карточки» ниже, название и цену прочитаю с картинки.";return}
         if(d.title)el.querySelector("#rT").value=d.title;
         if(d.price){let ru=false;try{ru=/\.ru$/i.test(new URL(d.final||link).hostname)}catch(x){}shop={amount:d.price,cur:d.cur||"",ru};recalc()}
         let added=0;
@@ -1810,6 +1812,24 @@ function rewardForm(r0){
         if(d.title&&!d.price)UN.textContent+=" цену сайт не показал.";
       }catch(x){UN.textContent="не получилось, проверь интернет и попробуй ещё раз."}
       finally{UB.disabled=false;UB.textContent="заполнить"}
+    };
+    el.querySelector("#rShot").onchange=async ev=>{
+      const f=ev.target.files[0];ev.target.value="";if(!f)return;
+      if(!TG){UN.textContent="чтение скриншота работает только внутри телеграма.";return}
+      UN.innerHTML='<span class="spin"></span> читаю скриншот…';
+      try{
+        const image=await shrinkShot(f);
+        const d=await fetch(BOT_API+"/shot",{method:"POST",headers:{"content-type":"text/plain"},body:JSON.stringify({initData:TG.initData,image})}).then(x=>x.json());
+        const photo=await pickImage(f);r.imgs.push(photo);paintG();
+        if(!d.ok){
+          UN.textContent=d.reason==="noai"?"скриншот добавила как фото. чтобы я читала текст с картинки, нужно один раз подключить Workers AI к воркеру (скажи Claude, он подскажет).":d.reason==="limit"?"на сегодня лимит чтения скриншотов закончился, фото добавила, название и цену впиши руками.":"фото добавила, но текст прочитать не вышло"+(d.err?" ("+d.err+")":"")+". впиши название и цену руками.";
+          return}
+        if(d.title)el.querySelector("#rT").value=d.title;
+        if(d.price){shop={amount:d.price,cur:d.cur||"",ru:!d.cur||d.cur==="₽"};recalc()}
+        const bits=[];if(d.title)bits.push("название");if(d.price)bits.push("цену");
+        UN.textContent="прочитала "+(bits.join(" и ")||"скриншот")+", скриншот добавила как фото. проверь числа: нейросеть может ошибиться."+(d.price?"":" цену не нашла.");
+        cropper(photo,4/5,c=>{const i=r.imgs.indexOf(photo);if(i>=0)r.imgs[i]=c;paintG()});
+      }catch(x){UN.textContent="не получилось, проверь интернет и попробуй ещё раз."}
     };
     el.querySelector("#rS").onclick=()=>{const t=el.querySelector("#rT").value.trim();const p=Math.max(1,parseInt(el.querySelector("#rP").value,10)||1);if(!t){toast("напиши хотелку");return}
       const list=S.profile.rewards;const i=list.findIndex(x=>x.id===r.id);S.profile.coinRate=rate();const nr={id:r.id,title:t,price:p,link:el.querySelector("#rL").value.trim(),imgs:r.imgs};if(shop)nr.shop=shop;if(i>=0)list[i]=nr;else list.push(nr);Store.saveProfile();closeSheet();toast("хотелка сохранена");afterChange()};
