@@ -191,7 +191,7 @@ button{cursor:pointer;border:0;background:none;-webkit-tap-highlight-color:trans
 .needb.open{border-color:var(--accent-t);background:var(--tile)}
 #needsCard .icons5{margin-top:12px}
 .icons5{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
-.icons5 button{min-height:72px;padding:8px 2px 6px;border-radius:14px;background:var(--chip);color:var(--muted);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border:1.5px solid transparent}.icons5 button i{font-style:normal;font-size:10px;line-height:1.1;text-align:center;letter-spacing:-.2px;white-space:nowrap}.nhint{margin-top:8px;font-size:13px;color:var(--muted)}
+.icons5 button{min-height:52px;padding:0;border-radius:14px;background:var(--chip);color:var(--muted);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border:1.5px solid transparent}.icons5 button i{font-style:normal;font-size:10px;line-height:1.1;text-align:center;letter-spacing:-.2px;white-space:nowrap}.nhint{margin-top:8px;font-size:13px;color:var(--muted)}
 .icons5 button svg{width:30px;height:30px}
 .icons5 button.on{background:var(--accent);color:var(--accent-ink)}
 .icons5 button.past{color:var(--accent-t)}
@@ -1127,7 +1127,7 @@ function stateBlock(date){
   const st=S.profile.states[date]||{};const open=S.needOpen;
   const head=`<div class="need3">${STATES.map(s=>{const v=st[s.k]||0;return`<button class="needb ${v?"set":""} ${open===s.k?"open":""}" data-act="needOpen" data-k="${s.k}" aria-expanded="${open===s.k}" aria-label="${s.n}: ${v?esc(s.labels[v-1]):"не отмечено"}"><span class="ni">${stateIcon(s.k,v||3)}</span><b>${s.n}</b><span class="nv">${v?esc(s.labels[v-1]):"отметить"}</span></button>`}).join("")}</div>`;
   const o=STATES.find(s=>s.k===open);const v=o?(st[o.k]||0):0;
-  const body=o?`<div class="icons5" role="group" aria-label="${o.n}">${[1,2,3,4,5].map(n=>`<button data-act="need" data-k="${o.k}" data-n="${n}" class="${v===n?"on":""}" aria-pressed="${v===n}" aria-label="${o.n}: ${esc(o.labels[n-1])}">${stateIcon(o.k,n)}<i>${esc(o.labels[n-1])}</i></button>`).join("")}</div>${o.hint?`<div class="nhint">${o.hint}</div>`:""}`:"";
+  const body=o?`<div class="icons5" role="group" aria-label="${o.n}">${[1,2,3,4,5].map(n=>`<button data-act="need" data-k="${o.k}" data-n="${n}" class="${v===n?"on":""}" aria-pressed="${v===n}" aria-label="${o.n}: ${esc(o.labels[n-1])}">${stateIcon(o.k,n)}</button>`).join("")}</div>`:"";
   return head+body;
 }
 
