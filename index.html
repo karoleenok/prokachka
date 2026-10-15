@@ -937,7 +937,12 @@ function pushSync(now,cfg){
     const ord={day:0,week:1,month:2};
     const q=(S.profile.challenges||[]).filter(c=>c.status==="active").sort((a,b)=>(ord[a.period]??3)-(ord[b.period]??3))[0];
     const body={initData:TG.initData,tz:-new Date().getTimezoneOffset(),last,todo,quest:q?(q.title+(q.period==="day"?"":q.period==="week"?" (на неделе)":" (в этом месяце)")):"",prof:(S.profile.profs||[]).slice(0,3)};
-    if(cfg){const R=S.profile.remind||{};body.cfg={on:!!R.on,hour:R.hour||20,count:R.count||1}}
+    {const dn=S.entries.filter(e=>!e.del&&!e.planned);const dayE=dn.filter(e=>e.date===t);const main=dayE.filter(e=>e.type!=="routine");
+      body.day={d:t,rt:dayE.length-main.length,xp:dayE.reduce((s,e)=>s+xpOf(e),0),items:main.slice(0,5).map(e=>({t:String(e.title||"").slice(0,50),x:xpOf(e)})),more:Math.max(0,main.length-5)};
+      const w0=addDays(t,-6);const wE=dn.filter(e=>e.date>=w0&&e.date<=t);const bySk={};wE.forEach(e=>{if(e.primary)bySk[e.primary]=(bySk[e.primary]||0)+xpOf(e)});
+      const topId=Object.keys(bySk).sort((a,b)=>bySk[b]-bySk[a])[0];const tsk=topId&&allSkills().find(s=>s.id===topId);const dv=derive();
+      body.wk={xp:wE.reduce((s,e)=>s+xpOf(e),0),n:wE.length,days:new Set(wE.map(e=>e.date)).size,top:tsk?tsk.name:"",lvl:dv.level,st:dv.streak.cur}}
+    if(cfg){const R=S.profile.remind||{};body.cfg={on:!!R.on,hour:R.hour||20,count:R.count||1,rep:R.rep!==false,wk:R.wk!==false}}
     fetch(BOT_API+"/sync",{method:"POST",headers:{"content-type":"text/plain"},body:JSON.stringify(body)}).then(r=>r.json()).then(j=>{
       const c=j&&j.cfg;if(c&&!cfg){const R=S.profile.remind||(S.profile.remind={on:false,hour:20,count:1});
         if(R.on!==c.on||R.hour!==c.hour||R.count!==c.count){R.on=c.on;R.hour=c.hour;R.count=c.count;Store.cache&&Store.cache()}}}).catch(()=>{});
@@ -1886,7 +1891,10 @@ function openSettings(){
     <select class="in-text" id="remCount" style="width:auto;padding:8px 12px">${[1,2,3].map(n=>`<option value="${n}" ${((S.profile.remind&&S.profile.remind.count)||1)===n?"selected":""}>${n}</option>`).join("")}</select>
     <label for="remHour" class="small muted">с</label>
     <select class="in-text" id="remHour" style="width:auto;padding:8px 12px">${Array.from({length:16},(_,i)=>i+8).map(h=>`<option value="${h}" ${((S.profile.remind&&S.profile.remind.hour)||20)===h?"selected":""}>${String(h).padStart(2,"0")}:00</option>`).join("")}</select></div>
-    <p class="small muted" style="margin:8px 0 0">бот напишет в выбранное время и напомнит, что у тебя в планах на сегодня. если уже всё записано и дел нет, промолчит.</p></div>`:`<p class="small muted" style="margin-top:16px">напоминания работают, когда приложение открыто из телеграма.</p>`}
+    <p class="small muted" style="margin:8px 0 0">бот напишет в выбранное время и напомнит, что у тебя в планах на сегодня. если уже всё записано и дел нет, промолчит.</p>
+    <label class="row" style="margin-top:12px;gap:10px;align-items:center;cursor:pointer"><input type="checkbox" id="repDay" ${S.profile.remind&&S.profile.remind.rep===false?"":"checked"}><span class="small">итоги дня в 21:00</span></label>
+    <label class="row" style="margin-top:8px;gap:10px;align-items:center;cursor:pointer"><input type="checkbox" id="repWk" ${S.profile.remind&&S.profile.remind.wk===false?"":"checked"}><span class="small">итоги недели по воскресеньям</span></label>
+    <p class="small muted" style="margin:6px 0 0">работают, пока включены напоминания.</p></div>`:`<p class="small muted" style="margin-top:16px">напоминания работают, когда приложение открыто из телеграма.</p>`}
   <div class="card stack" style="margin-top:16px;gap:10px">
     <button class="btn ghost wide" data-act="meet">имя и обращение</button>
     <button class="btn ghost wide" data-act="skillCat">выбрать навыки</button>
@@ -1907,6 +1915,8 @@ function openSettings(){
       rs.querySelectorAll("button").forEach(b=>b.onclick=()=>{const on=+b.dataset.rem===1;
         if(on&&TG&&TG.requestWriteAccess){try{TG.requestWriteAccess(()=>{})}catch(x){}}apply(on)});
       el.querySelector("#remHour").onchange=el.querySelector("#remCount").onchange=()=>{if(P.remind.on)apply(true);else{P.remind.hour=+el.querySelector("#remHour").value;P.remind.count=+el.querySelector("#remCount").value;Store.saveProfile()}}}
+    const rd1=el.querySelector("#repDay"),rd2=el.querySelector("#repWk");
+    if(rd1&&rd2){const P=S.profile;const sv=()=>{if(!P.remind)P.remind={on:false,hour:20,count:1};P.remind.rep=rd1.checked;P.remind.wk=rd2.checked;Store.saveProfile();pushSync(true,true)};rd1.onchange=rd2.onchange=sv}
     el.querySelector("#restoreFile").onchange=ev=>{const f=ev.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{let data;try{data=JSON.parse(rd.result)}catch(x){toast("это не файл копии прокачки");return}
       if(!data||!data.profile||!Array.isArray(data.entries)){toast("в файле нет данных прокачки");return}
       confirmSheet("заменить данные?","сейчас записей: "+live().length+". в копии: "+data.entries.filter(e=>!e.del).length+". текущие данные заменятся копией.","заменить",()=>restore(data))};rd.readAsText(f)};
