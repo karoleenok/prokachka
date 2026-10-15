@@ -1760,9 +1760,9 @@ function rewardForm(r0){
   if(!Array.isArray(r.imgs))r.imgs=r.img?[r.img]:[];delete r.img;
   sheet(`<div class="sheet-h"><h2>${isEdit?"хотелка":"новая хотелка"}</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
   <div class="field" style="margin-top:0"><label for="rU">вставь ссылку на вещь, я заполню сама</label>
-  <div class="row" style="gap:8px;flex-wrap:nowrap"><input class="in-text" id="rU" type="url" inputmode="url" autocomplete="off" placeholder="ссылка из магазина или с маркетплейса" style="flex:1;min-width:0"><button type="button" class="btn accent" id="rUgo" style="flex:none">заполнить</button></div>
+  <div class="row" style="gap:8px;flex-wrap:nowrap"><input class="in-text" id="rU" type="url" inputmode="url" autocomplete="off" placeholder="ссылка или скопированный текст из магазина" style="flex:1;min-width:0"><button type="button" class="btn accent" id="rUgo" style="flex:none">заполнить</button></div>
   <p class="small muted" id="rUn" style="margin-top:6px"></p>
-  <label class="btn ghost" for="rShot" style="margin-top:8px;cursor:pointer;width:100%">или загрузи скриншот карточки</label><input type="file" id="rShot" accept="image/*" hidden></div>
+  <label class="btn ghost" for="rShot" style="margin-top:8px;cursor:pointer;width:100%">или добавь скриншот карточки как фото</label><input type="file" id="rShot" accept="image/*" hidden></div>
   <div class="field"><span class="lbl">фото: первое будет обложкой</span><div class="gal" id="rGal"></div>
   <label class="btn ghost" for="rImg" style="margin-top:8px;cursor:pointer">${IC.plus} добавить фото</label><input type="file" id="rImg" accept="image/*" multiple hidden></div>
   <div class="field"><label for="rT">что хочу себе позволить</label><input class="in-text" id="rT" value="${esc(r.title)}"></div>
@@ -1792,14 +1792,24 @@ function rewardForm(r0){
     rateEl.oninput=()=>{if(shop)recalc()};
     const UN=el.querySelector("#rUn"),UB=el.querySelector("#rUgo"),UI=el.querySelector("#rU");
     UB.onclick=async()=>{
-      const link=UI.value.trim();if(!link){toast("вставь ссылку");return}
+      const raw=UI.value.trim();if(!raw){toast("вставь ссылку");return}
+      const um=raw.match(/https?:\/\/[^\s<>"]+/i);const link=um?um[0].replace(/[).,;»]+$/,""):raw;
+      const rest=um?raw.replace(um[0],"").replace(/\s+/g," ").trim():"";
+      const pm=rest.match(/(\d[\d\s\u00a0]{0,9}\d|\d)\s*(₽|руб\.?|р\.|р\b)/i);
+      let tx=rest;if(pm)tx=tx.replace(pm[0],"");tx=tx.replace(/[«»"]/g,"").replace(/^[\s—–\-:,.]+|[\s—–\-:,.]+$/g,"").trim();
+      if(um)UI.value=link;
+      const fromText=()=>{let got=[];
+        if(tx&&tx.length>2){el.querySelector("#rT").value=tx.slice(0,140);got.push("название")}
+        if(pm){const a=parseInt(pm[1].replace(/[\s\u00a0]/g,""),10);if(a>0){shop={amount:a,cur:"₽",ru:true};recalc();got.push("цену")}}
+        return got};
       if(!TG){UN.textContent="заполнение по ссылке работает только внутри телеграма.";return}
       UB.disabled=true;UB.innerHTML='<span class="spin"></span> ищу…';UN.textContent="";
       const post=(path,o)=>fetch(BOT_API+path,{method:"POST",headers:{"content-type":"text/plain"},body:JSON.stringify(Object.assign({initData:TG.initData},o))});
       try{
         const d=await post("/unfurl",{url:link}).then(x=>x.json());
         el.querySelector("#rL").value=link;
-        if(!d.ok){UN.textContent=d.reason==="link"?"не похоже на ссылку. вставь адрес страницы целиком.":"сайт не отдал данные (так бывает у ozon, wildberries и яндекс маркета). ссылку сохранила. нажми «загрузи скриншот карточки» ниже, название и цену прочитаю с картинки.";return}
+        if(!d.ok){const g=fromText();UN.textContent=d.reason==="link"?"не похоже на ссылку. вставь адрес страницы целиком.":"сайт не отдал данные (так бывает у ozon, wildberries и яндекс маркета). ссылку сохранила"+(g.length?", из текста взяла: "+g.join(" и ")+".":". впиши название и цену руками или скопируй в магазине название с ценой и вставь сюда вместе со ссылкой.")+" фото можно добавить скриншотом ниже.";return}
+        const g0=fromText();
         if(d.title)el.querySelector("#rT").value=d.title;
         if(d.price){let ru=false;try{ru=/\.ru$/i.test(new URL(d.final||link).hostname)}catch(x){}shop={amount:d.price,cur:d.cur||"",ru};recalc()}
         let added=0;
@@ -1815,21 +1825,12 @@ function rewardForm(r0){
     };
     el.querySelector("#rShot").onchange=async ev=>{
       const f=ev.target.files[0];ev.target.value="";if(!f)return;
-      if(!TG){UN.textContent="чтение скриншота работает только внутри телеграма.";return}
-      UN.innerHTML='<span class="spin"></span> читаю скриншот…';
       try{
-        const image=await shrinkShot(f);
-        const d=await fetch(BOT_API+"/shot",{method:"POST",headers:{"content-type":"text/plain"},body:JSON.stringify({initData:TG.initData,image})}).then(x=>x.json());
+        if(r.imgs.length>=8){toast("фото уже максимум");return}
         const photo=await pickImage(f);r.imgs.push(photo);paintG();
-        if(!d.ok){
-          UN.textContent=d.reason==="noai"?"скриншот добавила как фото. чтобы я читала текст с картинки, нужно один раз подключить Workers AI к воркеру (скажи Claude, он подскажет).":d.reason==="limit"?"на сегодня лимит чтения скриншотов закончился, фото добавила, название и цену впиши руками.":"фото добавила, но текст прочитать не вышло"+(d.err?" ("+d.err+")":"")+". впиши название и цену руками.";
-          return}
-        if(d.title)el.querySelector("#rT").value=d.title;
-        if(d.price){shop={amount:d.price,cur:d.cur||"",ru:!d.cur||d.cur==="₽"};recalc()}
-        const bits=[];if(d.title)bits.push("название");if(d.price)bits.push("цену");
-        UN.textContent="прочитала "+(bits.join(" и ")||"скриншот")+", скриншот добавила как фото. проверь числа: нейросеть может ошибиться."+(d.price?"":" цену не нашла.");
+        UN.textContent="скриншот добавила как фото. обрежь до товара, название и цену впиши.";
         cropper(photo,4/5,c=>{const i=r.imgs.indexOf(photo);if(i>=0)r.imgs[i]=c;paintG()});
-      }catch(x){UN.textContent="не получилось, проверь интернет и попробуй ещё раз."}
+      }catch(x){UN.textContent="не получилось добавить картинку, попробуй ещё раз."}
     };
     el.querySelector("#rS").onclick=()=>{const t=el.querySelector("#rT").value.trim();const p=Math.max(1,parseInt(el.querySelector("#rP").value,10)||1);if(!t){toast("напиши хотелку");return}
       const list=S.profile.rewards;const i=list.findIndex(x=>x.id===r.id);S.profile.coinRate=rate();const nr={id:r.id,title:t,price:p,link:el.querySelector("#rL").value.trim(),imgs:r.imgs};if(shop)nr.shop=shop;if(i>=0)list[i]=nr;else list.push(nr);Store.saveProfile();closeSheet();toast("хотелка сохранена");afterChange()};
