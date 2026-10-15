@@ -85,7 +85,7 @@ button{cursor:pointer;border:0;background:none;-webkit-tap-highlight-color:trans
 .big::first-letter,.q-title::first-letter,.sel.plain::first-letter,.sheet h2::first-letter,.tour .tip h3::first-letter{text-transform:uppercase}
 .hero .big{font-size:clamp(56px,18.5vw,74px);margin-top:4px}
 .hero .pill,.hero .stat{background:var(--soft);color:#171C24}
-.hero .coin{box-shadow:inset 0 0 0 1.5px var(--accent),inset 0 0 0 4px #fff,inset 0 0 0 5px var(--accent);background:var(--accent)}
+.hero .coin{background:#fff;box-shadow:inset 0 0 0 1.5px rgba(23,28,36,.18)}
 .rank{font-size:15px;font-weight:600;margin-top:6px;opacity:.95}
 .xpbar{height:10px;border-radius:999px;background:var(--hero-track);margin-top:14px;overflow:hidden}
 .xpbar i{display:block;height:100%;border-radius:999px;background:var(--hero-fill);transition:width .9s cubic-bezier(.2,.8,.2,1)}
@@ -220,7 +220,8 @@ button{cursor:pointer;border:0;background:none;-webkit-tap-highlight-color:trans
 .check svg{width:15px;height:15px}
 
 /* wishlist */
-.coin{width:16px;height:16px;border-radius:50%;background:var(--coin);display:inline-block;flex:none;box-shadow:inset 0 0 0 1.5px rgba(51,115,207,.45),inset 0 0 0 4px var(--coin),inset 0 0 0 5px rgba(51,115,207,.2)}
+#rUn:empty,#rShop:empty{display:none}
+.coin{width:16px;height:16px;border-radius:50%;background:var(--accent-t);display:inline-block;flex:none;box-shadow:inset 0 0 0 1.5px rgba(23,28,36,.22)}
 .price{display:inline-flex;align-items:center;gap:5px;font-weight:700}
 .wish-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
 .wish{background:var(--card);border-radius:18px;overflow:hidden;display:flex;flex-direction:column}
@@ -450,6 +451,7 @@ html.tt,html.tt *{transition:background-color .4s ease,color .4s ease,border-col
   .iconbtn:hover,.btn:hover,.chip:hover,.sync:hover,.needb:hover{filter:brightness(.96)}
   .btn,.needb,.chip,.iconbtn,.nav button,.link{cursor:pointer}
   .hero{padding:32px 36px 28px;display:grid;grid-template-columns:1fr minmax(320px,420px);column-gap:48px;align-items:end}
+  .hero.wallet{display:block;padding:28px 32px}
   .hero .big{font-size:128px;grid-column:1;grid-row:1}
   .hero .rank{grid-column:1;grid-row:2;font-size:18px;margin-top:14px}
   .sec{min-height:32px}
@@ -1327,8 +1329,8 @@ function wishCard(r){
 }
 function vRewards(d){
   const P=S.profile;const all=achAll();const hidden=Object.values(P.achEdit||{}).filter(x=>x.hidden).length;
-  return`<section class="hero"><div class="hero-top"><span class="pill">мой кошелёк</span></div><div class="big num" style="font-size:68px;display:flex;align-items:center;gap:14px"><span class="coin" style="width:38px;height:38px"></span>${d.coins}</div>
-  <div class="rank">за сезон заработано ${d.earned}. 10 xp = 1 монета</div></section>
+  return`<section class="hero wallet"><div class="hero-top"><span class="pill">мой кошелёк</span></div><div class="big num" style="font-size:68px;display:flex;align-items:center;gap:14px"><span class="coin" style="width:38px;height:38px"></span>${d.coins}</div>
+  <div class="rank">за сезон заработано ${d.earned}<br><span style="font-weight:500;opacity:.85">10 xp = 1 монета</span></div></section>
   <div id="wishSec">${secTitle("вишлист","wish",`<button class="link" data-act="rewardNew">добавить</button>`)}
   <div class="wish-grid">${P.rewards.filter(r=>!r.example).map(wishCard).join("")}
     <button class="wish wish-new" data-act="rewardNew">${IC.plus}<span>новая хотелка</span></button>
@@ -1760,7 +1762,7 @@ function rewardForm(r0){
   if(!Array.isArray(r.imgs))r.imgs=r.img?[r.img]:[];delete r.img;
   sheet(`<div class="sheet-h"><h2>${isEdit?"хотелка":"новая хотелка"}</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
   <div class="field" style="margin-top:0"><label for="rU">вставь ссылку на вещь, я заполню сама</label>
-  <div class="row" style="gap:8px;flex-wrap:nowrap"><input class="in-text" id="rU" type="url" inputmode="url" autocomplete="off" placeholder="ссылка или скопированный текст из магазина" style="flex:1;min-width:0"><button type="button" class="btn accent" id="rUgo" style="flex:none">заполнить</button></div>
+  <div class="row" style="gap:8px;flex-wrap:nowrap"><input class="in-text" id="rU" type="url" inputmode="url" autocomplete="off" placeholder="ссылка или текст из магазина" style="flex:1;min-width:0"><button type="button" class="btn accent" id="rUgo" style="flex:none">заполнить</button></div>
   <p class="small muted" id="rUn" style="margin-top:6px"></p>
   <label class="btn ghost" for="rShot" style="margin-top:8px;cursor:pointer;width:100%">или добавь скриншот карточки как фото</label><input type="file" id="rShot" accept="image/*" hidden></div>
   <div class="field"><span class="lbl">фото: первое будет обложкой</span><div class="gal" id="rGal"></div>
@@ -1768,7 +1770,7 @@ function rewardForm(r0){
   <div class="field"><label for="rT">что хочу себе позволить</label><input class="in-text" id="rT" value="${esc(r.title)}"></div>
   <div class="field"><label for="rP">цена в монетах</label><input class="in-text" id="rP" type="number" min="1" inputmode="numeric" value="${r.price}"></div>
   <p class="small muted">для ориентира: за активный день выходит 5–20 монет.</p>
-  <div class="field"><label for="rR">курс: сколько ₽ в одной монете</label><input class="in-text" id="rR" type="number" min="1" inputmode="numeric" value="${Math.max(1,parseInt(S.profile.coinRate,10)||100)}"><p class="small muted" id="rShop" style="margin-top:6px">${r.shop?"в магазине: "+esc(shopFmt(r.shop)):""}</p></div>
+  <p class="small muted" id="rShop">${r.shop?"цена в магазине: "+esc(shopFmt(r.shop))+" (просто для справки)":""}</p>
   <div class="field"><label for="rL">ссылка, если хочешь</label><input class="in-text" id="rL" value="${esc(r.link||"")}" placeholder="где купить или посмотреть"></div>
   <div class="row" style="margin-top:14px"><button class="btn accent" id="rS">сохранить</button>${isEdit?`<button class="btn ghost" id="rD">удалить</button>`:""}</div>`,el=>{
     const gal=el.querySelector("#rGal");
@@ -1785,11 +1787,8 @@ function rewardForm(r0){
       for(const f of files){try{r.imgs.push(await pickImage(f))}catch(x){toast("одно фото не загрузилось")}}
       paintG();if(was===0&&r.imgs.length)cropper(r.imgs[0],4/5,c=>{r.imgs[0]=c;paintG()})};
     let shop=r.shop||null;
-    const rateEl=el.querySelector("#rR"),shopEl=el.querySelector("#rShop"),priceEl=el.querySelector("#rP");
-    const rate=()=>Math.max(1,parseInt(rateEl.value,10)||100);
-    const rub=sh=>sh&&(/^(₽|RUB|RUR)$/i.test(sh.cur)||(!sh.cur&&sh.ru));
-    const recalc=()=>{if(rub(shop)){priceEl.value=Math.max(1,Math.round(shop.amount/rate()))}shopEl.textContent=shop?"в магазине: "+shopFmt(shop)+(rub(shop)?" → "+coinsW(Math.max(1,Math.round(shop.amount/rate()))):" (в другой валюте, монеты поставь сама)"):""};
-    rateEl.oninput=()=>{if(shop)recalc()};
+    const shopEl=el.querySelector("#rShop");
+    const recalc=()=>{shopEl.textContent=shop?"цена в магазине: "+shopFmt(shop)+" (просто для справки, монеты ставь сама)":""};
     const UN=el.querySelector("#rUn"),UB=el.querySelector("#rUgo"),UI=el.querySelector("#rU");
     UB.onclick=async()=>{
       const raw=UI.value.trim();if(!raw){toast("вставь ссылку");return}
@@ -1833,7 +1832,7 @@ function rewardForm(r0){
       }catch(x){UN.textContent="не получилось добавить картинку, попробуй ещё раз."}
     };
     el.querySelector("#rS").onclick=()=>{const t=el.querySelector("#rT").value.trim();const p=Math.max(1,parseInt(el.querySelector("#rP").value,10)||1);if(!t){toast("напиши хотелку");return}
-      const list=S.profile.rewards;const i=list.findIndex(x=>x.id===r.id);S.profile.coinRate=rate();const nr={id:r.id,title:t,price:p,link:el.querySelector("#rL").value.trim(),imgs:r.imgs};if(shop)nr.shop=shop;if(i>=0)list[i]=nr;else list.push(nr);Store.saveProfile();closeSheet();toast("хотелка сохранена");afterChange()};
+      const list=S.profile.rewards;const i=list.findIndex(x=>x.id===r.id);const nr={id:r.id,title:t,price:p,link:el.querySelector("#rL").value.trim(),imgs:r.imgs};if(shop)nr.shop=shop;if(i>=0)list[i]=nr;else list.push(nr);Store.saveProfile();closeSheet();toast("хотелка сохранена");afterChange()};
     const del=el.querySelector("#rD");if(del)del.onclick=()=>{S.profile.rewards=S.profile.rewards.filter(x=>x.id!==r.id);Store.saveProfile();closeSheet();afterChange()};
   });
 }
