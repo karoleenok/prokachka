@@ -1151,6 +1151,7 @@ function vHome(d){
   <div class="addrow" id="addRow"><button class="btn accent" data-act="add" id="addBtn">${IC.plus} записать действие</button><button class="btn ghost" data-act="add" data-plan="1">запланировать</button></div>
 
   ${routineCard()}
+  ${ownerCard()}
   <div class="hm-cols"><div class="hm-a">
   ${!todays.length?`<div class="remind" style="margin-top:8px">${IC.bell}<div>${esc(reminder)}</div></div>`:""}
   ${todays.length?`<div id="todaySec">${secTitle("сделано сегодня","today",`<span class="small muted num">+${todays.reduce((a,e)=>a+xpOf(e),0)} xp</span>`)}<div class="stack">${todayCards(todays)}</div></div>`:""}
@@ -1518,6 +1519,22 @@ function routineCard(){
   <div class="row" style="justify-content:space-between;flex-wrap:nowrap"><div class="row" style="gap:6px;flex-wrap:nowrap"><b>рутина дня</b><button class="q" data-act="routineHelp" aria-label="что такое рутина">?</button></div><div class="big num" style="font-size:28px;line-height:1">${n}<span class="muted">/${ROUTINE_CAP}</span></div></div>
   <div class="pips" aria-hidden="true">${pips}</div>
   <div class="chips" style="margin-top:12px">${chips}<button type="button" class="chip dash" data-act="routineOwn">+ своя</button></div></section>`;
+}
+/* статистика для владельца: бот отдаёт цифры только если telegram id совпадает с id владельца */
+let OWN=null;
+function ownerLoad(){
+  if(!TG||!TG.initData)return;
+  fetch(BOT_API+"/owner-stats",{method:"POST",headers:{"content-type":"text/plain"},body:JSON.stringify({initData:TG.initData})})
+    .then(r=>r.ok?r.json():null).then(j=>{if(j&&typeof j.total==="number"){OWN=j;if(S.view==="home")render()}}).catch(()=>{});
+}
+function ownerCard(){
+  if(!OWN)return"";const o=OWN;const mx=Math.max(1,...o.days.map(x=>x[1]));
+  const bars=o.days.map(x=>`<i title="${x[0]}: ${x[1]}" style="flex:1;height:${Math.max(6,Math.round(x[1]/mx*100))}%;background:var(--accent,#b28dff);border-radius:3px 3px 0 0"></i>`).join("");
+  const pr=(o.profs||[]).slice(0,4).map(p=>(PROFS.find(x=>x.id===p[0])||{n:p[0]}).n+" "+p[1]).join(" · ");
+  return`<section class="card" id="ownCard" style="margin-top:12px"><div class="row" style="justify-content:space-between"><b>статистика</b><button class="link" data-act="ownerRef">обновить</button></div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px"><div><b class="num" style="font-size:22px">${o.total}</b><div class="small muted">всего</div></div><div><b class="num" style="font-size:22px">${o.w7}</b><div class="small muted">за 7 дней</div></div><div><b class="num" style="font-size:22px">${o.total?Math.round(o.back*100/o.total):0}%</b><div class="small muted">вернулись</div></div><div><b class="num" style="font-size:22px">${o.rem}</b><div class="small muted">напомин.</div></div></div>
+  <div style="display:flex;gap:3px;align-items:flex-end;height:44px;margin-top:12px">${bars}</div>
+  ${pr?`<div class="small muted" style="margin-top:8px">${esc(pr)}</div>`:""}</section>`;
 }
 function routineOwn(){
   const act=activeSkills();if(!act.length){toast("сначала выбери навыки");return}
@@ -2113,6 +2130,7 @@ document.addEventListener("click",ev=>{
     case"meet":meetSheet();break;
     case"rewardEdit":rewardForm(P.rewards.find(x=>x.id===id));break;
     case"settings":openSettings();break;
+    case"ownerRef":ownerLoad();toast("обновляю");break;
     case"theme":try{localStorage.setItem("prk-theme",id)}catch(x){}applyTheme(id);document.querySelectorAll('[data-act="theme"]').forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.id===id)));break;
     case"themeToggle":{const isDark=document.documentElement.getAttribute("data-theme")==="dark";const n=isDark?"light":"dark";try{localStorage.setItem("prk-theme",n)}catch(x){}applyTheme(n);break}
     case"backup":backup();break;
@@ -2162,6 +2180,7 @@ function tgColors(){if(!TG)return;requestAnimationFrame(()=>{const rgb=getComput
 if(TG){try{TG.ready();TG.expand();if(TG.disableVerticalSwipes)TG.disableVerticalSwipes();TG.onEvent("themeChanged",()=>applyTheme());TG.BackButton.onClick(()=>{if(T)return;const ov=[...document.querySelectorAll("body>.shade")].pop();if(ov){ov.remove();return}closeSheet()})}catch(x){}}
 applyTheme();
 setTimeout(()=>pushSync(true),5000);
+setTimeout(ownerLoad,2500);
 try{if(TG&&TG.requestWriteAccess&&!localStorage.getItem("prk-wa")){localStorage.setItem("prk-wa","1");setTimeout(()=>{try{TG.requestWriteAccess(()=>{})}catch(x){}},6000)}}catch(x){}
 const loc=Store.loadLocal();
 S.profile=loc.p?normalize(loc.p):defaultProfile();
