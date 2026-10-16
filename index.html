@@ -843,11 +843,12 @@ const live=()=>S.entries.filter(e=>!e.del);
    сначала всё сохраняется на телефоне, потом досылается в облако телеграма. побеждает более свежая версия. */
 const TG=window.Telegram&&window.Telegram.WebApp&&window.Telegram.WebApp.initData?window.Telegram.WebApp:null;
 const CS=TG&&TG.CloudStorage&&TG.isVersionAtLeast&&TG.isVersionAtLeast("6.9")?TG.CloudStorage:null;
+const cloudCall=(fn)=>new Promise((res,rej)=>{const t=setTimeout(()=>rej(new Error("timeout")),20000);try{fn((e,r)=>{clearTimeout(t);e?rej(e):res(r)})}catch(x){clearTimeout(t);rej(x)}});
 const cs={
-  keys:()=>new Promise((res,rej)=>CS.getKeys((e,k)=>e?rej(e):res(k||[]))),
-  get:async keys=>{const out={};for(let i=0;i<keys.length;i+=40){const part=keys.slice(i,i+40);const v=await new Promise((res,rej)=>CS.getItems(part,(e,r)=>e?rej(e):res(r||{})));Object.assign(out,v)}return out},
-  set:(k,v)=>new Promise((res,rej)=>CS.setItem(k,v,(e,ok)=>e?rej(e):res(ok))),
-  del:keys=>new Promise((res,rej)=>{if(!keys.length)return res();CS.removeItems(keys,e=>e?rej(e):res())})
+  keys:()=>cloudCall(cb=>CS.getKeys(cb)).then(k=>k||[]),
+  get:async keys=>{const out={};for(let i=0;i<keys.length;i+=40){const part=keys.slice(i,i+40);const v=await cloudCall(cb=>CS.getItems(part,cb));Object.assign(out,v||{})}return out},
+  set:(k,v)=>cloudCall(cb=>CS.setItem(k,v,cb)),
+  del:keys=>keys.length?cloudCall(cb=>CS.removeItems(keys,cb)):Promise.resolve()
 };
 const CH=4000;
 const IMG={};const imgSaved=new Set();
@@ -882,10 +883,9 @@ const Store={
       const keys=await this.keysAll();
       const nKeys=keys.filter(k=>k.endsWith("_n"));const meta=await cs.get(nKeys);
       nKeys.forEach(k=>{this.counts[k.slice(0,-2)]=+meta[k]||0});
-      const want=[];Object.entries(this.counts).forEach(([pre,n])=>{for(let i=0;i<n;i++)want.push(pre+"_"+i)});
+      const want=[];Object.entries(this.counts).forEach(([pre,n])=>{if(pre[0]==="i")return;for(let i=0;i<n;i++)want.push(pre+"_"+i)});
       const vals=await cs.get(want);
       const blob=pre=>{const n=this.counts[pre]||0;let s="";for(let i=0;i<n;i++)s+=vals[pre+"_"+i]||"";return s};
-      Object.keys(this.counts).filter(p=>p[0]==="i").forEach(p=>{const rid=p.slice(1);IMG[rid]=blob(p);imgSaved.add(rid)});
       let rp=null;if(this.counts.p){try{rp=JSON.parse(blob("p"))}catch(x){}}
       let re=[];Object.keys(this.counts).filter(p=>/^e\d{6}$/.test(p)).forEach(p=>{try{re=re.concat(JSON.parse(blob(p)))}catch(x){}});
       unpackImgs(S.profile);S.entries.forEach(unpackImgs);
@@ -893,9 +893,22 @@ const Store={
       this.mergeEntries(re.map(unpackImgs));
       this.ready=true;refresh();
       await this.flush();
+      this.loadImgs();
     }catch(x){this.setStatus("error","не получилось связаться с облаком телеграма. всё сохранено на телефоне, попробую ещё раз.");clearTimeout(this.retryT);this.retryT=setTimeout(()=>this.connect(),8000)}
   },
   async keysAll(){return cs.keys()},
+  /* фото подгружаем уже после того, как дела и профиль на месте, чтобы метка «сохраняю» не висела */
+  async loadImgs(){
+    try{
+      const pres=Object.keys(this.counts).filter(p=>p[0]==="i"&&!imgSaved.has(p.slice(1)));
+      for(const pre of pres){
+        const n=this.counts[pre]||0;const keys=[];for(let i=0;i<n;i++)keys.push(pre+"_"+i);
+        const v=await cs.get(keys);let str="";for(let i=0;i<n;i++)str+=v[pre+"_"+i]||"";
+        IMG[pre.slice(1)]=str;imgSaved.add(pre.slice(1));
+      }
+      if(pres.length){unpackImgs(S.profile);S.entries.forEach(unpackImgs);refresh()}
+    }catch(x){clearTimeout(this.imgT);this.imgT=setTimeout(()=>this.loadImgs(),10000)}
+  },
   mark(k){this.dirty.add(k);if(!this.ready&&CS)return;clearTimeout(this.qT);this.qT=setTimeout(()=>this.flush(),250)},
   flushNow(){clearTimeout(this.qT);if(this.dirty.size)this.flush()},
   mergeProfile(r){
@@ -913,7 +926,7 @@ const Store={
   },
   async writeBlob(pre,str){
     const n=Math.max(1,Math.ceil(str.length/CH));const old=this.counts[pre]||0;
-    await Promise.all(Array.from({length:n},(_,i)=>cs.set(pre+"_"+i,str.slice(i*CH,(i+1)*CH))));
+    for(let g=0;g<n;g+=6)await Promise.all(Array.from({length:Math.min(6,n-g)},(_,j)=>cs.set(pre+"_"+(g+j),str.slice((g+j)*CH,(g+j+1)*CH))));
     await cs.set(pre+"_n",String(n));
     const extra=[];for(let i=n;i<old;i++)extra.push(pre+"_"+i);if(extra.length)await cs.del(extra);
     this.counts[pre]=n;
