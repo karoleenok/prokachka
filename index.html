@@ -459,6 +459,7 @@ html.tt,html.tt *{transition:background-color .4s ease,color .4s ease,border-col
   .hero .xpbar{grid-column:2;grid-row:1;align-self:end}
   .hero .xpmeta{grid-column:2;grid-row:2}
   .hero .stats{grid-column:1/-1;grid-row:3;margin-top:20px}
+  .hero .hq{grid-column:1/-1;grid-row:4;margin-top:18px;display:grid;grid-template-columns:1fr auto;column-gap:24px;align-items:center}.hero .hq .hq-top,.hero .hq .hq-t,.hero .hq .hq-m{grid-column:1}.hero .hq .hq-b{grid-column:2;grid-row:1/4;margin-top:0}
   .greet{font-size:24px;margin-top:28px}
   .addrow{grid-template-columns:auto auto;justify-content:start;gap:10px}
   .addrow .btn{padding-inline:28px}
@@ -680,7 +681,7 @@ const EFF=[{id:"steps",n:"шаги к цели",d:"то, что двигает �
   {id:"know",n:"знания",d:"уроки, книги, видео, статьи",types:["learn"],c:"var(--line)"}];
 const effOf=type=>{const g=EFF.find(g=>g.types.includes(type));return g?g.id:""};
 const FEAR_XP=30, FIRST_MULT=1.5, SEC_SHARE=.4;
-const PERIODS={day:{label:"квест дня",xp:30,coins:5},week:{label:"квест недели",xp:80,coins:15},month:{label:"босс месяца",xp:250,coins:50}};
+const PERIODS={day:{label:"квест дня",xp:30,coins:5},week:{label:"квест недели",xp:80,coins:15},month:{label:"квест месяца",xp:250,coins:50}};
 /* идеи квестов: общие шаблоны под любой навык + идея самого навыка */
 const CH_GEN={
   day:[
@@ -699,7 +700,7 @@ const CH_GEN={
     {t:"сделать в «{s}» проект, за который не стыдно взять деньги",e:"за месяц сделай в «{s}» проект такого уровня, чтобы за похожий можно было попросить оплату.",b:"появится работа для портфолио и уверенность, что ты уже можешь продавать этот навык."}
   ]
 };
-const PER_REASON={day:"квест дня маленький: его реально закрыть сегодня и почувствовать движение.",week:"неделя: хватит времени сделать заметный шаг, но не так долго, чтобы остыть.",month:"босс месяца: большая цель, которая двигает тебя к результатам сезона."};
+const PER_REASON={day:"квест дня маленький: его реально закрыть сегодня и почувствовать движение.",week:"неделя: хватит времени сделать заметный шаг, но не так долго, чтобы остыть.",month:"квест месяца: большая цель, которая двигает тебя к результатам сезона."};
 function ideaFor(skill,per){
   const s=skillById(skill);if(!s)return[];
   const out=CH_GEN[per].map(x=>({t:x.t.replace("{s}",s.name),about:{essence:x.e.replace(/\{s\}/g,s.name),benefit:x.b.replace(/\{s\}/g,s.name),reason:"это идея из библиотеки квестов для навыка «"+s.name+"», который ты сейчас качаешь. "+PER_REASON[per],by:"app"}}));
@@ -747,7 +748,7 @@ const ACH=[
   {id:"month",ic:"30д",n:"месяц огня",d:"серия 30 дней",f:d=>d.streak.best>=30},
   {id:"master",ic:"5",n:"мастер ветки",d:"любой навык до 5 уровня",f:d=>Object.values(d.skills).some(k=>k.xp>0&&k.level>=5)},
   {id:"wide",ic:"✳",n:"разносторонность",d:"опыт в 5 разных навыках",f:d=>Object.values(d.skills).filter(k=>k.xp>0).length>=5},
-  {id:"boss",ic:"Б!",n:"победа над боссом",d:"закрыт босс месяца",f:d=>d.bossDone>=1},
+  {id:"boss",ic:"М!",n:"квест месяца",d:"закрыт квест месяца",f:d=>d.bossDone>=1},
   {id:"treat",ic:"♥",n:"заслужил{а|}",d:"первая награда себе",f:d=>d.purchases>=1},
   {id:"back",ic:"↺",n:"возвращение",d:"вернул{ась|ся} после паузы",f:d=>d.byType.bonus>=1},
   {id:"lvl10",ic:"10",n:"десятка",d:"уровень сезона 10",f:d=>d.level>=10}
@@ -772,7 +773,7 @@ const HELP={
   today:["сегодня","всё, что ты записал{а|} за сегодня. в «изменить» можно дописать заметку, ссылку, результат или фото, а можно и удалить запись."],
   planned:["в планах","то, что ты собирал{ась|ся} сделать. как сделаешь, нажми «сделал{а|}», и опыт засчитается сегодняшним днём."],
   team:["командные квесты","общий квест на несколько человек. у каждой задачи есть ответственный, дедлайн и комментарии, а у квеста можно поставить этапы с промежуточными дедлайнами.\n\nпозови команду кнопкой «позвать»: человек получит ссылку на бота и присоединится в один клик.\n\nбот пишет всем участникам, когда кто-то добавил или выполнил задачу, оставил комментарий, и напоминает о дедлайнах за день и в день. за выполненную задачу +20 xp тому, кто её сделал."],
-  quest:["квесты","квест посложнее обычного дела. лучше всего брать то, чего немного боишься. бывают на день, на неделю и на месяц, месячный называется боссом.\n\nсправил{ась|ся}, жми «выполнил{а|}» и получай опыт и монеты.\nне успеваешь, жми «перенести».\nне получилось, жми «разбор» и напиши, что помешало. за это тоже дадут 10 xp."],
+  quest:["квесты","квест посложнее обычного дела. лучше всего брать то, чего немного боишься. бывают на день, на неделю и на месяц.\n\nсправил{ась|ся}, жми «выполнил{а|}» и получай опыт и монеты.\nне успеваешь, жми «перенести».\nне получилось, жми «разбор» и напиши, что помешало. за это тоже дадут 10 xp."],
   state:["состояние","раз в день отмечай, как ты. слева слабее, справа лучше. если нажать ещё раз, отметка снимется. потом в «пути» будет видно, в какие дни ты был{а|} на подъёме."],
   skills:["навыки","это то, что ты качаешь. у каждого навыка 20 уровней. основной навык действия получает весь опыт, дополнительные получают по 40%. набор навыков меняется в разделе «навыки», кнопка «выбрать навыки»."],
   feed:["лента","все твои действия по дням, свежие сверху. если нажать на навык сверху, останутся только его записи."],
@@ -848,7 +849,7 @@ function stateIcon(k,n){
 }
 
 /* ================= профиль ================= */
-const S={hist:[],grpOpen:(()=>{try{return JSON.parse(localStorage.getItem("prk-grp"))||{}}catch(x){return{}}})(),profile:null,entries:[],view:"home",pathMode:"feed",pathFilter:null,thenDate:null,lastW:null};
+const S={hist:[],qTab:(()=>{try{return localStorage.getItem("prk-qtab")||"mine"}catch(x){return"mine"}})(),grpOpen:(()=>{try{return JSON.parse(localStorage.getItem("prk-grp"))||{}}catch(x){return{}}})(),profile:null,entries:[],view:"home",pathMode:"feed",pathFilter:null,thenDate:null,lastW:null};
 function defaultProfile(){
   const t=today();
   return {v:2,fresh:true,upd:0,seasonStart:t,seasonDays:90,active:[],custom:[],startLevels:{},fears:"",
@@ -1319,6 +1320,7 @@ function vHome(d){
   <div class="addrow" id="addRow"><button class="btn accent" data-act="add" id="addBtn">${IC.plus} записать действие</button><button class="btn ghost" data-act="add" data-plan="1" data-day="tomorrow">запланировать</button></div>
 
   ${planCard()}
+  <div id="tqHome">${tqHome()}</div>
   ${piggyCard(d)}
   <div class="hm-cols"><div class="hm-a">
   ${!todays.length?`<div class="remind" style="margin-top:8px">${IC.bell}<div>${esc(reminder)}</div></div>`:""}
@@ -1351,7 +1353,7 @@ function piggyCard(d){
   const P=S.profile;if(!P.active.length)return"";
   const W=(P.rewards||[]).filter(r=>!r.example&&r.price>0);
   const have=Math.max(0,d.coins);
-  if(!W.length)return`<section class="card piggy" style="margin-top:12px"><div class="row" style="justify-content:space-between"><b>копилка</b><span class="num">${IC.coin} ${have}</span></div><p class="small muted" style="margin:6px 0 10px">монеты копятся за каждое действие. добавь хотелку: то, чем наградишь себя, когда накопишь.</p><button class="btn ghost wide" data-act="piggyAdd">${IC.plus} добавить хотелку</button></section>`;
+  if(!W.length)return`<section class="card piggy" style="margin-top:12px"><div class="row" style="justify-content:space-between"><b>награды</b><span class="num">${IC.coin} ${have}</span></div><p class="small muted" style="margin:6px 0 10px">монеты копятся за каждое действие. добавь хотелку: то, чем наградишь себя, когда накопишь.</p><button class="btn ghost wide" data-act="piggyAdd">${IC.plus} добавить хотелку</button></section>`;
   const pace=coinPace();
   const eta=r=>{const left=r.price-have;if(left<=0)return"можно забрать";if(pace<=0)return"осталось "+left;const dd=Math.ceil(left/pace);return"осталось "+left+" · примерно "+(dd<=1?"день":dd+" "+plural(dd,"день","дня","дней"))};
   const star=W.filter(r=>r.goal);
@@ -1361,16 +1363,16 @@ function piggyCard(d){
   const row=r=>{const pr=Math.min(100,Math.round(have/r.price*100));const cv=(r.imgs||[])[0];
     return`<div class="wl" data-act="wishView" data-id="${r.id}" role="button" style="cursor:pointer"><div class="wi" ${cv?`style="${coverCSS(cv,1)}"`:""}>${cv?"":IC.gift}</div><div class="wb"><div class="wt">${r.goal?"⭐ ":""}${esc(r.title)}</div><div class="prog" style="margin-top:6px"><i style="width:${pr}%"></i></div><div class="small muted" style="margin-top:4px">${IC.coin} ${r.price} · ${eta(r)}</div></div></div>`};
   return`<section class="card piggy" style="margin-top:12px">
-  <div class="row" style="justify-content:space-between"><b>копилка</b><span class="num" style="font-weight:700">${IC.coin} ${have}</span></div>
+  <div class="row" style="justify-content:space-between"><b>награды</b><span class="num" style="font-weight:700">${IC.coin} ${have}</span></div>
   ${can.length?`<div class="small" style="margin:8px 0 2px">уже можно забрать: <b>${can.slice(0,3).map(r=>esc(r.title)).join(", ")}</b>${can.length>3?" и ещё "+(can.length-3):""}</div>`:""}
   <div style="margin-top:6px">${show.map(row).join("")}</div>
-  <div class="row" style="justify-content:space-between;margin-top:8px"><span class="small muted">${pace>0?"в среднем "+(Math.round(pace*10)/10)+" "+plural(Math.round(pace),"монета","монеты","монет")+" в день":"монеты придут с первыми записями"}</span><button class="link" data-act="tab" data-id="rewards">вишлист →</button></div>
+  <div class="row" style="justify-content:space-between;margin-top:8px"><span class="small muted">${pace>0?"в среднем "+(Math.round(pace*10)/10)+" "+plural(Math.round(pace),"монета","монеты","монет")+" в день":"монеты придут с первыми записями"}</span><button class="link" data-act="tab" data-id="rewards">все награды →</button></div>
   ${!star.length?`<div class="small muted" style="margin-top:6px">отметь звёздочкой в вишлисте, на что копишь, и она будет здесь первой.</div>`:""}</section>`;
 }
 
 const STAR='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.8l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2l-5.7 3.1 1.2-6.4L2.8 9.5l6.4-.8z"/></svg>';
 const CHEST='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 10.5h17v9h-17z"/><path d="M3.5 10.5V8a4 4 0 0 1 4-4h9a4 4 0 0 1 4 4v2.5"/><path d="M10 10.5v3h4v-3"/></svg>';
-const QNAME={day:"квест дня",week:"квест недели",month:"босс месяца"};
+const QNAME={day:"квест дня",week:"квест недели",month:"квест месяца"};
 function timeLeft(c){const n=diffDays(today(),c.due);if(n<0)return"просрочен на "+(-n)+" "+plural(-n,"день","дня","дней");if(n===0)return"последний день";return"осталось "+n+" "+plural(n,"день","дня","дней")}
 function questPips(c){
   if(c.period==="day")return"";
@@ -1381,7 +1383,7 @@ function questPips(c){
 function questCard(c){
   const Pd=PERIODS[c.period]||PERIODS.week;const st=c.status;const sk=skillById(c.skill);
   const steps=c.steps||[];const left=steps.filter(x=>!x.done).length;const lvl={day:1,week:2,month:3}[c.period]||2;
-  const hp=steps.length?`<div class="hp"><div class="hp-l"><span>${c.period==="month"?"здоровье босса":"осталось этапов"}</span><b class="num">${left} / ${steps.length}</b></div><div class="hp-bar">${steps.map(x=>`<i class="${x.done?"":"on"}"></i>`).join("")}</div></div>`:"";
+  const hp=steps.length?`<div class="hp"><div class="hp-l"><span>осталось этапов</span><b class="num">${left} / ${steps.length}</b></div><div class="hp-bar">${steps.map(x=>`<i class="${x.done?"":"on"}"></i>`).join("")}</div></div>`:"";
   return`<div class="qcard q-${c.period} ${st!=="active"?"q-closed":""}">
     <div class="q-top"><span class="q-badge">${QNAME[c.period]||Pd.label}</span>${c.moved?`<span class="q-moved small">перенесён ×${c.moved}</span>`:""}</div>
     <div class="q-title">${esc(c.title)}</div>
@@ -1508,17 +1510,18 @@ function vQuests(){
   const P=S.profile;const act=P.challenges.filter(c=>c.status==="active");const fin=P.challenges.filter(c=>c.status!=="active").slice(-6).reverse();
   const order={month:0,week:1,day:2};act.sort((a,b)=>order[a.period]-order[b.period]);
   const unused=GOAL_LIB.filter(g=>!P.goals.some(x=>x.title===g.t));
+  const team=S.qTab==="team";const nTeam=TQ.list.length;
   return`${secTitle("квесты","quest")}
-  <div class="addrow" id="questAdd"><button class="btn accent" data-act="qSuggest">${IC.spark} предложи квест</button><button class="btn" data-act="qNew">${IC.plus} свой</button></div>
-  <div class="stack">${act.length?act.map(questCard).join(""):`<div class="card small muted">сейчас квестов нет. возьми какой-нибудь на день, неделю или месяц.</div>`}</div>
-  <div id="tqSec">${tqSection()}</div>
+  <div class="seg" role="group" aria-label="какие квесты" style="margin-top:12px"><button data-act="qTab" data-id="mine" aria-pressed="${!team}">мои${act.length?" · "+act.length:""}</button><button data-act="qTab" data-id="team" aria-pressed="${team}">командные${nTeam?" · "+nTeam:""}</button></div>
+  <div class="addrow" id="questAdd" style="margin-top:12px">${team?`<button class="btn accent" data-act="tqNew">${IC.plus} командный квест</button>`:`<button class="btn accent" data-act="qSuggest">${IC.spark} предложи квест</button><button class="btn" data-act="qNew">${IC.plus} свой</button><button class="btn" data-act="qTab" data-id="team">${IC.plus} командный</button>`}</div>
+  ${team?`<div id="tqSec">${tqSection(true)}</div>`:`<div class="stack">${act.length?act.map(questCard).join(""):`<div class="card small muted">сейчас квестов нет. возьми какой-нибудь на день, неделю или месяц.</div>`}</div>
   <div id="goalsSec">${secTitle("цели сезона","goals",`<button class="link" data-act="goalNew">добавить цель</button>`)}
   ${unused.length?`<details class="card" style="margin-top:12px" ${P.goals.length?"":"open"}><summary style="margin:0">идеи целей с готовыми первыми шагами</summary><div class="chips" style="margin-top:10px">${(S.goalsAll?unused:unused.slice(0,4)).map(g=>`<button class="chip" data-act="goalQuick" data-t="${esc(g.t)}">+ ${esc(g.t)}</button>`).join("")}${unused.length>4?`<button class="chip" data-act="goalsMore">${S.goalsAll?"свернуть":"ещё "+(unused.length-4)}</button>`:""}</div></details>`:""}
   <div class="stack">${P.goals.map(g=>{const steps=g.steps||[];const dn=steps.filter(s=>s.done).length;return`<div class="card"><div class="row" style="justify-content:space-between;flex-wrap:nowrap"><div style="font-weight:700;min-width:0">${esc(g.title)}</div><span class="small muted num">${dn}/${steps.length}</span></div>
     ${steps.length?`<div style="margin-top:6px">${steps.map(s=>`<div class="goal-step"><button class="check ${s.done?"on":""}" data-act="stepToggle" data-g="${g.id}" data-s="${s.id}" aria-label="${s.done?"отменить":"отметить"} шаг" aria-pressed="${!!s.done}">${s.done?IC.check:""}</button><span style="flex:1;min-width:0;${s.done?"text-decoration:line-through;opacity:.6":""}">${esc(s.t)}</span><button class="link" data-act="stepDel" data-g="${g.id}" data-s="${s.id}" aria-label="удалить шаг">✕</button></div>`).join("")}</div>`:`<div class="small muted" style="margin-top:4px">разложи цель на первый маленький шаг</div>`}
     <form class="row" data-form="step" data-g="${g.id}" style="margin-top:8px;flex-wrap:nowrap"><input class="in-text" name="t" placeholder="новый шаг, например «написать 3 компаниям»" style="padding:9px 10px" aria-label="новый шаг для цели ${esc(g.title)}"><button class="btn sm" type="submit">добавить</button></form>
     <div class="row" style="margin-top:8px"><button class="link" data-act="goalDel" data-g="${g.id}">удалить цель</button></div></div>`}).join("")}</div></div>
-  ${fin.length?`${secTitle("закрытые")}<div class="stack">${fin.map(questCard).join("")}</div>`:""}`;
+  ${fin.length?`${secTitle("закрытые")}<div class="stack">${fin.map(questCard).join("")}</div>`:""}`}`;
 }
 
 
@@ -1553,20 +1556,31 @@ function calLinks(title,date,note){
   return`<span class="row small" style="gap:12px"><button class="link" data-act="openUrl" data-url="${esc(g)}">в google календарь</button><button class="link" data-act="openUrl" data-url="${esc(ics)}">в календарь айфона / мака</button></span>`;
 }
 function tqProgress(q){const all=(q.tasks||[]).length,dn=(q.tasks||[]).filter(t=>t.done).length;return{all,dn,pr:all?Math.round(dn/all*100):0}}
-function tqSection(){
-  const head=secTitle("командные квесты","team",Store.online()?`<button class="link" data-act="tqNew">создать</button>`:"");
+function tqSection(noHead){
+  const head=noHead?"":secTitle("командные квесты","team",Store.online()?`<button class="link" data-act="tqNew">создать</button>`:"");
   if(!Store.online())return head+`<div class="card small muted" style="margin-top:12px">командные квесты работают, когда прокачка открыта через бота в телеграме.</div>`;
   if(!TQ.loaded)return head+`<div class="card small muted" style="margin-top:12px">загружаю…</div>`;
-  if(!TQ.list.length)return head+`<div class="card" style="margin-top:12px"><p style="margin:0">квест на нескольких человек: общие задачи, ответственные, дедлайны и комментарии. бот пишет всем участникам, когда кто-то что-то сделал.</p><button class="btn accent wide" style="margin-top:12px" data-act="tqNew">${IC.plus} создать командный квест</button></div>`;
+  if(!TQ.list.length)return head+`<div class="card" style="margin-top:12px"><p style="margin:0">квест на нескольких человек: общие задачи, ответственные, дедлайны и комментарии. бот пишет всем участникам, когда кто-то что-то сделал.</p>${noHead?"":`<button class="btn accent wide" style="margin-top:12px" data-act="tqNew">${IC.plus} создать командный квест</button>`}</div>`;
   return head+`<div class="stack">${TQ.list.map(q=>{const p=tqProgress(q);const mine=(q.tasks||[]).filter(t=>!t.done&&t.who===TQ.me()).length;
     return`<div class="card" data-act="tqOpen" data-id="${esc(q.id)}" role="button" style="cursor:pointer">
       <div class="row" style="justify-content:space-between;flex-wrap:nowrap;gap:10px"><b style="min-width:0;overflow-wrap:anywhere">${esc(q.title)}</b>${dlChip(q.deadline,p.all&&p.dn===p.all)}</div>
       <div class="prog" style="margin-top:10px"><i style="width:${p.pr}%"></i></div>
       <div class="row" style="justify-content:space-between;margin-top:8px"><span class="small muted">${p.all?`готово ${p.dn} из ${p.all}`:"задач пока нет"}${mine?` · на тебе: ${mine}`:""}</span><span class="avs">${(q.members||[]).slice(0,5).map(m=>avatar(m,26)).join("")}</span></div></div>`}).join("")}</div>`;
 }
+/* командные квесты на главной: прогресс и мои задачи, их можно отметить прямо отсюда */
+function tqHome(){
+  if(!TQ.list.length)return"";const me=TQ.me();
+  return`<section class="card" style="margin-top:12px"><div class="row" style="justify-content:space-between"><b>командные квесты</b><button class="link" data-act="qTab" data-id="team" data-go="1">все →</button></div>
+  ${TQ.list.slice(0,3).map(q=>{const p=tqProgress(q);const mine=(q.tasks||[]).filter(t=>!t.done&&t.who===me).sort((a,b)=>(a.deadline||"9")<(b.deadline||"9")?-1:1);
+    return`<div style="margin-top:12px"><div class="row" style="justify-content:space-between;flex-wrap:nowrap;gap:10px;cursor:pointer" data-act="tqOpen" data-id="${esc(q.id)}" role="button"><span style="font-weight:600;min-width:0;overflow-wrap:anywhere">${esc(q.title)}</span><span class="small muted num" style="white-space:nowrap">${p.dn} из ${p.all}</span></div>
+    <div class="prog" style="margin-top:6px"><i style="width:${p.pr}%"></i></div>
+    ${mine.slice(0,3).map(t=>tqTaskRow(q,t)).join("")}${mine.length>3?`<div class="small muted" style="margin-top:4px">и ещё ${mine.length-3} на тебе</div>`:""}${!mine.length?`<div class="small muted" style="margin-top:6px">на тебе задач нет</div>`:""}</div>`}).join("")}</section>`;
+}
 function tqRepaint(){
-  if(S.view==="quests"){const el=$("#tqSec");if(el)el.innerHTML=tqSection();else render()}
-  if(TQ.open){const sh=$("#layer .sheet");if(sh&&sh.dataset.tq===TQ.open.q&&!sh.contains(document.activeElement)){if(TQ.open.t)tqTaskSheet(TQ.open.q,TQ.open.t,true);else tqSheet(TQ.open.q,true)}}
+  if(S.view==="home"){const h=$("#tqHome");if(h){const html=tqHome();if(h._h!==html){h.innerHTML=html;h._h=html}}}
+  if(S.view==="quests"){const el=$("#tqSec");if(el){const html=tqSection(true);if(el._h!==html){el.innerHTML=html;el._h=html}}const sg=document.querySelector('[data-act="qTab"][data-id="team"]');if(sg&&sg.closest(".seg"))sg.textContent="командные"+(TQ.list.length?" · "+TQ.list.length:"")}
+  // открытое окно перерисовываем, только если данные правда поменялись и человек ничего не печатает
+  if(TQ.open){const sh=$("#layer .sheet");if(sh&&sh.dataset.tq===TQ.open.q&&!sh.dataset.dirty){const sig=JSON.stringify(TQ.q(TQ.open.q)||null);if(sh.dataset.sig!==sig){const y=sh.scrollTop;if(TQ.open.t)tqTaskSheet(TQ.open.q,TQ.open.t,true);else tqSheet(TQ.open.q,true);const n=$("#layer .sheet");if(n)n.scrollTop=y}}}
 }
 function tqTaskRow(q,t){
   const m=tqMem(q,t.who);const nc=(q.comments||[]).filter(c=>c.tid===t.id).length;
@@ -1580,7 +1594,7 @@ function tqSheet(qid,keep){
   const p=tqProgress(q);const st=q.stages||[];
   const tasks=(q.tasks||[]).slice().sort((a,b)=>(a.done-b.done)||((a.deadline||"9999")<(b.deadline||"9999")?-1:(a.deadline||"9999")>(b.deadline||"9999")?1:(a.created||0)-(b.created||0)));
   const group=sid=>tasks.filter(t=>(t.stage||"")===sid&&(sid===""||st.some(x=>x.id===sid))||(sid===""&&t.stage&&!st.some(x=>x.id===t.stage)));
-  const stBlock=x=>{const ts=group(x.id);return`<div class="tq-stage"><span>${x.done?"✅ ":""}${esc(x.title)} ${dlChip(x.deadline,x.done)}</span><button class="link" data-act="tqStage" data-q="${esc(q.id)}" data-id="${esc(x.id)}">${x.done?"открыть":"закрыть этап"}</button></div>${ts.map(t=>tqTaskRow(q,t)).join("")||`<div class="small muted" style="padding:6px 0">в этапе пока нет задач</div>`}`};
+  const stBlock=x=>{const ts=group(x.id);return`<div class="tq-stage"><span>${x.done?"✅ ":""}${esc(x.title)} ${dlChip(x.deadline,x.done)}</span><span class="row" style="gap:12px;flex-wrap:nowrap">${x.deadline?`<button class="link" data-act="calPick" data-q="${esc(q.id)}" data-t="${esc("этап «"+x.title+"» · "+q.title)}" data-d="${esc(x.deadline)}">в календарь</button>`:""}<button class="link" data-act="tqStage" data-q="${esc(q.id)}" data-id="${esc(x.id)}">${x.done?"открыть":"закрыть"}</button></span></div>${ts.map(t=>tqTaskRow(q,t)).join("")||`<div class="small muted" style="padding:6px 0">в этапе пока нет задач</div>`}`};
   const free=group("");
   sheet(`<div class="sheet-h"><h2 style="overflow-wrap:anywhere">${esc(q.title)}</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
   ${q.about?`<p style="margin:0 0 10px;white-space:pre-wrap">${esc(q.about)}</p>`:""}
@@ -1593,7 +1607,9 @@ function tqSheet(qid,keep){
   ${!tasks.length?`<p class="small muted" style="margin:8px 0 0">добавь первую задачу: что сделать, кто отвечает и до какого числа.</p>`:""}</div>
   <div class="card" style="margin-top:10px"><b>этапы</b><p class="small muted" style="margin:6px 0 0">промежуточные дедлайны: например «сценарий до 25.10», «съёмка до 2.11».</p>
   <form class="row" data-form="tqStage" data-q="${esc(q.id)}" style="margin-top:10px;flex-wrap:nowrap;gap:6px"><input class="in-text" name="t" placeholder="название этапа" style="padding:9px 10px" aria-label="название этапа"><input class="in-text" type="date" name="d" style="padding:9px 8px;width:auto" aria-label="дедлайн этапа"><button class="btn sm" type="submit">+</button></form></div>
-  <div class="stack" style="margin-top:12px"><button class="btn ghost wide" data-act="tqEdit" data-q="${esc(q.id)}">изменить название, описание, дедлайн</button><button class="btn ghost wide" data-act="tqLeave" data-q="${esc(q.id)}">выйти из квеста</button></div>`,el=>{el.dataset.tq=q.id});
+  <button class="btn accent wide" style="margin-top:14px" data-act="close">готово</button>
+  <p class="small muted" style="margin:8px 0 0;text-align:center">задачи, этапы и отметки сохраняются сразу, команда получает их в боте</p>
+  <div class="row" style="justify-content:center;gap:18px;margin-top:12px"><button class="link" data-act="tqEdit" data-q="${esc(q.id)}">изменить квест</button><button class="link" data-act="tqLeave" data-q="${esc(q.id)}" style="color:var(--muted)">выйти из квеста</button></div>`,el=>{el.dataset.tq=q.id;el.dataset.sig=JSON.stringify(q);el.addEventListener("input",()=>{el.dataset.dirty="1"})});
 }
 function tqEditSheet(qid){
   const q=qid?TQ.q(qid):null;TQ.open=null;
@@ -1615,18 +1631,19 @@ function tqTaskSheet(qid,tid,keep){
   const F={who:t?t.who:TQ.me(),stage:t?t.stage:""};
   const cm=t?(q.comments||[]).filter(c=>c.tid===t.id):[];
   sheet(`<div class="sheet-h"><button class="iconbtn" data-act="tqOpen" data-id="${esc(q.id)}" aria-label="назад к квесту">←</button><h2 style="flex:1;margin-left:8px">${t?"задача":"новая задача"}</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
-  <div class="small muted" style="margin:-4px 0 6px">квест «${esc(q.title)}»</div>
-  <div class="field" style="margin-top:6px"><label for="ttT">что сделать</label><input class="in-text" id="ttT" maxlength="160" placeholder="например, снять три сторис" value="${t?esc(t.title):""}"></div>
+  <div class="small muted" style="margin:0 0 14px">квест «${esc(q.title)}»</div>
+  <div class="field" style="margin-top:0"><label for="ttT">что сделать</label><input class="in-text" id="ttT" maxlength="160" placeholder="например, снять три сторис" value="${t?esc(t.title):""}"></div>
   <div class="field"><label for="ttE">суть</label><textarea class="in-text" id="ttE" rows="3" maxlength="2000" placeholder="детали, ссылки, что считается готовым">${t?esc(t.essence||""):""}</textarea></div>
   <div class="field"><label>ответственный</label><div class="pick" id="ttW">${(q.members||[]).map(m=>`<button type="button" data-u="${m.uid}" aria-pressed="${m.uid===F.who}">${avatar(m,24)}${esc(m.name)}${m.uid===TQ.me()?" (я)":""}</button>`).join("")}<button type="button" data-u="0" aria-pressed="${!F.who}" style="padding-left:12px">никто</button></div></div>
   <div class="field"><label for="ttD">дедлайн</label><input class="in-text" type="date" id="ttD" value="${t?esc(t.deadline||""):""}">${t&&t.deadline?calLinks(t.title+" · "+q.title,t.deadline,t.essence):""}</div>
   ${(q.stages||[]).length?`<div class="field"><label for="ttS">этап</label><select class="in-text" id="ttS"><option value="">без этапа</option>${q.stages.map(x=>`<option value="${esc(x.id)}" ${x.id===F.stage?"selected":""}>${esc(x.title)}${x.deadline?" · до "+esc(fmtD(x.deadline)):""}</option>`).join("")}</select></div>`:""}
-  <div class="stack"><button class="btn accent wide" id="ttSave">${t?"сохранить":"добавить задачу"}</button>${t?`<button class="btn ${t.done?"ghost":"accent"} wide" data-act="tqDone" data-q="${esc(q.id)}" data-id="${esc(t.id)}">${t.done?"вернуть в работу":"готово ✓"}</button>`:""}</div>
+  <div class="stack"><button class="btn accent wide" id="ttSave">${t?"сохранить изменения":"добавить задачу"}</button>${t?`<button class="btn ghost wide" data-act="tqDone" data-q="${esc(q.id)}" data-id="${esc(t.id)}">${t.done?"вернуть в работу":"✓ отметить выполненной"}</button>`:""}</div>
+  <p class="small muted" style="margin:8px 0 0;text-align:center">${t?"после сохранения команда получит уведомление":"команда получит уведомление о новой задаче"}</p>
   ${t?`<div class="card" style="margin-top:14px"><b>комментарии${cm.length?" · "+cm.length:""}</b>
   ${cm.map(c=>{const m=tqMem(q,c.uid)||{uid:c.uid,name:"бывший участник"};const w=new Date(c.ts);return`<div class="cmt">${avatar(m,28)}<div style="min-width:0"><div class="small"><b>${esc(m.name)}</b> <span class="muted">${esc(fmtD(w.toISOString().slice(0,10)))} в ${w.toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"})}</span></div><div class="tx">${esc(c.text)}</div></div></div>`}).join("")||`<p class="small muted" style="margin:6px 0 0">пока тихо. напиши, если есть вопрос или апдейт: бот перешлёт команде.</p>`}
   <form class="row" data-form="tqCmt" data-q="${esc(q.id)}" data-id="${esc(t.id)}" style="margin-top:8px;flex-wrap:nowrap"><input class="in-text" name="t" maxlength="1500" placeholder="комментарий" style="padding:9px 10px" aria-label="комментарий"><button class="btn sm accent" type="submit">отправить</button></form></div>
-  <button class="link" style="margin-top:14px" data-act="tqTaskDel" data-q="${esc(q.id)}" data-id="${esc(t.id)}">удалить задачу</button>`:""}`,el=>{
-    el.dataset.tq=q.id;
+  <button class="link" style="margin-top:14px;color:var(--muted)" data-act="tqTaskDel" data-q="${esc(q.id)}" data-id="${esc(t.id)}">удалить задачу</button>`:""}`,el=>{
+    el.dataset.tq=q.id;el.dataset.sig=JSON.stringify(q);el.addEventListener("input",()=>{el.dataset.dirty="1"});
     el.querySelectorAll("#ttW button").forEach(b=>b.onclick=()=>{F.who=+b.dataset.u;el.querySelectorAll("#ttW button").forEach(x=>x.setAttribute("aria-pressed",String(x===b)))});
     el.querySelector("#ttSave").onclick=async()=>{
       const title=el.querySelector("#ttT").value.trim();if(!title){toast("напиши, что сделать");el.querySelector("#ttT").focus();return}
@@ -2430,7 +2447,7 @@ function rulesSheet(){
   sheet(`<div class="sheet-h"><h2>правила игры</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
   <div class="stack" style="margin-top:0">
   <div class="card"><b>сезон и уровни</b><p class="small" style="margin:6px 0 0">сезон длится 90 дней. опыт поднимает уровень, а на некоторых уровнях дают звание: ${RANKS.map(r=>r[1]).join(" → ")}.</p></div>
-  <div class="card"><b>сколько опыта за что</b><div class="xptable">${TYPES.map(t=>`<span>${t.label} <span class="muted small">${t.hint}</span></span><b>${t.xp}</b>`).join("")}<span>рутина сверх четырёх в день, день остаётся в серии</span><b>0</b><span>делаю впервые</span><b>×1.5</b><span>шаг в страх</span><b>+${FEAR_XP}</b><span>квест дня / недели / босс</span><b>30 / 80 / 250</b><span>шаг к цели сезона</span><b>40</b></div></div>
+  <div class="card"><b>сколько опыта за что</b><div class="xptable">${TYPES.map(t=>`<span>${t.label} <span class="muted small">${t.hint}</span></span><b>${t.xp}</b>`).join("")}<span>рутина сверх четырёх в день, день остаётся в серии</span><b>0</b><span>делаю впервые</span><b>×1.5</b><span>шаг в страх</span><b>+${FEAR_XP}</b><span>квест дня / недели / месяца</span><b>30 / 80 / 250</b><span>шаг к цели сезона</span><b>40</b></div></div>
   <div class="card"><b>навыки</b><p class="small" style="margin:6px 0 0">у каждого навыка 20 уровней. основной навык получает весь опыт за действие, дополнительные (их можно выбрать до двух) получают по 40%.</p></div>
   <div class="card"><b>монеты</b><p class="small" style="margin:6px 0 0">за каждые 10 xp дают монету. их можно потратить на хотелки из вишлиста.</p></div>
   <div class="card"><b>мягкая серия</b><p class="small" style="margin:6px 0 0">за неделю без пропусков дают заморозку, максимум три. если пропустишь день, сгорит заморозка, а серия останется. если вернёшься после перерыва в пару дней, получишь 25 xp бонусом.</p></div>
@@ -2572,7 +2589,7 @@ document.addEventListener("click",ev=>{
     case"achAll":S.achAll=!S.achAll;render();break;
     case"qMenu":{const c=P.challenges.find(x=>x.id===id);if(!c)break;sheet(`<div class="sheet-h"><span class="pill">${esc(c.title.slice(0,40))}</span><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div><div class="stack"><button class="btn wide" data-act="qInfo" data-id="${c.id}">в чём суть</button><button class="btn wide" data-act="qReview" data-id="${c.id}">разбор</button></div>`);break}
     case"qStep":{const c=P.challenges.find(x=>x.id===id);const st=c&&(c.steps||[]).find(x=>x.id===b.dataset.s);if(!st||c.status!=="active")break;st.done=!st.done;Store.saveProfile();
-      const inSheet=!!b.closest(".sheet");if(c.steps.every(x=>x.done)){toast(c.period==="month"?"босс повержен! нажми «пройден», чтобы забрать награду":"все этапы пройдены, забирай награду");}else if(st.done)toast("этап пройден");
+      const inSheet=!!b.closest(".sheet");if(c.steps.every(x=>x.done)){toast(c.period==="month"?"все этапы квеста месяца пройдены! нажми «пройден», чтобы забрать награду":"все этапы пройдены, забирай награду");}else if(st.done)toast("этап пройден");
       if(inSheet){render();questSheet(id)}else render();break}
     case"qStepDel":{const c=P.challenges.find(x=>x.id===id);if(!c)break;c.steps=(c.steps||[]).filter(x=>x.id!==b.dataset.s);Store.saveProfile();render();questSheet(id);break}
     case"qMove":{const c=P.challenges.find(x=>x.id===id);if(!c)break;c.moved=(c.moved||0)+1;c.due=c.period==="day"?addDays(today(),1):c.period==="week"?endOfWeek(addDays(today(),7)):endOfMonth(addDays(endOfMonth(today()),1));Store.saveProfile();toast("перенесено до "+fmtD(c.due));render();break}
@@ -2629,6 +2646,8 @@ document.addEventListener("click",ev=>{
     case"sync":syncSheet();break;
     case"allowCloud":allowCloud();break;
     case"tqNew":tqEditSheet(null);break;
+    case"calPick":{const qid=b.dataset.q;sheet(`<div class="sheet-h"><h2>в календарь</h2><button class="iconbtn" data-act="tqOpen" data-id="${esc(qid)}" aria-label="назад">✕</button></div><p class="small muted" style="margin:0 0 6px">${esc(b.dataset.t)} · ${esc(fmtD(b.dataset.d))}</p><div style="margin-top:8px">${calLinks(b.dataset.t,b.dataset.d,"")}</div><button class="btn ghost wide" style="margin-top:14px" data-act="tqOpen" data-id="${esc(qid)}">назад к квесту</button>`);break}
+    case"qTab":if(b.dataset.go){S.view="quests";window.scrollTo(0,0)}S.qTab=id;try{localStorage.setItem("prk-qtab",id)}catch(x){}render();if(id==="team")TQ.load();break;
     case"tqOpen":tqSheet(b.dataset.id);TQ.load();break;
     case"tqEdit":tqEditSheet(b.dataset.q);break;
     case"tqTask":tqTaskSheet(b.dataset.q,b.dataset.id);break;
