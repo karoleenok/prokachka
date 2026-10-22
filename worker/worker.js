@@ -44,6 +44,12 @@ async function checkInitData(env, initData) {
   if (!(age < 60 * 60 * 24 * 30)) return null;
   try { return JSON.parse(p.get("user")).id; } catch (e) { return null; }
 }
+// то же, но возвращает человека целиком: имя и фото для командных квестов
+async function checkUser(env, initData) {
+  const id = await checkInitData(env, initData);
+  if (!id) return null;
+  try { const u = JSON.parse(new URLSearchParams(initData).get("user")); return { id, name: cut([u.first_name, u.last_name].filter(Boolean).join(" ") || u.username || "игрок", 40), photo: /^https:\/\//.test(u.photo_url || "") ? u.photo_url : "" }; } catch (e) { return { id, name: "игрок", photo: "" }; }
+}
 const localNow = tz => {
   const d = new Date(Date.now() + (Number(tz) || 0) * 60000);
   return { date: d.toISOString().slice(0, 10), hour: d.getUTCHours() };
@@ -315,6 +321,12 @@ async function dbInit(env) {
     env.DB.prepare("CREATE TABLE IF NOT EXISTS hist (uid INTEGER NOT NULL, hid TEXT NOT NULL, ts INTEGER NOT NULL, sv INTEGER NOT NULL, data TEXT NOT NULL, PRIMARY KEY (uid, hid))"),
     env.DB.prepare("CREATE INDEX IF NOT EXISTS hist_sv ON hist (uid, sv)"),
     env.DB.prepare("CREATE TABLE IF NOT EXISTS img (uid INTEGER NOT NULL, rid TEXT NOT NULL, data TEXT NOT NULL, PRIMARY KEY (uid, rid))"),
+    env.DB.prepare("CREATE TABLE IF NOT EXISTS tq (id TEXT PRIMARY KEY, code TEXT NOT NULL, owner INTEGER NOT NULL, upd INTEGER NOT NULL, data TEXT NOT NULL)"),
+    env.DB.prepare("CREATE UNIQUE INDEX IF NOT EXISTS tq_code ON tq (code)"),
+    env.DB.prepare("CREATE TABLE IF NOT EXISTS tqm (qid TEXT NOT NULL, uid INTEGER NOT NULL, name TEXT, photo TEXT, joined INTEGER, PRIMARY KEY (qid, uid))"),
+    env.DB.prepare("CREATE INDEX IF NOT EXISTS tqm_uid ON tqm (uid)"),
+    env.DB.prepare("CREATE TABLE IF NOT EXISTS tqt (qid TEXT NOT NULL, id TEXT NOT NULL, upd INTEGER NOT NULL, data TEXT NOT NULL, PRIMARY KEY (qid, id))"),
+    env.DB.prepare("CREATE TABLE IF NOT EXISTS tqc (qid TEXT NOT NULL, tid TEXT NOT NULL, id TEXT NOT NULL, uid INTEGER NOT NULL, ts INTEGER NOT NULL, text TEXT NOT NULL, PRIMARY KEY (qid, id))"),
   ]);
   dbReady = true;
 }
@@ -404,6 +416,168 @@ async function verifyText(env, uid, date) {
   return L.join("\n").slice(0, 4000);
 }
 const verifyKb = { inline_keyboard: [[{ text: "✅ синхронизировать устройства", callback_data: "s:1" }], [{ text: "открыть прокачку", web_app: { url: APP } }]] };
+
+// ================= командные квесты =================
+// квест общий для всех участников: задачи с ответственным, дедлайном и комментариями. бот пишет всем о каждом изменении.
+const rnd = n => [...crypto.getRandomValues(new Uint8Array(n))].map(b => "abcdefghijkmnpqrstuvwxyz23456789"[b % 32]).join("");
+const pj = t => { try { return JSON.parse(t); } catch (e) { return null; } };
+const ddmm = d => /^\d{4}-\d{2}-\d{2}$/.test(d || "") ? d.slice(8, 10) + "." + d.slice(5, 7) : "";
+const tqBtn = qid => ({ inline_keyboard: [[{ text: "открыть квест", web_app: { url: APP + "#tq=" + qid } }]] });
+function cleanQuest(q, old) {
+  const o = old || {};
+  const stages = (Array.isArray(q.stages) ? q.stages : o.stages || []).slice(0, 20).filter(x => x && sid(x.id)).map(x => ({ id: x.id, title: cut(x.title, 120), deadline: /^\d{4}-\d{2}-\d{2}$/.test(x.deadline || "") ? x.deadline : "", done: !!x.done, r1: x.r1 || "", r0: x.r0 || "" }));
+  return { id: o.id || q.id, title: cut(q.title, 120) || o.title || "командный квест", about: String(q.about || "").slice(0, 1500), deadline: /^\d{4}-\d{2}-\d{2}$/.test(q.deadline || "") ? q.deadline : "", stages, created: o.created || Date.now(), upd: Date.now(), r1: o.r1 || "", r0: o.r0 || "" };
+}
+function cleanTask(t, old) {
+  const o = old || {};
+  return { id: t.id, title: cut(t.title, 160) || o.title || "задача", essence: String(t.essence || "").slice(0, 2000), who: Number(t.who) || 0, deadline: /^\d{4}-\d{2}-\d{2}$/.test(t.deadline || "") ? t.deadline : "", stage: sid(t.stage) ? t.stage : "", done: !!t.done, doneBy: t.done ? (Number(t.doneBy) || o.doneBy || 0) : 0, doneAt: t.done ? (o.done ? o.doneAt : Date.now()) : 0, del: !!t.del, by: o.by || Number(t.by) || 0, created: o.created || Date.now(), upd: Number(t.upd) || Date.now(), r1: o.deadline === t.deadline ? (o.r1 || "") : "", r0: o.deadline === t.deadline ? (o.r0 || "") : "" };
+}
+async function tqMember(env, qid, uid) { return !!(await env.DB.prepare("SELECT 1 AS x FROM tqm WHERE qid = ?1 AND uid = ?2").bind(qid, uid).first()); }
+async function tqNotify(env, qid, exceptUid, text) {
+  const ms = (await env.DB.prepare("SELECT uid FROM tqm WHERE qid = ?1").bind(qid).all()).results;
+  for (const m of ms) if (m.uid !== exceptUid) await tg(env, "sendMessage", { chat_id: m.uid, text: text.slice(0, 4000), reply_markup: tqBtn(qid) });
+}
+async function tqList(env, uid) {
+  const qs = (await env.DB.prepare("SELECT q.id, q.code, q.owner, q.data FROM tq q JOIN tqm m ON m.qid = q.id WHERE m.uid = ?1").bind(uid).all()).results;
+  const out = [];
+  for (const q of qs) {
+    const data = pj(q.data); if (!data || data.del) continue;
+    const members = (await env.DB.prepare("SELECT uid, name, photo, joined FROM tqm WHERE qid = ?1 ORDER BY joined").bind(q.id).all()).results;
+    const tasks = (await env.DB.prepare("SELECT data FROM tqt WHERE qid = ?1").bind(q.id).all()).results.map(x => pj(x.data)).filter(t => t && !t.del);
+    const comments = (await env.DB.prepare("SELECT id, tid, uid, ts, text FROM tqc WHERE qid = ?1 ORDER BY ts").bind(q.id).all()).results;
+    out.push(Object.assign(data, { code: q.code, owner: q.owner, members, tasks, comments }));
+  }
+  return out.sort((a, b) => (b.created || 0) - (a.created || 0));
+}
+async function tqOp(env, ctx, u, b) {
+  await dbInit(env);
+  const f = b.g !== "m"; // род для сообщений: приложение присылает пол из профиля
+  const V = (m, w) => f ? w : m;
+  const op = b.op;
+  const later = p => ctx.waitUntil(p.catch(() => {}));
+  const nameOf = async (qid, id) => { const r = await env.DB.prepare("SELECT name FROM tqm WHERE qid = ?1 AND uid = ?2").bind(qid, id).first(); return r ? r.name : ""; };
+  // имя и фото участника обновляем при каждом заходе
+  await env.DB.prepare("UPDATE tqm SET name = ?2, photo = ?3 WHERE uid = ?1").bind(u.id, u.name, u.photo).run();
+  if (op === "list") return { list: await tqList(env, u.id) };
+  if (op === "save") {
+    const q = b.quest || {};
+    if (!sid(q.id)) return { error: "bad" };
+    const row = await env.DB.prepare("SELECT data FROM tq WHERE id = ?1").bind(q.id).first();
+    if (!row) {
+      const data = cleanQuest(q, null);
+      await env.DB.batch([
+        env.DB.prepare("INSERT INTO tq (id, code, owner, upd, data) VALUES (?1, ?2, ?3, ?4, ?5)").bind(q.id, rnd(10), u.id, data.upd, JSON.stringify(data)),
+        env.DB.prepare("INSERT OR IGNORE INTO tqm (qid, uid, name, photo, joined) VALUES (?1, ?2, ?3, ?4, ?5)").bind(q.id, u.id, u.name, u.photo, Date.now()),
+      ]);
+    } else {
+      if (!await tqMember(env, q.id, u.id)) return { error: "not member" };
+      const old = pj(row.data) || {};
+      const data = cleanQuest(q, old);
+      if (q.del) data.del = true;
+      // этапы: напоминания уже отправленные не теряем
+      data.stages.forEach(st => { const os = (old.stages || []).find(x => x.id === st.id); if (os && os.deadline === st.deadline) { st.r1 = os.r1 || ""; st.r0 = os.r0 || ""; } });
+      if (old.deadline !== data.deadline) { data.r1 = ""; data.r0 = ""; }
+      await env.DB.prepare("UPDATE tq SET upd = ?2, data = ?3 WHERE id = ?1").bind(q.id, data.upd, JSON.stringify(data)).run();
+      const ev = [];
+      if (q.del) ev.push("" + V("закрыл", "закрыла") + " квест");
+      else {
+        if (old.deadline !== data.deadline && data.deadline) ev.push("" + V("поставил", "поставила") + " дедлайн квеста: " + ddmm(data.deadline));
+        data.stages.forEach(st => { const os = (old.stages || []).find(x => x.id === st.id); if (!os) ev.push("" + V("добавил", "добавила") + " этап «" + st.title + "»" + (st.deadline ? " до " + ddmm(st.deadline) : "")); else if (!os.done && st.done) ev.push("" + V("закрыл", "закрыла") + " этап «" + st.title + "» ✅"); else if (os.deadline !== st.deadline && st.deadline) ev.push("" + V("перенёс", "перенесла") + " этап «" + st.title + "» на " + ddmm(st.deadline)); });
+      }
+      if (ev.length) later(tqNotify(env, q.id, u.id, u.name + " " + ev.join(", ") + "\nквест «" + data.title + "»"));
+    }
+    return { list: await tqList(env, u.id) };
+  }
+  if (op === "task") {
+    const t = b.task || {}, qid = b.qid;
+    if (!sid(qid) || !sid(t.id) || !await tqMember(env, qid, u.id)) return { error: "bad" };
+    const qrow = await env.DB.prepare("SELECT data FROM tq WHERE id = ?1").bind(qid).first(); const q = pj(qrow && qrow.data) || {};
+    const row = await env.DB.prepare("SELECT data FROM tqt WHERE qid = ?1 AND id = ?2").bind(qid, t.id).first();
+    const old = row ? pj(row.data) : null;
+    if (!old) t.by = u.id;
+    if (t.done && !(old && old.done)) t.doneBy = u.id;
+    const data = cleanTask(t, old);
+    data.upd = Date.now();
+    await env.DB.prepare("INSERT INTO tqt (qid, id, upd, data) VALUES (?1, ?2, ?3, ?4) ON CONFLICT (qid, id) DO UPDATE SET upd = excluded.upd, data = excluded.data").bind(qid, t.id, data.upd, JSON.stringify(data)).run();
+    const all = (await env.DB.prepare("SELECT data FROM tqt WHERE qid = ?1").bind(qid).all()).results.map(x => pj(x.data)).filter(x => x && !x.del);
+    const dn = all.filter(x => x.done).length;
+    const ev = [];
+    const whoName = data.who ? await nameOf(qid, data.who) : "";
+    if (!old) ev.push("➕ " + u.name + " " + V("добавил", "добавила") + " задачу «" + data.title + "»" + (whoName ? "\nответственный: " + whoName : "") + (data.deadline ? "\nдедлайн: " + ddmm(data.deadline) : ""));
+    else if (data.del && !old.del) ev.push("🗑 " + u.name + " " + V("удалил", "удалила") + " задачу «" + data.title + "»");
+    else {
+      if (data.done && !old.done) ev.push("✅ " + u.name + " " + V("выполнил", "выполнила") + " «" + data.title + "»\nготово " + dn + " из " + all.length);
+      if (!data.done && old.done) ev.push("↩️ " + u.name + " " + V("вернул", "вернула") + " в работу «" + data.title + "»");
+      if (data.who !== old.who && data.who) ev.push("👤 " + u.name + " " + V("назначил", "назначила") + " ответственным " + (data.who === u.id ? "себя" : whoName) + " в задаче «" + data.title + "»");
+      if (data.deadline !== old.deadline && data.deadline) ev.push("📅 " + u.name + " " + V("поставил", "поставила") + " дедлайн " + ddmm(data.deadline) + " для «" + data.title + "»");
+      if (!ev.length && (data.title !== old.title || data.essence !== old.essence)) ev.push("✏️ " + u.name + " " + V("изменил", "изменила") + " задачу «" + data.title + "»");
+    }
+    if (ev.length) later(tqNotify(env, qid, u.id, ev.join("\n") + "\nквест «" + (q.title || "") + "»"));
+    return { list: await tqList(env, u.id) };
+  }
+  if (op === "comment") {
+    const qid = b.qid, tid = b.tid, text = String(b.text || "").trim().slice(0, 1500);
+    if (!sid(qid) || !sid(tid) || !text || !await tqMember(env, qid, u.id)) return { error: "bad" };
+    await env.DB.prepare("INSERT INTO tqc (qid, tid, id, uid, ts, text) VALUES (?1, ?2, ?3, ?4, ?5, ?6)").bind(qid, tid, rnd(12), u.id, Date.now(), text).run();
+    const tr = await env.DB.prepare("SELECT data FROM tqt WHERE qid = ?1 AND id = ?2").bind(qid, tid).first(); const t = pj(tr && tr.data) || {};
+    later(tqNotify(env, qid, u.id, "💬 " + u.name + " в задаче «" + (t.title || "") + "»:\n" + cut(text, 600)));
+    return { list: await tqList(env, u.id) };
+  }
+  if (op === "join") {
+    const code = String(b.code || "").slice(0, 20);
+    const q = await env.DB.prepare("SELECT id, data FROM tq WHERE code = ?1").bind(code).first();
+    if (!q) return { error: "not found" };
+    const was = await tqMember(env, q.id, u.id);
+    if (!was) {
+      await env.DB.prepare("INSERT OR IGNORE INTO tqm (qid, uid, name, photo, joined) VALUES (?1, ?2, ?3, ?4, ?5)").bind(q.id, u.id, u.name, u.photo, Date.now()).run();
+      later(tqNotify(env, q.id, u.id, "🙌 " + u.name + " " + V("присоединился", "присоединилась") + " к квесту «" + ((pj(q.data) || {}).title || "") + "»"));
+    }
+    return { joined: q.id, list: await tqList(env, u.id) };
+  }
+  if (op === "leave") {
+    if (!sid(b.qid)) return { error: "bad" };
+    await env.DB.prepare("DELETE FROM tqm WHERE qid = ?1 AND uid = ?2").bind(b.qid, u.id).run();
+    later(tqNotify(env, b.qid, u.id, "👋 " + u.name + " " + V("вышел", "вышла") + " из квеста"));
+    return { list: await tqList(env, u.id) };
+  }
+  return { error: "op" };
+}
+// напоминания о дедлайнах: за день и в день дедлайна, утром по московскому времени
+async function tqRemind(env) {
+  if (!env.DB) return;
+  await dbInit(env);
+  const t = localNow(180); if (t.hour < 10) return;
+  const today = t.date, tomorrow = shiftDate(today, 1);
+  const qs = (await env.DB.prepare("SELECT id, data FROM tq").all()).results;
+  for (const qr of qs) {
+    const q = pj(qr.data); if (!q || q.del) continue;
+    const msgs = []; let qDirty = false;
+    const check = (o, label) => {
+      if (!o.deadline || o.done) return;
+      if (o.deadline === tomorrow && o.r1 !== today) { o.r1 = today; msgs.push("⏰ завтра дедлайн: " + label); return true; }
+      if (o.deadline === today && o.r0 !== today) { o.r0 = today; msgs.push("🔥 сегодня дедлайн: " + label); return true; }
+      return false;
+    };
+    if (check(q, "весь квест «" + q.title + "»")) qDirty = true;
+    (q.stages || []).forEach(st => { if (check(st, "этап «" + st.title + "»")) qDirty = true; });
+    if (qDirty) await env.DB.prepare("UPDATE tq SET data = ?2 WHERE id = ?1").bind(q.id, JSON.stringify(q)).run();
+    const ms = (await env.DB.prepare("SELECT uid, name FROM tqm WHERE qid = ?1").bind(q.id).all()).results;
+    const nm = id => (ms.find(m => m.uid === id) || {}).name || "";
+    const ts = (await env.DB.prepare("SELECT id, data FROM tqt WHERE qid = ?1").bind(q.id).all()).results;
+    for (const tr of ts) {
+      const x = pj(tr.data); if (!x || x.del) continue;
+      if (check(x, "«" + x.title + "»" + (x.who ? " · ответственный: " + nm(x.who) : ""))) await env.DB.prepare("UPDATE tqt SET data = ?3 WHERE qid = ?1 AND id = ?2").bind(q.id, x.id, JSON.stringify(x)).run();
+    }
+    if (msgs.length) for (const m of ms) await tg(env, "sendMessage", { chat_id: m.uid, text: ("квест «" + q.title + "»\n" + msgs.join("\n")).slice(0, 4000), reply_markup: tqBtn(q.id) });
+  }
+}
+// событие в календарь: файл .ics на весь день (айфон и мак откроют его в календаре)
+function icsFile(title, date, note) {
+  const d = date.replace(/-/g, ""), e = shiftDate(date, 1).replace(/-/g, "");
+  const esc = s => String(s || "").replace(/[\\;,]/g, m => "\\" + m).replace(/\n/g, "\\n");
+  return ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//prokachka//RU", "BEGIN:VEVENT", "UID:" + rnd(16) + "@prokachka", "DTSTAMP:" + new Date().toISOString().replace(/[-:]/g, "").slice(0, 15) + "Z",
+    "DTSTART;VALUE=DATE:" + d, "DTEND;VALUE=DATE:" + e, "SUMMARY:" + esc(title), "DESCRIPTION:" + esc(note), "BEGIN:VALARM", "TRIGGER:-PT15H", "ACTION:DISPLAY", "DESCRIPTION:" + esc(title), "END:VALARM", "END:VEVENT", "END:VCALENDAR"].join("\r\n");
+}
 
 export default {
   async fetch(req, env, ctx) {
@@ -512,6 +686,18 @@ export default {
     }
 
     // ответы на кнопки в чате
+    if (url.pathname === "/ics" && req.method === "GET") {
+      const date = url.searchParams.get("d") || "";
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return new Response("bad date", { status: 400 });
+      return new Response(icsFile(cut(url.searchParams.get("t"), 200), date, String(url.searchParams.get("n") || "").slice(0, 1000)), { headers: { "content-type": "text/calendar; charset=utf-8", "content-disposition": "attachment; filename=\"prokachka-" + date + ".ics\"" } });
+    }
+    if (url.pathname === "/tq" && req.method === "POST") {
+      if (!env.DB) return J({ error: "no db" }, 500);
+      const b = await req.json().catch(() => null);
+      const u = b && b.initData ? await checkUser(env, String(b.initData)) : null;
+      if (!u) return J({ error: "bad" }, 401);
+      return J(await tqOp(env, ctx, u, b));
+    }
     if ((url.pathname === "/st" || url.pathname === "/verify") && req.method === "POST") {
       if (!env.DB) return J({ error: "no db" }, 500);
       const b = await req.json().catch(() => null);
@@ -620,6 +806,14 @@ export default {
           await tg(env, "sendMessage", { chat_id: chat, text: L.join("\n") });
           return new Response("ok");
         }
+        const inv = /^\/start\s+tqj_([a-z0-9]{6,20})/.exec(m.text || "");
+        if (inv && env.DB) {
+          await dbInit(env);
+          const q = await env.DB.prepare("SELECT data FROM tq WHERE code = ?1").bind(inv[1]).first();
+          const d = q ? pj(q.data) : null;
+          await tg(env, "sendMessage", { chat_id: chat, text: d ? "тебя позвали в командный квест «" + d.title + "»" + (d.deadline ? " (до " + ddmm(d.deadline) + ")" : "") + ".\nнажми кнопку, чтобы присоединиться: будешь видеть задачи команды, а я буду писать, когда кто-то что-то сделал." : "приглашение устарело или квест закрыли. попроси новую ссылку.", reply_markup: d ? { inline_keyboard: [[{ text: "присоединиться", web_app: { url: APP + "#tqj=" + inv[1] } }]] } : appBtn("открыть прокачку") });
+          return new Response("ok");
+        }
         const isStart = /^\/start/.test(m.text || "");
         if (isStart && rec && !rec.cfg) {
           // 1) то же, что в описании бота: картинка и текст
@@ -643,6 +837,7 @@ export default {
   async scheduled(event, env) {
     if (!env.BOT_TOKEN || !env.USERS) return;
     await bcRun(env);
+    try { await tqRemind(env); } catch (e) {}
     let cursor;
     do {
       const l = await env.USERS.list({ prefix: "u:", cursor });
