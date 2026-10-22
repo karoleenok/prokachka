@@ -626,6 +626,7 @@ html.tt,html.tt *{transition:background-color .4s ease,color .4s ease,border-col
 .gfull .grow{min-height:54px}.gfull .grow.ghead{min-height:48px}.gfull .gantt:not(.wide){--glw:128px}.gfull .glb{font-size:13px}.gfull .glb.qh{font-size:14.5px}@media (min-width:600px){.gfull .gantt:not(.wide){--glw:200px}}
 .gqt{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;margin:12px -2px 0;border-bottom:1px solid color-mix(in srgb,currentColor 12%,transparent)}.gqt::-webkit-scrollbar{display:none}
 .gqt button{flex:none;background:none;border:0;color:inherit;font:inherit;font-size:14px;font-weight:600;padding:10px 12px 11px;opacity:.5;white-space:nowrap;max-width:260px;overflow:hidden;text-overflow:ellipsis;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.gqt.solo button{white-space:normal;max-width:none;text-overflow:clip;text-align:left;line-height:1.3;flex:1}
 .gqt button[aria-selected="true"]{opacity:1;border-bottom-color:var(--accent)}
 .gqm{display:flex;align-items:center;gap:10px;margin-top:12px;font-size:13px;flex-wrap:wrap}
 .gqm .gqbar{width:64px;height:6px;border-radius:3px;background:color-mix(in srgb,currentColor 12%,transparent);overflow:hidden}.gqm .gqbar i{display:block;height:100%;background:var(--accent);border-radius:inherit}
@@ -1897,7 +1898,7 @@ function questList(){
 const GX_ICON_T=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h9M8 12h10M6 18h7"/></svg>`;
 const GX_ICON=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>`;
 function gqPick(all){const k=S.gq;return all.some(x=>x.key===k)?k:(all[0]?all[0].key:"")}
-function gqTabs(all,act){const k=gqPick(all);return`<div class="gqt" role="tablist">${all.map(x=>`<button role="tab" data-act="${act}" data-id="${esc(x.key)}" aria-selected="${k===x.key}">${x.team?"👥 ":""}${esc(x.name)}</button>`).join("")}</div>`}
+function gqTabs(all,act){const k=gqPick(all);return`<div class="gqt ${all.length===1?"solo":""}" role="tablist">${all.map(x=>`<button role="tab" data-act="${act}" data-id="${esc(x.key)}" aria-selected="${k===x.key}">${x.team?"👥 ":""}${esc(x.name)}</button>`).join("")}</div>`}
 function gqMeta(x){if(!x)return"";const mem=x.team?(x.q.members||[]):[];
   return`<div class="gqm"><span class="gqbar"><i style="width:${x.pr||0}%"></i></span><span><b>${x.pr||0}%</b>${x.dl?` · до ${shortD(x.dl)}`:""}${x.team?"":` · ${esc(x.per)}`}</span>${mem.length?`<span class="avs">${mem.slice(0,5).map(m=>avatar(m,22)).join("")}</span>`:""}<button class="gqo" ${x.team?`data-act="tqOpen" data-id="${esc(x.q.id)}"`:`data-act="qInfo" data-id="${esc(x.c.id)}"`}>открыть квест</button></div>`}
 function gqBody(all,act){const k=gqPick(all);const x=all.find(y=>y.key===k);
