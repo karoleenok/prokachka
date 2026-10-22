@@ -1408,7 +1408,21 @@ function questSheet(id){
   <div class="card" style="margin-top:12px">${(c.steps||[]).length?(c.steps||[]).map(x=>`<div class="goal-step"><button class="check ${x.done?"on":""}" data-act="qStep" data-id="${c.id}" data-s="${x.id}" aria-pressed="${!!x.done}">${x.done?IC.check:""}</button><span style="flex:1;min-width:0;${x.done?"text-decoration:line-through;opacity:.6":""}">${esc(x.t)}</span><button class="link" data-act="qStepDel" data-id="${c.id}" data-s="${x.id}" aria-label="удалить этап">✕</button></div>`).join(""):`<p class="small muted" style="margin:0">этапов пока нет</p>`}
   ${c.status==="active"?`<form class="row" data-form="qstep" data-id="${c.id}" style="margin-top:8px;flex-wrap:nowrap"><input class="in-text" name="t" placeholder="новый этап" style="padding:9px 10px" aria-label="новый этап"><button class="btn sm" type="submit">добавить</button></form>`:""}</div>
   <div class="row" style="margin-top:14px"><span class="small"><b class="num">+${c.xp} xp</b> и ${coinsW(c.coins)} за прохождение</span></div>
+  ${c.status==="active"&&Store.online()?`<div class="card" style="margin-top:14px"><b>сделать командным</b><p class="small muted" style="margin:6px 0 10px">позовёшь людей, этапы станут задачами с ответственными и дедлайнами, бот будет писать всей команде.</p><button class="btn accent wide" data-act="qToTeam" data-id="${c.id}">${IC.plus} сделать командным</button></div>`:""}
   <div class="row" style="margin-top:14px"><button class="btn ghost" data-act="qDel" data-id="${c.id}">удалить квест</button></div>`);
+}
+/* личный квест → командный: этапы становятся задачами, дедлайн сохраняется */
+function questToTeam(id){
+  const P=S.profile;const c=P.challenges.find(x=>x.id===id);if(!c)return;
+  confirmSheet("сделать квест командным?","этапы станут задачами команды (на тебе), дедлайн квеста сохранится. потом позовёшь людей и раздашь задачи. квест переедет из личных в командные.","сделать командным",async()=>{
+    const a=c.about||{};const qid=uid();
+    try{
+      await TQ.call("save",{quest:{id:qid,title:c.title,about:[a.essence,a.benefit].filter(Boolean).join("\n\n"),deadline:c.due||"",stages:[]}});
+      for(const x of (c.steps||[]))await TQ.call("task",{qid,task:{id:uid(),title:x.t,who:TQ.me(),done:!!x.done,deadline:"",upd:Date.now()}});
+      markGone(c.id);P.challenges=P.challenges.filter(x=>x.id!==c.id);Store.saveProfile();
+      S.view="quests";S.qTab="team";render();window.scrollTo(0,0);tqSheet(qid);toast("квест стал командным, зови людей");
+    }catch(x){toast("не получилось, проверь интернет и попробуй ещё раз")}
+  });
 }
 
 function vPath(d){
@@ -2587,7 +2601,8 @@ document.addEventListener("click",ev=>{
     case"qInfo":questSheet(id);break;
     case"goalsMore":S.goalsAll=!S.goalsAll;render();break;
     case"achAll":S.achAll=!S.achAll;render();break;
-    case"qMenu":{const c=P.challenges.find(x=>x.id===id);if(!c)break;sheet(`<div class="sheet-h"><span class="pill">${esc(c.title.slice(0,40))}</span><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div><div class="stack"><button class="btn wide" data-act="qInfo" data-id="${c.id}">в чём суть</button><button class="btn wide" data-act="qReview" data-id="${c.id}">разбор</button></div>`);break}
+    case"qMenu":{const c=P.challenges.find(x=>x.id===id);if(!c)break;sheet(`<div class="sheet-h"><span class="pill">${esc(c.title.slice(0,40))}</span><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div><div class="stack"><button class="btn wide" data-act="qInfo" data-id="${c.id}">в чём суть</button><button class="btn wide" data-act="qReview" data-id="${c.id}">разбор</button>${Store.online()?`<button class="btn wide" data-act="qToTeam" data-id="${c.id}">сделать командным</button>`:""}</div>`);break}
+    case"qToTeam":questToTeam(id);break;
     case"qStep":{const c=P.challenges.find(x=>x.id===id);const st=c&&(c.steps||[]).find(x=>x.id===b.dataset.s);if(!st||c.status!=="active")break;st.done=!st.done;Store.saveProfile();
       const inSheet=!!b.closest(".sheet");if(c.steps.every(x=>x.done)){toast(c.period==="month"?"все этапы квеста месяца пройдены! нажми «пройден», чтобы забрать награду":"все этапы пройдены, забирай награду");}else if(st.done)toast("этап пройден");
       if(inSheet){render();questSheet(id)}else render();break}
