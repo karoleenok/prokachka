@@ -243,7 +243,7 @@ async function bcSend(env, chat, b, kb) {
     if (last) body.reply_markup = kb;
     keep(await tg(env, m, body));
   } else if (b.type === "album") {
-    const items = b.media || b.files.map(f => ({ t: "photo", f }));
+    const items = b.media || (b.files || [b.file]).filter(Boolean).map(f => ({ t: "photo", f }));
     const media = items.map((x, i) => i === 0 && fits ? Object.assign({ type: x.t, media: x.f, caption: text }, ents.length ? { caption_entities: ents } : {}) : { type: x.t, media: x.f });
     keep(await tg(env, "sendMediaGroup", { chat_id: chat, media }));
     if (!first.ok) return first;
@@ -263,22 +263,44 @@ async function bcSend(env, chat, b, kb) {
 // альбом: телеграм присылает каждое фото отдельным сообщением. копим их в D1 (там нет задержки, как у списка KV),
 // первое сообщение группы «забирает» сборку и через 4 секунды собирает пост целиком
 async function bcpInit(env) { await env.DB.prepare("CREATE TABLE IF NOT EXISTS bcp (gid TEXT NOT NULL, mid INTEGER NOT NULL, kind TEXT, file TEXT, cap TEXT, ents TEXT, PRIMARY KEY (gid, mid))").run(); }
-async function bcpAdd(env, m) {
-  await bcpInit(env);
-  const kind = m.photo ? "photo" : m.video ? "video" : "";
-  const file = m.photo ? m.photo[m.photo.length - 1].file_id : m.video ? m.video.file_id : "";
-  await env.DB.prepare("INSERT OR REPLACE INTO bcp (gid, mid, kind, file, cap, ents) VALUES (?1, ?2, ?3, ?4, ?5, ?6)").bind(String(m.media_group_id), m.message_id, kind, file, m.caption || "", JSON.stringify(m.caption_entities || [])).run();
-  const c = await env.DB.prepare("INSERT OR IGNORE INTO bcp (gid, mid, kind) VALUES (?1, -1, 'claim')").bind(String(m.media_group_id)).run();
-  return !!(c.meta && c.meta.changes);
+// что за медиа в сообщении: фото, видео или картинка, отправленная файлом (без сжатия)
+function mediaOf(m) {
+  if (m.photo && m.photo.length) return { kind: "photo", file: m.photo[m.photo.length - 1].file_id };
+  if (m.video) return { kind: "video", file: m.video.file_id };
+  if (m.document && /^(image|video)\//.test(m.document.mime_type || "")) return { kind: "document", file: m.document.file_id };
+  return null;
 }
+let bcpReady = false;
+async function bcpAdd(env, m, gid) {
+  if (!bcpReady) { await bcpInit(env); bcpReady = true; }
+  const md = mediaOf(m) || { kind: "", file: "" };
+  // одним запросом: само фото и «заявка» на сборку. меньше обращений к базе, значит фото альбома доезжают быстрее
+  const r = await env.DB.batch([
+    env.DB.prepare("INSERT OR REPLACE INTO bcp (gid, mid, kind, file, cap, ents) VALUES (?1, ?2, ?3, ?4, ?5, ?6)").bind(gid, m.message_id, md.kind, md.file, m.caption || "", JSON.stringify(m.caption_entities || [])),
+    env.DB.prepare("INSERT OR IGNORE INTO bcp (gid, mid, kind) VALUES (?1, -1, 'claim')").bind(gid),
+  ]);
+  const c = r && r[1];
+  return !!(c && c.meta && c.meta.changes);
+}
+const albumRows = async (env, gid) => (await env.DB.prepare("SELECT mid, kind, file, cap, ents FROM bcp WHERE gid = ?1 AND mid >= 0 ORDER BY mid").bind(gid).all()).results || [];
 async function albumFlow(env, chat, gid) {
-  await new Promise(r => setTimeout(r, 4000)); // ждём, пока телеграм доставит все фото альбома
-  const rows = (await env.DB.prepare("SELECT mid, kind, file, cap, ents FROM bcp WHERE gid = ?1 AND mid >= 0 ORDER BY mid").bind(String(gid)).all()).results || [];
+  // ждём, пока телеграм доставит все фото: собираем, пока новые приходят, и идём дальше после 3 секунд тишины (но не дольше 22 секунд)
+  const t0 = Date.now(); let n = -1, still = 0, rows = [];
+  await new Promise(r => setTimeout(r, 2500));
+  while (Date.now() - t0 < 22000) {
+    rows = await albumRows(env, gid);
+    if (rows.length === n) { still += 1; if (still >= 2) break; } else { n = rows.length; still = 0; }
+    await new Promise(r => setTimeout(r, 1500));
+  }
   if (!rows.length) return;
+  const loose = gid.startsWith("d:");
   const capRow = rows.find(r => /^\/send(@\w+)?(\s|$)/.test(r.cap || "")) || null;
   const cur = await env.USERS.get("bc:cur", "json");
   if (cur && cur.state === "sending") { await tg(env, "sendMessage", { chat_id: chat, text: "прошлая рассылка ещё идёт, подожди отчёта." }); return; }
-  const draftText = cur && cur.state === "draft" && cur.type === "text" && cur.text && Date.now() - parseInt(cur.id, 36) < 3600000 ? cur : null;
+  const fresh = cur && cur.state === "draft" && Date.now() - parseInt(cur.id, 36) < 3600000;
+  // для фото, присланных по одному, берём текст черновика, даже если к нему уже прилипла первая картинка
+  const draftText = fresh && cur.text && (cur.type === "text" || loose) ? cur : null;
+  const prevMedia = loose && fresh && cur.type !== "text" ? (cur.media || (cur.files || [cur.file]).filter(Boolean).map(f => ({ t: cur.type === "video" ? "video" : "photo", f }))) : [];
   let text = "", ents = [];
   if (capRow) {
     const raw = capRow.cap; const pre = raw.length - raw.replace(/^\/send(@\w+)?\s*/, "").length;
@@ -290,10 +312,17 @@ async function albumFlow(env, chat, gid) {
     await tg(env, "sendMessage", { chat_id: chat, text: "вижу альбом. чтобы сделать из него рассылку, начни подпись с /send или сначала пришли /send и текст, а потом картинки." });
     return;
   }
-  const items = rows.filter(r => r.file).slice(0, 10).map(r => ({ t: r.kind || "photo", f: r.file }));
-  const b = { id: Date.now().toString(36), text, ents, type: items.length > 1 ? "album" : (items[0].t === "video" ? "video" : "photo"), file: items[0].f, media: items, files: items.map(x => x.f), state: "draft", ok: 0, fail: 0, skip: 0 };
+  let all = prevMedia.concat(rows.filter(r => r.file).map(r => ({ t: r.kind || "photo", f: r.file })));
+  // телеграм не смешивает в одном альбоме файлы с фото и видео: если прислали вперемешку, оставляем фото и видео
+  const docs = all.filter(x => x.t === "document"), vis = all.filter(x => x.t !== "document");
+  let note = "";
+  if (docs.length && vis.length) { all = vis; note = "\n(часть картинок пришла файлами, а часть фото. телеграм не собирает их в один альбом, поэтому взяла только фото. пришли всё одинаково: лучше фото, со сжатием)"; }
+  const items = all.slice(0, 10);
+  if (!items.length) return;
+  const one = items.length === 1 && items[0].t !== "document";
+  const b = { id: Date.now().toString(36), text, ents, type: one ? (items[0].t === "video" ? "video" : "photo") : "album", file: items[0].f, media: items, files: items.map(x => x.f), state: "draft", ok: 0, fail: 0, skip: 0 };
   await env.USERS.put("bc:cur", JSON.stringify(b));
-  await tg(env, "sendMessage", { chat_id: chat, text: "так увидят люди" + (rows.length > 10 ? " (взяла первые 10 из " + rows.length + ")" : "") + (text.length > CAP ? "\n(текст длиннее подписи в 1024 знака, это предел телеграма. поэтому он придёт отдельным сообщением сразу под картинками. чтобы был один пост, сократи текст до 1024 знаков)" : "") });
+  await tg(env, "sendMessage", { chat_id: chat, text: "так увидят люди" + (all.length > 10 ? " (взяла первые 10 из " + all.length + ", больше телеграм в один пост не пускает)" : "") + note + (text.length > CAP ? "\n(текст длиннее подписи в 1024 знака, это предел телеграма. поэтому он придёт отдельным сообщением сразу под картинками. чтобы был один пост, сократи текст до 1024 знаков)" : "") });
   await bcSend(env, chat, b, BC_KB);
 }
 async function bcRun(env) {
@@ -878,11 +907,20 @@ export default {
         }
         if (/^\/support(@\w+)?\s*$/.test(raw) && rec) { await supStart(env, chat, rec); return new Response("ok"); }
         if (/^\/done(@\w+)?\s*$/.test(raw) && rec) { await supStop(env, chat, rec); return new Response("ok"); }
-        if (rec && rec.sup && Date.now() - rec.sup < SUP_TTL && !/^\//.test(raw)) { await supForward(env, m, rec); return new Response("ok"); }
-        if (m.from && m.from.id === OWNER && (m.photo || m.video) && m.media_group_id && env.USERS && env.DB) {
-          if (await bcpAdd(env, m)) ctx.waitUntil(albumFlow(env, chat, m.media_group_id));
-          return new Response("ok");
+        // картинки владельца для рассылки собираем раньше поддержки: иначе в режиме поддержки каждое фото альбома уходило отдельно
+        if (m.from && m.from.id === OWNER && mediaOf(m) && env.USERS && env.DB) {
+          let gid = m.media_group_id ? String(m.media_group_id) : "";
+          // фото, присланные по одному после /send и текста, тоже склеиваем в один альбом, а не в отдельные посты
+          if (!gid && !raw) {
+            const cd = await env.USERS.get("bc:cur", "json");
+            if (cd && cd.state === "draft" && Date.now() - parseInt(cd.id, 36) < 3600000) gid = "d:" + cd.id;
+          }
+          if (gid) {
+            if (await bcpAdd(env, m, gid)) ctx.waitUntil(albumFlow(env, chat, gid));
+            return new Response("ok");
+          }
         }
+        if (rec && rec.sup && Date.now() - rec.sup < SUP_TTL && !/^\//.test(raw)) { await supForward(env, m, rec); return new Response("ok"); }
         // одиночная картинка без подписи сразу после текста /send — приклеиваем к нему
         let sendLike = /^\/send(@\w+)?(\s|$)/.test(raw);
         if (!sendLike && m.from && m.from.id === OWNER && (m.photo || m.video || m.animation) && !raw && env.USERS) {
