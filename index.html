@@ -459,7 +459,8 @@ html.tt,html.tt *{transition:background-color .4s ease,color .4s ease,border-col
   .stack>.grp{grid-column:1/-1;margin-top:10px}
   .hero .xpbar{grid-column:2;grid-row:1;align-self:end}
   .hero .xpmeta{grid-column:2;grid-row:2}
-  .hero .stats{grid-column:1/-1;grid-row:3;margin-top:20px}
+  .hero .stats{grid-column:1;grid-row:3;margin-top:20px;align-self:center}
+  .hero .pstrip{grid-column:2;grid-row:3;margin-top:20px}
   .hero #tqHero{grid-column:1/-1;grid-row:5}
   .hero .hq{grid-column:1/-1;grid-row:4;margin-top:18px;display:grid;grid-template-columns:1fr auto;column-gap:24px;align-items:center}.hero .hq .hq-top,.hero .hq .hq-t,.hero .hq .hq-m{grid-column:1}.hero .hq .hq-b{grid-column:2;grid-row:1/4;margin-top:0}
   .greet{font-size:24px;margin-top:28px}
@@ -624,6 +625,16 @@ html.tt,html.tt *{transition:background-color .4s ease,color .4s ease,border-col
 .gfull .chip{white-space:nowrap;flex:none}
 .gfull .gantt{flex:1;min-height:0;display:flex;flex-direction:column}.gfull .gsc{flex:0 1 auto;min-height:0;overflow:auto}
 .gfull .grow{min-height:54px}.gfull .grow.ghead{min-height:48px}.gfull .gantt:not(.wide){--glw:128px}.gfull .glb{font-size:13px}.gfull .glb.qh{font-size:14.5px}@media (min-width:600px){.gfull .gantt:not(.wide){--glw:200px}}
+.chain{display:flex;align-items:stretch;gap:6px;margin-top:14px}.ch-n{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;padding:10px;border-radius:14px;border:1px solid var(--line)}
+.ch-n b{font-size:13px;line-height:1.25;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}.ch-ic{color:var(--accent-t);height:22px}.ch-ar{align-self:center;color:var(--muted)}
+.fgrp{width:100%;margin-bottom:8px}.fgl{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--muted);margin:2px 0 6px}
+.fsph{width:100%;display:flex;align-items:center;gap:8px;margin-top:8px;padding:8px 10px;border-radius:10px;background:color-mix(in srgb,var(--accent) 10%,transparent);font-size:13px}
+.m-sph{display:inline-flex;vertical-align:-2px;margin-right:4px;opacity:.75}
+.pstrip{display:flex;align-items:center;gap:12px;width:100%;margin-top:12px;padding:8px 12px 8px 8px;border-radius:16px;background:var(--panel-soft);border:0;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.pstrip svg{display:block;flex:none}.ps-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.ps-t b{font-size:13.5px;font-weight:600}.ps-up{color:var(--s-accent-t)}.ps-s{font-size:12.5px;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ps-ar{opacity:.6}
+.fsub{font-size:11.5px;color:var(--muted);opacity:.85;margin:10px 0 6px 2px}.fgrp .fsub:first-of-type{margin-top:2px}.fskq{margin:0 0 10px;padding:9px 12px}
+.mp-pulse{animation:mpp 1.2s ease-out 3;transform-box:fill-box;transform-origin:center}
+@keyframes mpp{0%{r:3;opacity:1}100%{r:9;opacity:0}}
 .rd-lab{cursor:pointer}.rd-lab:hover text:first-of-type{text-decoration:underline}.sphic{flex:none}
 .sph-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px}
 .sph{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:8px 10px;border-radius:12px;border:1px solid var(--line);background:none;color:inherit;cursor:pointer;text-align:left;min-width:0}
@@ -1015,7 +1026,7 @@ const skillById=id=>allSkills().find(s=>s.id===id);
 const SPH_IC={work:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7M3 12.5h18"/>',money:'<circle cx="12" cy="12" r="8.5"/><path d="M14.6 9.4c-.5-.9-1.5-1.4-2.6-1.4-1.4 0-2.5.8-2.5 2s1.1 1.6 2.5 2 2.5.8 2.5 2-1.1 2-2.5 2c-1.1 0-2.1-.5-2.6-1.4M12 6.5V8M12 16v1.5"/>',people:'<circle cx="9" cy="8.5" r="3"/><path d="M3.5 19.5c0-3 2.5-5.5 5.5-5.5s5.5 2.5 5.5 5.5"/><circle cx="17" cy="9.5" r="2.3"/><path d="M16.5 14.2c2.4.1 4 1.9 4 4.6"/>',body:'<path d="M3 12.5h4l2.2-4.5 4 9 2.3-4.5H21"/>',soul:'<path d="M12 3.5l1.9 5.6 5.6 1.9-5.6 1.9L12 18.5l-1.9-5.6-5.6-1.9 5.6-1.9z"/>',mind:'<path d="M5 4.5h11.5a2 2 0 0 1 2 2V20H7a2 2 0 0 1-2-2zM5 18a2 2 0 0 1 2-2h11.5"/>'};
 const sphIc=(id,sz)=>`<svg class="sphic" viewBox="0 0 24 24" width="${sz||16}" height="${sz||16}" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${SPH_IC[id]||""}</svg>`;
 const SPHERES=[
-  {id:"work",n:"дело",ic:"work",d:"профессия и ремесло: то, чем ты зарабатываешь и в чём растёшь как специалист",top:"job"},
+  {id:"work",n:"работа",ic:"work",d:"профессия и ремесло: то, чем ты зарабатываешь и в чём растёшь как специалист",top:"job"},
   {id:"money",n:"деньги",ic:"money",d:"продажи, клиенты, продвижение, личные финансы и инвестиции",top:"money"},
   {id:"people",n:"люди",ic:"people",d:"близкие, друзья, команда, дом и забота о других",top:"relations"},
   {id:"body",n:"тело",ic:"body",d:"спорт, сон, еда, отдых и энергия",top:"sport"},
@@ -1515,6 +1526,7 @@ function vHome(d){
     <button class="rank rank-btn" data-act="ranks" aria-label="уровни и звания">${esc(rankOf(d.level))} <span style="opacity:.7;font-weight:500">· что дают уровни →</span></button>
     <div class="xpbar" role="progressbar" aria-valuemin="0" aria-valuemax="${d.lv.need}" aria-valuenow="${d.lv.into}"><i style="width:${S.lastW||"0%"}" data-w="${Math.max(2,Math.round(d.lv.frac*100))}%"></i></div>
     <div class="xpmeta num"><span>${d.lv.into} xp</span><span>до ${d.level+1} ур.: ${d.lv.need-d.lv.into}</span></div>
+    ${noSkills?"":miniPortrait(d)}
     <div class="stats" id="statsRow">
       ${d.coins>0?`<span class="stat num">${IC.coin} ${coinsW(d.coins)}</span>`:""}
       ${d.streak.cur>0?`<span class="stat num">${IC.flame} серия ${d.streak.cur} ${plural(d.streak.cur,"день","дня","дней")}</span>`:""}
@@ -1777,6 +1789,23 @@ function portraitCard(d){
   return`<div class="card portrait" style="margin-top:12px"><div class="row" style="justify-content:space-between;flex-wrap:nowrap"><div class="row" style="gap:6px"><b>портрет героя</b><button class="q" data-act="hint" data-k="portrait" aria-label="что это">?</button></div>${anyGrow?`<span class="small muted rd-leg"><i></i>месяц назад</span>`:""}</div>
   ${radarSVG(items,max,{then:anyGrow})}
   <p class="small muted" style="margin:10px 0 0;text-align:center">${up.length?`за месяц больше всего выросло: <b style="color:var(--ink)">${esc(up[0].n)}</b>${weak&&weak.sp.n!==up[0].n?` · подтянуть: <b style="color:var(--ink)">${esc(weak.sp.n)}</b>`:""}`:strong.now>1?`сильнее всего: <b style="color:var(--ink)">${esc(strong.name)}</b> · подтянуть: <b style="color:var(--ink)">${esc(weak.sp.n)}</b>`:"нажми на сферу, чтобы увидеть, что в неё входит"}</p></div>`;
+}
+function chainSheet(e,sk,sp){
+  const node=(ic,lbl,val)=>`<div class="ch-n"><div class="ch-ic">${ic}</div><div class="small muted">${lbl}</div><b>${esc(val)}</b></div>`;
+  sheet(`<span class="pill">как растёт герой</span><h2 style="margin-top:12px">каждое дело качает тебя</h2>
+  <div class="chain">${node(`<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 12l4.5 4.5L19 7"/></svg>`,"запись",e.title)}<span class="ch-ar">→</span>${node(`<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>`,"навык",sk.name)}<span class="ch-ar">→</span>${node(sphIc(sp.id,20),"сфера",sp.n)}</div>
+  <p style="margin:14px 0 0">опыт за запись идёт в навык, а навыки складываются в шесть сфер жизни: работа, деньги, люди, тело, душа и ум. из них и рисуется портрет героя.</p>
+  <p class="small muted" style="margin:8px 0 0">качать можно сколько угодно навыков, сферы просто показывают баланс: где ты растёшь, а что давно стоит.</p>
+  <div class="row" style="margin-top:16px;flex-wrap:nowrap"><button class="btn accent" style="flex:1" data-act="goPortraitClose">посмотреть портрет</button><button class="btn ghost" style="flex:1" data-act="close">понятно</button></div>`);
+}
+function miniPortrait(d){
+  const sp=spheresOf(d);const n=sp.length;const S0=46,c=S0/2,R=18;const max=Math.max(5,Math.ceil(Math.max(...sp.map(x=>x.val))));
+  const pt=(i,v)=>{const a=-Math.PI/2+i*2*Math.PI/n;const r=R*Math.max(.08,Math.min(1,v/max));return[(c+r*Math.cos(a)).toFixed(1),(c+r*Math.sin(a)).toFixed(1)]};
+  const hex=sp.map((_,i)=>pt(i,max).join(",")).join(" ");const poly=sp.map((x,i)=>pt(i,x.val).join(",")).join(" ");
+  const ax=sp.map((_,i)=>{const p=pt(i,max);return`<line x1="${c}" y1="${c}" x2="${p[0]}" y2="${p[1]}" stroke="currentColor" stroke-opacity=".15"/>`}).join("");
+  const pl=S.pulse&&Date.now()-S.pulse.t<8000?S.pulse.sid:"";const pi=sp.findIndex(x=>x.sp.id===pl);
+  const list=sp.filter(x=>x.sks.length).sort((a,b)=>b.val-a.val).slice(0,4).map(x=>`${esc(x.sp.n)} ${x.level}`).join(" · ");
+  return`<button class="pstrip" data-act="goPortrait" aria-label="портрет героя"><svg viewBox="0 0 ${S0} ${S0}" width="${S0}" height="${S0}" aria-hidden="true"><polygon points="${hex}" fill="none" stroke="currentColor" stroke-opacity=".3" stroke-width="1"/>${ax}<polygon points="${poly}" fill="var(--accent)" fill-opacity=".4" stroke="var(--accent)" stroke-width="1.5" stroke-linejoin="round"/>${pi>=0?`<circle class="mp-pulse" cx="${pt(pi,sp[pi].val)[0]}" cy="${pt(pi,sp[pi].val)[1]}" r="3" fill="var(--accent)"/>`:""}</svg><span class="ps-t"><b>портрет героя${pl?` <span class="ps-up">· ${esc(sphereById(pl).n)} ↑</span>`:""}</b><span class="ps-s">${list||"нажми, чтобы посмотреть сферы"}</span></span><span class="ps-ar" aria-hidden="true">→</span></button>`;
 }
 function sphereSheet(id){
   const d=derive();const P=S.profile;const all=spheresOf(d);const x=all.find(y=>y.sp.id===id);if(!x)return;
@@ -2244,7 +2273,7 @@ function openEntry(e,opts){
   <div class="field"><span class="lbl">${isEdit?"":"2. "}что это было (от этого зависит опыт)</span><div id="fTypes"></div><div class="small muted" id="fTypeHint" style="margin-top:6px"></div></div>
   </div>
   <div class="field" id="fDayField" style="display:none"><span class="lbl">на какой день</span><div class="chips" id="fDays"></div><div class="small muted" id="fDayHint" style="margin-top:6px"></div></div>
-  <div class="field" id="fSkillField"><span class="lbl">${isEdit?"":"3. "}к какому навыку это относится</span><div class="chips" id="fPrim"></div></div>
+  <div class="field" id="fSkillField"><span class="lbl">${isEdit?"":"3. "}к какому навыку это относится</span>${activeSkills().length>10?`<input class="in-text fskq" id="fSkQ" type="search" placeholder="найти навык" autocomplete="off" aria-label="найти навык">`:""}<div class="chips" id="fPrim"></div></div>
   <div class="field" id="fTplField"><span class="lbl">${isEdit?"":"4. "}или выбери готовое</span><div class="chips" id="fTpls"></div></div>
   <details id="fMore" ${isEdit&&(F.secondary.length||F.first||F.fear||F.date!==today())?"open":""}><summary>ещё: доп. навыки, впервые, шаг в страх, дата</summary>
   <div class="field"><span class="lbl">ещё качает (до двух, получат 40%)</span><div class="chips" id="fSec"></div></div>
@@ -2268,7 +2297,20 @@ function paintForm(){
   const el=$(".sheet");if(!el||!F||!el.querySelector("#fTypes"))return;
   const ch=skillChoices();
   const put=(sel,h)=>{const n=el.querySelector(sel);if(n&&n._h!==h){n.innerHTML=h;n._h=h}};
-  put("#fPrim",ch.map(s=>`<button type="button" class="chip" data-f="prim" data-id="${s.id}" aria-pressed="${F.primary===s.id}">${inFocus(s.id)?"★ ":""}${esc(s.name)}</button>`).join("")+(F.autoSk&&F.primary?`<div class="small muted" style="width:100%;margin-top:4px">подставила навык сама, можно поменять</div>`:""));
+  put("#fPrim",(()=>{
+    const q=(F.skq||"").trim().toLowerCase();const list=q?ch.filter(k=>k.name.toLowerCase().includes(q)):ch;
+    const chip=s=>`<button type="button" class="chip" data-f="prim" data-id="${s.id}" aria-pressed="${F.primary===s.id}">${inFocus(s.id)?"★ ":""}${esc(s.name)}</button>`;
+    let h="";
+    if(!q&&ch.length>6){const since=addDays(today(),-60);const cnt={};live().forEach(e=>{if(e.primary&&e.date>=since)cnt[e.primary]=(cnt[e.primary]||0)+1});const top=ch.filter(k=>cnt[k.id]).sort((a,b)=>cnt[b.id]-cnt[a.id]).slice(0,3);
+      if(top.length)h+=`<div class="fgrp"><div class="fgl">часто используешь</div><div class="chips">${top.map(chip).join("")}</div></div>`}
+    h+=SPHERES.map(sp=>{const ls=list.filter(k=>sphereOf(k)===sp.id);if(!ls.length)return"";
+      let body;
+      if(!q&&ls.length>5){const gs=[...new Set(ls.map(k=>k.g))];body=gs.map(g=>{const sub=ls.filter(k=>k.g===g);const key=sp.id+":"+g;const open=(F.skOpen||{})[key]||sub.some(k=>k.id===F.primary&&sub.indexOf(k)>=3);const shown=open?sub:sub.slice(0,3);
+        return`${gs.length>1?`<div class="fsub">${esc((GROUPS.find(x=>x.id===g)||{name:"своё"}).name)}</div>`:""}<div class="chips">${shown.map(chip).join("")}${sub.length>shown.length?`<button type="button" class="chip dash" data-f="skmore" data-id="${key}">+${sub.length-shown.length} ещё</button>`:""}</div>`}).join("")}
+      else body=`<div class="chips">${ls.map(chip).join("")}</div>`;
+      return`<div class="fgrp"><div class="fgl">${sphIc(sp.id,13)}${esc(sp.n)}${ls.length>5?` · ${ls.length}`:""}</div>${body}</div>`}).join("");
+    if(q&&!list.length)h+=`<div class="small muted">ничего не нашлось. добавить навык можно через каталог на экране «навыки».</div>`;
+    return h})()+(F.primary&&skillById(F.primary)?(()=>{const sp=sphereById(sphereOf(skillById(F.primary)));return`<div class="fsph">${sphIc(sp.id,15)}<span>качает сферу <b>${esc(sp.n)}</b> в портрете героя</span></div>`})():"")+(F.autoSk&&F.primary?`<div class="small muted" style="width:100%;margin-top:4px">подставила навык сама, можно поменять</div>`:""));
   put("#fTpls",F.primary?gx(tplsFor(F.primary).map((t,i)=>`<button type="button" class="chip" data-f="tpl" data-i="${i}" aria-pressed="${F.title===t.t&&F.type===t.type}">${esc(t.t)}</button>`).join("")):`<span class="small muted">сначала выбери навык, и тут появятся варианты</span>`);
   const tb=t=>`<button type="button" class="chip" data-f="type" data-id="${t.id}" aria-pressed="${F.type===t.id}" title="${esc(t.hint)}">${esc(t.label)} · ${t.xp}</button>`;
   put("#fTypes",gx(EFF.slice().reverse().map(g=>`<div class="tgrp"><div class="tgl">${esc(g.n)}</div><div class="chips">${g.types.map(id=>tb(TY[id])).join("")}</div></div>`).join("")+`<div class="tgrp"><div class="tgl">рутина</div><div class="chips">${tb(TY.routine)}</div></div>`));
@@ -2285,7 +2327,7 @@ function paintForm(){
   el.querySelector("#fXpSub").textContent=F.planned?gx("опыт придёт, когда отметишь «сделал{а|}»"):(x?"+"+coinsW(coinsOf(x)):F.type==="routine"?"лимит опыта по рутине на сегодня выбран, но серия засчитается":"выбери тип действия");
 }
 function formSync(){const el=$(".sheet");if(!el||!F||!el.querySelector("#fTitle"))return;F.title=el.querySelector("#fTitle").value;F.first=el.querySelector("#fFirst").checked;F.fear=el.querySelector("#fFear").checked;F.date=el.querySelector("#fDate").value||today();
-  F.note=el.querySelector("#fNote").value;F.link=el.querySelector("#fLink").value.trim();F.money=el.querySelector("#fMoney").value;paintForm()}
+  F.note=el.querySelector("#fNote").value;F.link=el.querySelector("#fLink").value.trim();F.money=el.querySelector("#fMoney").value;const sq=el.querySelector("#fSkQ");if(sq)F.skq=sq.value;paintForm()}
 async function formChange(ev){
   formSync();
   if(ev.target.id==="fImg"&&ev.target.files[0]){const box=$(".sheet .imgpick");box.innerHTML='<span class="small"><span class="spin"></span> загружаю…</span>';
@@ -2298,6 +2340,7 @@ async function formClick(ev){
   else if(f==="day"){F.date=b.dataset.d;$("#fDate").value=F.date}
   else if(f==="dayOther"){const fd=$("#fDate");$("#fMore").open=true;try{fd.showPicker()}catch(x){fd.focus()}}
   else if(f==="type")F.type=b.dataset.id;
+  else if(f==="skmore"){F.skOpen=Object.assign({},F.skOpen,{[b.dataset.id]:true})}
   else if(f==="prim"){F.primary=b.dataset.id;F.autoSk=false;F.skPicked=true;F.secondary=F.secondary.filter(x=>x!==F.primary)}
   else if(f==="sec"){const id=b.dataset.id;if(F.secondary.includes(id))F.secondary=F.secondary.filter(x=>x!==id);else{if(F.secondary.length>=2)F.secondary.shift();F.secondary.push(id)}}
   else if(f==="tpl"){const t=tplsFor(F.primary)[+b.dataset.i];if(t){F.title=t.t;F.type=t.type;$("#fTitle").value=F.title}}
@@ -2315,8 +2358,12 @@ function saveEntry(){
   const isNew=!S.entries.some(e=>e.id===F.id);
   const e=clone(F);e.title=e.title.trim();setNox(e);
   if(!e.planned&&isNew&&e.date===today())maybeComeback();
+  const sk0=skillById(e.primary);const sp0=sk0?sphereOf(sk0):"";const before=!e.planned&&sp0?spheresOf(derive()).find(x=>x.sp.id===sp0):null;
   Store.putEntry(e);closeSheet();F=null;
-  toast(e.planned?"добавлено в план: "+dayWord(e.date):e.nox?"записано. на сегодня 4 рутины уже дали опыт, серия идёт":"сохранено: +"+xpOf(e)+" xp · +"+coinsW(coinsOf(xpOf(e))));
+  const after=before?spheresOf(derive()).find(x=>x.sp.id===sp0):null;
+  if(!e.planned&&sp0)S.pulse={sid:sp0,t:Date.now()};
+  if(!e.planned&&sp0&&!S.profile.seenSph){S.profile.seenSph=1;Store.saveProfile();setTimeout(()=>chainSheet(e,sk0,sphereById(sp0)),900)}
+  toast(e.planned?"добавлено в план: "+dayWord(e.date):e.nox?"записано. на сегодня 4 рутины уже дали опыт, серия идёт":after&&after.level>before.level?"+"+xpOf(e)+" xp · "+sphereById(sp0).n+" теперь уровень "+after.level+" ↑":"+"+xpOf(e)+" xp → "+(sk0?sk0.name+" · "+sphereById(sp0).n+" ↑":""));
   afterChange();
 }
 function maybeComeback(){
@@ -2398,7 +2445,7 @@ const dayFull=d=>{const x=parseD(d);return WDF[x.getDay()]+", "+x.getDate()+" "+
 const dayWord=d=>d===today()?"сегодня":d===addDays(today(),1)?"завтра":dayShort(d);
 function planRow(e){
   const x=xpOf(e);const sk=skillById(e.primary);const od=e.date<today();
-  return`<div class="tk"><button class="cb" data-act="markDone" data-id="${e.id}" aria-label="отметить: сделал{а|}"></button><div class="tkb" data-act="editEntry" data-id="${e.id}"><div class="t">${esc(e.title)}</div><div class="m">${esc(sk?sk.name:"")}${od?" · с "+fmtD(e.date):""}</div></div><div class="xp num">+${x} xp</div></div>`;
+  return`<div class="tk"><button class="cb" data-act="markDone" data-id="${e.id}" aria-label="отметить: сделал{а|}"></button><div class="tkb" data-act="editEntry" data-id="${e.id}"><div class="t">${esc(e.title)}</div><div class="m">${sk?`<span class="m-sph">${sphIc(sphereOf(sk),12)}</span>`:""}${esc(sk?sk.name:"")}${od?" · с "+fmtD(e.date):""}</div></div><div class="xp num">+${x} xp</div></div>`;
 }
 function doneRow(e){
   const sk=skillById(e.primary);
@@ -3113,6 +3160,8 @@ document.addEventListener("click",ev=>{
     case"grpTog":{S.grpOpen=S.grpOpen||{};S.grpOpen[id]=!S.grpOpen[id];try{localStorage.setItem("prk-grp",JSON.stringify(S.grpOpen))}catch(x){}render();break}
     case"skillCat":skillCatalog();break;
     case"sphere":sphereSheet(id);break;
+    case"goPortraitClose":closeSheet();S.view="skills";render();window.scrollTo(0,0);break;
+    case"goPortrait":S.view="skills";render();window.scrollTo(0,0);break;
     case"catThenAdd":closeSheet();if(S.profile.active.length)openEntry(null,{});break;
     case"startLevels":openStartLevels();break;
     case"slDone":{closeSheet();const f=window._slDone;window._slDone=null;if(f)f();break}
