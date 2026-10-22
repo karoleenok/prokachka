@@ -69,6 +69,19 @@ button{cursor:pointer;border:0;background:none;-webkit-tap-highlight-color:trans
 .brand small{display:block;font-style:normal;font-family:var(--f-body);font-weight:500;font-size:13px;white-space:nowrap;letter-spacing:0;text-transform:none;color:var(--muted-bg);margin-top:5px}
 .iconbtn{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--btn);color:var(--ink);flex:none}
 .iconbtn svg{width:20px;height:20px}
+/* новости и обновления: колокольчик со счётчиком в шапке и лента в окне */
+.bell{position:relative}
+.nbadge{position:absolute;top:-5px;right:-5px;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--accent);color:var(--accent-ink);font-size:11px;font-weight:700;line-height:18px;text-align:center;box-shadow:0 0 0 2px var(--bg);pointer-events:none}
+.nbadge[hidden]{display:none}
+.nw-list{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+.nw{display:flex;flex-direction:column;gap:6px}
+.nw.fresh{border-color:var(--accent)}
+.nw-h{display:flex;align-items:center;gap:6px;flex-wrap:nowrap}
+.nw-h .nw-d{margin-left:auto;white-space:nowrap}
+.nw-t{font-weight:700;line-height:1.3;overflow-wrap:anywhere}
+.nw-x{line-height:1.45;overflow-wrap:anywhere}
+.nw-a{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.nw-empty{text-align:center;padding:22px 12px}
 .sync{display:inline-grid;place-items:center;width:40px;height:40px;border-radius:12px;background:var(--btn);font-size:13px;font-weight:600;white-space:nowrap}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .sync i{width:14px;height:14px;border-radius:50%;background:var(--muted)}
@@ -347,6 +360,15 @@ button.ach{border:0;font:inherit;color:var(--ink);cursor:pointer}
 /* сделано / в планах: один цвет, разная плотность */
 .entry-row{display:flex;gap:12px;align-items:flex-start}
 .entry-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+/* карточки дел в сетке: одинаковая высота в ряду, кнопки внизу, длинные названия переносятся */
+.stack>.fade-up{display:flex;min-width:0}
+.stack>.fade-up>.entry{flex:1;min-width:0}
+.entry>.entry-row{flex:1;align-items:stretch}
+.entry>.entry-row>.st-mark{align-self:flex-start}
+.entry .t{overflow-wrap:anywhere;line-height:1.3}
+.entry .meta{margin-top:2px}
+.entry .note{margin:2px 0}
+.entry .ent-act{margin-top:auto;padding-top:6px}
 .st-mark{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;margin-top:-2px}
 .st-mark svg{width:16px;height:16px}
 .is-done .st-mark{background:var(--accent);color:var(--accent-ink)}
@@ -687,6 +709,7 @@ html.tt,html.tt *{transition:background-color .4s ease,color .4s ease,border-col
     <div class="brand"><svg class="logo" viewBox="0 0 480 119" role="img" aria-label="прокачка" fill="none"><path d="M-2.32793e-05 95L8.94722 41.2203H55.8962L46.949 95H32.6622L39.7334 52.9576H21.0212L14.0462 95H-2.32793e-05ZM49.333 115.107L61.7437 41.2203H76.4152L74.924 50.3119H75.5494C76.4473 48.8367 77.6338 47.3455 79.109 45.8383C80.6163 44.331 82.4763 43.0803 84.689 42.0862C86.9018 41.06 89.4994 40.5469 92.4818 40.5469C96.3942 40.5469 99.8256 41.5731 102.776 43.6255C105.726 45.6458 107.843 48.7084 109.126 52.8133C110.44 56.9181 110.601 62.0491 109.607 68.2064C108.612 74.1712 106.801 79.2221 104.171 83.359C101.573 87.4638 98.4466 90.5745 94.7907 92.691C91.1349 94.8076 87.2545 95.8659 83.1497 95.8659C80.2956 95.8659 77.9385 95.3848 76.0785 94.4228C74.2185 93.4607 72.7754 92.2581 71.7492 90.815C70.723 89.3398 69.9854 87.8647 69.5364 86.3895H69.0554L64.2931 115.107H49.333ZM80.4559 84.0324C82.9252 84.0003 85.0899 83.3269 86.9499 82.0121C88.8419 80.6652 90.4133 78.8052 91.664 76.4321C92.9468 74.0269 93.8607 71.269 94.4059 68.1583C94.8869 65.0476 94.8869 62.3217 94.4059 59.9807C93.9569 57.6076 93.0109 55.7476 91.5678 54.4007C90.1247 53.0538 88.1685 52.3803 85.6992 52.3803C83.294 52.3803 81.1294 53.0377 79.2052 54.3526C77.3131 55.6353 75.7257 57.4633 74.443 59.8364C73.1923 62.1774 72.3104 64.9514 71.7973 68.1583C71.2842 71.3331 71.2681 74.1071 71.7492 76.4802C72.2302 78.8533 73.2083 80.6972 74.6835 82.0121C76.1587 83.3269 78.0828 84.0003 80.4559 84.0324ZM133.108 96.0583C127.624 96.0262 123.086 94.8397 119.495 92.4986C115.903 90.1576 113.37 86.9026 111.894 82.7336C110.451 78.5326 110.195 73.6581 111.125 68.1102C112.023 62.5943 113.867 57.7679 116.657 53.631C119.447 49.4941 122.99 46.2872 127.288 44.0103C131.617 41.7014 136.491 40.5469 141.911 40.5469C147.363 40.5469 151.884 41.7174 155.476 44.0584C159.068 46.3995 161.585 49.6705 163.028 53.8715C164.504 58.0726 164.776 62.9631 163.846 68.5431C162.948 74.0269 161.088 78.8372 158.266 82.9741C155.476 87.079 151.933 90.2859 147.635 92.5948C143.37 94.8717 138.528 96.0262 133.108 96.0583ZM134.599 84.5134C137.101 84.5134 139.329 83.8079 141.286 82.3969C143.242 80.9538 144.861 78.9976 146.144 76.5283C147.427 74.0269 148.325 71.2048 148.838 68.0621C149.351 64.9514 149.383 62.1774 148.934 59.7402C148.517 57.3029 147.603 55.3948 146.192 54.0158C144.781 52.6048 142.841 51.9153 140.372 51.9474C137.87 51.9153 135.641 52.6208 133.685 54.064C131.729 55.5071 130.11 57.4793 128.827 59.9807C127.544 62.4821 126.646 65.3041 126.133 68.4469C125.62 71.5255 125.572 74.2834 125.989 76.7207C126.406 79.1579 127.32 81.066 128.731 82.445C130.174 83.824 132.13 84.5134 134.599 84.5134ZM187.396 96.0583C181.912 96.0262 177.374 94.8397 173.782 92.4986C170.191 90.1576 167.657 86.9026 166.182 82.7336C164.739 78.5326 164.482 73.6581 165.412 68.1102C166.31 62.5943 168.154 57.7679 170.944 53.631C173.734 49.4941 177.278 46.2872 181.575 44.0103C185.904 41.7014 190.779 40.5469 196.199 40.5469C201.65 40.5469 206.172 41.7174 209.764 44.0584C213.356 46.3995 215.873 49.6705 217.316 53.8715C218.791 58.0726 219.064 62.9631 218.134 68.5431C217.236 74.0269 215.376 78.8372 212.554 82.9741C209.764 87.079 206.22 90.2859 201.923 92.5948C197.658 94.8717 192.815 96.0262 187.396 96.0583ZM188.887 84.5134C191.388 84.5134 193.617 83.8079 195.573 82.3969C197.529 80.9538 199.149 78.9976 200.432 76.5283C201.714 74.0269 202.612 71.2048 203.126 68.0621C203.639 64.9514 203.671 62.1774 203.222 59.7402C202.805 57.3029 201.891 55.3948 200.48 54.0158C199.069 52.6048 197.129 51.9153 194.659 51.9474C192.158 51.9153 189.929 52.6208 187.973 54.064C186.017 55.5071 184.397 57.4793 183.114 59.9807C181.832 62.4821 180.934 65.3041 180.421 68.4469C179.908 71.5255 179.859 74.2834 180.276 76.7207C180.693 79.1579 181.607 81.066 183.018 82.445C184.461 83.824 186.418 84.5134 188.887 84.5134ZM217.343 95L226.29 41.2203H241.202L237.643 62.0972H241.876L259.963 41.2203H277.52L254.046 67.9659L268.766 95H251.015L240.962 75.951H235.43L232.255 95H217.343ZM284.041 96.0102C280.642 96.0102 277.692 95.4169 275.19 94.2303C272.689 93.0117 270.861 91.2159 269.706 88.8428C268.552 86.4697 268.263 83.5193 268.841 79.9917C269.354 76.9772 270.316 74.4759 271.727 72.4876C273.17 70.4672 274.934 68.8317 277.018 67.581C279.103 66.3303 281.412 65.3843 283.945 64.7429C286.479 64.1015 289.092 63.6526 291.786 63.396C294.929 63.1074 297.478 62.8188 299.434 62.5302C301.391 62.2095 302.866 61.7605 303.86 61.1833C304.854 60.606 305.447 59.7562 305.64 58.6338V58.3933C305.96 56.1805 305.544 54.4808 304.389 53.2943C303.267 52.0757 301.439 51.4503 298.905 51.4183C296.244 51.4503 293.983 52.0436 292.123 53.1981C290.295 54.3526 288.98 55.8277 288.178 57.6236L274.661 56.5172C275.848 53.2462 277.66 50.4241 280.097 48.051C282.566 45.6458 285.549 43.8019 289.044 42.5191C292.54 41.2043 296.436 40.5469 300.733 40.5469C303.716 40.5469 306.506 40.8996 309.103 41.6052C311.701 42.3107 313.946 43.401 315.838 44.8762C317.73 46.3193 319.093 48.1953 319.926 50.5043C320.792 52.8133 320.953 55.5552 320.408 58.73L314.395 95H300.3L301.551 87.4959H301.118C299.996 89.1955 298.601 90.6867 296.933 91.9695C295.298 93.2202 293.405 94.2143 291.257 94.9519C289.108 95.6574 286.703 96.0102 284.041 96.0102ZM290.054 85.716C292.203 85.716 294.191 85.2831 296.019 84.4172C297.847 83.5193 299.354 82.3328 300.541 80.8576C301.759 79.3503 302.529 77.6667 302.85 75.8067L303.764 70.0824C303.283 70.371 302.609 70.6436 301.743 70.9002C300.878 71.1246 299.931 71.3491 298.905 71.5736C297.879 71.766 296.853 71.9424 295.827 72.1028C294.8 72.231 293.886 72.3593 293.085 72.4876C291.289 72.7441 289.685 73.161 288.274 73.7383C286.863 74.2834 285.709 75.0371 284.811 75.9991C283.945 76.9291 283.4 78.0997 283.175 79.5107C282.823 81.531 283.288 83.0703 284.57 84.1286C285.885 85.1869 287.713 85.716 290.054 85.716ZM375.705 41.2203L366.854 95H352.664L361.611 41.2203H375.705ZM364.834 64.8872L362.958 76.6245C361.739 77.1376 360.232 77.6186 358.436 78.0676C356.672 78.5165 354.844 78.8853 352.952 79.174C351.06 79.4305 349.281 79.5588 347.613 79.5588C339.884 79.5588 334.064 77.9714 330.151 74.7965C326.271 71.5896 324.908 66.4907 326.063 59.4996L329.093 41.1722H343.139L340.061 59.4996C339.74 61.5841 339.836 63.2357 340.349 64.4543C340.862 65.6729 341.857 66.5388 343.332 67.0519C344.839 67.565 346.907 67.8215 349.537 67.8215C352.006 67.8536 354.46 67.6131 356.897 67.1C359.334 66.5869 361.98 65.8493 364.834 64.8872ZM372.606 95L381.553 41.2203H396.465L392.905 62.0972H397.138L415.225 41.2203H432.783L409.309 67.9659L424.028 95H406.278L396.224 75.951H390.692L387.518 95H372.606ZM439.304 96.0102C435.905 96.0102 432.954 95.4169 430.453 94.2303C427.951 93.0117 426.124 91.2159 424.969 88.8428C423.815 86.4697 423.526 83.5193 424.103 79.9917C424.616 76.9772 425.578 74.4759 426.989 72.4876C428.432 70.4672 430.196 68.8317 432.281 67.581C434.365 66.3303 436.674 65.3843 439.208 64.7429C441.741 64.1015 444.355 63.6526 447.049 63.396C450.191 63.1074 452.741 62.8188 454.697 62.5302C456.653 62.2095 458.128 61.7605 459.123 61.1833C460.117 60.606 460.71 59.7562 460.902 58.6338V58.3933C461.223 56.1805 460.806 54.4808 459.652 53.2943C458.529 52.0757 456.701 51.4503 454.168 51.4183C451.506 51.4503 449.245 52.0436 447.385 53.1981C445.557 54.3526 444.243 55.8277 443.441 57.6236L429.924 56.5172C431.11 53.2462 432.922 50.4241 435.359 48.051C437.829 45.6458 440.811 43.8019 444.307 42.5191C447.802 41.2043 451.699 40.5469 455.996 40.5469C458.978 40.5469 461.768 40.8996 464.366 41.6052C466.963 42.3107 469.208 43.401 471.1 44.8762C472.992 46.3193 474.355 48.1953 475.189 50.5043C476.055 52.8133 476.215 55.5552 475.67 58.73L469.657 95H455.563L456.814 87.4959H456.381C455.258 89.1955 453.863 90.6867 452.196 91.9695C450.56 93.2202 448.668 94.2143 446.519 94.9519C444.371 95.6574 441.966 96.0102 439.304 96.0102ZM445.317 85.716C447.465 85.716 449.454 85.2831 451.282 84.4172C453.11 83.5193 454.617 82.3328 455.803 80.8576C457.022 79.3503 457.792 77.6667 458.112 75.8067L459.026 70.0824C458.545 70.371 457.872 70.6436 457.006 70.9002C456.14 71.1246 455.194 71.3491 454.168 71.5736C453.142 71.766 452.115 71.9424 451.089 72.1028C450.063 72.231 449.149 72.3593 448.347 72.4876C446.551 72.7441 444.948 73.161 443.537 73.7383C442.126 74.2834 440.971 75.0371 440.074 75.9991C439.208 76.9291 438.663 78.0997 438.438 79.5107C438.085 81.531 438.55 83.0703 439.833 84.1286C441.148 85.1869 442.976 85.716 445.317 85.716Z" fill="currentColor"/><path d="M106.894 114.278H206.743" stroke="currentColor" stroke-width="7.88127" stroke-linecap="round"/><path d="M166.829 27.8288L272.048 27.8288" stroke="currentColor" stroke-width="7.88127" stroke-linecap="round"/></svg><small id="seasonLbl">сезон 1</small></div>
     <div class="row" style="flex-wrap:nowrap;gap:6px">
       <button class="sync local" id="syncBtn" data-act="sync" aria-label="где сохраняются данные: устройство"><i></i><span id="syncTxt" class="sr">устройство</span></button>
+      <button class="iconbtn bell" id="newsBtn" data-act="news" aria-label="новости и обновления"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/></svg><span class="nbadge" id="newsBadge" hidden></span></button>
       <button class="iconbtn" id="helpBtn" data-act="help" aria-label="помощь" style="font-weight:700;font-size:18px">?</button>
       <button class="iconbtn" id="themeBtn" data-act="themeToggle" aria-label="сменить тему"></button>
       <button class="iconbtn" data-act="settings" aria-label="настройки"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg></button>
@@ -924,17 +947,17 @@ const HELP={
   focus:["фокус сезона","выбери до трёх главных навыков на сезон. действия в них дают ×1,5 опыта, а на карточках и в форме записи они со звёздочкой ★.\n\nускорение действует для новых записей, прошлые не пересчитываются. поменять фокус можно в любой момент."],
   cal:["календарь","каждая клетка — день месяца. чем ярче, тем больше опыта ты получил{а|} в этот день, бледные дни ещё впереди, точка — сегодня.\n\nнажми на день, и ниже появятся дела за него. стрелками листаются месяцы."],
   weeks:["дел по неделям сезона","каждый столбик — одна неделя сезона, цифра сверху — сколько дел ты записал{а|}. светлый столбик — эта неделя."],
-  eff:["куда ушли силы","шаги к цели — то, что двигает результат: создал{а|}, выпустил{а|}, продал{а|}, научил{а|}.\nпрактика — тренировка и пробы нового.\nзнания — уроки, книги, видео, статьи.\n\nсчитается в опыте за эту неделю, в скобках — прошлая неделя."],
+  eff:["куда ушли силы","шаги к цели — то, что двигает результат: создал{а|}, выпустил{а|} или показал{а|}, заработал{а|}, помог{ла|} или научил{а|}.\nпрактика — тренировка и пробы нового.\nзнания — уроки, книги, видео, статьи.\nрутина сюда не входит: у неё свой лимит опыта.\n\nсчитается в опыте за эту неделю, в скобках — прошлая неделя."],
   portrait:["портрет героя","шесть сфер жизни, как характеристики персонажа в игре: дело, деньги, люди, тело, душа и ум. каждый твой навык живёт в одной из сфер, и опыт из записей по навыку качает её сферу.\n\nуровень сферы — средний по трём самым сильным навыкам в ней, поэтому одна большая сфера не задавливает остальные. чем дальше точка от центра, тем выше уровень. пунктир — какой была форма месяц назад.\n\nнажми на сферу внизу: увидишь, что в неё входит, какие навыки её качают, и сможешь перенести навык в другую сферу или добавить новый."],
   level:["уровень сезона","сезон длится 90 дней. за каждое действие ты получаешь опыт, и полоса понемногу заполняется. когда она заполнится, откроется новый уровень. на некоторых уровнях дают новое звание."],
   stats:["монеты, серия, заморозки","монеты. за каждые 10 xp дают одну монету, их можно потратить на хотелки в «наградах».\n\nсерия. столько дней подряд ты что-то записываешь.\n\nзаморозки. за каждую неделю без пропусков дают одну, максимум три. если пропустишь день, сгорит заморозка, а серия останется."],
-  add:["записать или запланировать","если ты уже что-то сделал{а|}, жми «записать действие», опыт начислится сразу.\n\nесли только собираешься, жми «запланировать». опыт придёт, когда отметишь, что сделал{а|}."],
+  add:["записать или запланировать","«записать действие»: ты уже сделал{а|} дело, опыт начислится сразу.\n«запланировать»: только собираешься, опыт придёт, когда отметишь «сделал{а|}». переключить можно прямо в форме, сверху «сделал{а|} / планирую».\n\nв форме четыре шага: название, что это было (от этого зависит опыт), навык и готовые варианты под навык. если лень печатать, выбери «повторить недавнее» или расскажи словами, и claude разложит сам{а|}.\n\nпод «ещё» прячутся доп. навыки (получат 40%), «делаю впервые» (опыт ×1,5), «шаг в страх» (+30 xp) и дата. рутина даёт 5 xp, первые 4 в день."],
   today:["сегодня","всё, что ты записал{а|} за сегодня. в «изменить» можно дописать заметку, ссылку, результат или фото, а можно и удалить запись."],
   planned:["в планах","то, что ты собирал{ась|ся} сделать. как сделаешь, нажми «сделал{а|}», и опыт засчитается сегодняшним днём."],
   team:["командные квесты","общий квест на несколько человек. у каждой задачи есть ответственный, дедлайн и комментарии, а у квеста можно поставить этапы с промежуточными дедлайнами.\n\nпозови команду кнопкой «позвать»: человек получит ссылку на бота и присоединится в один клик.\n\nбот пишет всем участникам, когда кто-то добавил или выполнил задачу, оставил комментарий, и напоминает о дедлайнах за день и в день. за выполненную задачу +20 xp тому, кто её сделал."],
   quest:["квесты","квест посложнее обычного дела. лучше всего брать то, чего немного боишься. бывают на день, на неделю и на месяц.\n\nсправил{ась|ся}, жми «выполнил{а|}» и получай опыт и монеты.\nне успеваешь, жми «перенести».\nне получилось, жми «разбор» и напиши, что помешало. за это тоже дадут 10 xp."],
   state:["состояние","раз в день отмечай, как ты. слева слабее, справа лучше. если нажать ещё раз, отметка снимется. потом в «пути» будет видно, в какие дни ты был{а|} на подъёме."],
-  skills:["навыки","это то, что ты качаешь. у каждого навыка 20 уровней. основной навык действия получает весь опыт, дополнительные получают по 40%. набор навыков меняется в разделе «навыки», кнопка «выбрать навыки»."],
+  skills:["навыки","это то, что ты качаешь. у каждого навыка 20 уровней. основной навык действия получает весь опыт, дополнительные получают по 40%.\n\nнабор меняется вверху раздела:\n«выбрать навыки» — включить, поставить на паузу или добавить свой;\n«стартовые уровни» — на каком уровне ты уже был{а|};\n«подобрать по профессии» — готовый набор под твоё дело;\n«разобрать с ии» — нейросеть предложит, что переименовать, объединить или убрать.\n\nпорядок списка: по уровню, недавние или вручную."],
   feed:["лента","все твои действия по дням, свежие сверху. если нажать на навык сверху, останутся только его записи."],
   chart:["график","линия показывает, сколько опыта ты набрал{а|} с начала сезона. ниже видно, сколько ты делаешь {сама|сам}, а сколько смотришь и читаешь."],
   compare:["до и после","выбери день в прошлом и посмотри, какие уровни были тогда и какие сейчас. ниже появятся записи той недели."],
@@ -1469,6 +1492,7 @@ function render(d){
   requestAnimationFrame(()=>document.querySelectorAll("[data-w]").forEach(el=>{el.style.width=el.dataset.w;S.lastW=el.dataset.w}));
   animateIn($("#view"));
   paintSync();
+  paintNews();
 }
 const PLAIN_SEC=new Set(["сделано сегодня","в планах","состояние","ветки навыков","цели сезона","ачивки","закрытые"]);
 const secTitle=(t,k,right)=>{const pl=" plain";t=t.charAt(0).toUpperCase()+t.slice(1);return`<div class="sec"><div class="sec-l">${k&&HELP[k]?`<button class="sel sel-b${pl}" data-act="hint" data-k="${k}" aria-label="что это: ${esc(HELP[k][0])}">${t}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5v.1"/></svg></button>`:`<span class="sel${pl}">${t}</span>`}</div>${right||""}</div>`};
@@ -1507,7 +1531,7 @@ function entryCard(e){
   ${e.money?`<div class="small"><b>результат:</b> ${esc(e.money)}</div>`:""}
   ${e.link?`<div class="small" style="overflow-wrap:anywhere"><a href="${esc(/^https?:\/\//.test(e.link)?e.link:"https://"+e.link)}" target="_blank" rel="noopener" class="link">${esc(e.link)}</a></div>`:""}
   ${e.img&&e.img.url?`<img src="${esc(e.img.url)}" alt="${esc(e.title)}" loading="lazy">`:""}
-  ${e.type!=="bonus"?`<div class="row">${plan?`<button class="btn sm accent" data-act="markDone" data-id="${e.id}">${IC.check} сделал{а|}, +${x} xp</button>`:""}<button class="btn sm ghost" data-act="editEntry" data-id="${e.id}">изменить</button></div>`:""}
+  ${e.type!=="bonus"?`<div class="row ent-act">${plan?`<button class="btn sm accent" data-act="markDone" data-id="${e.id}">${IC.check} сделал{а|}, +${x} xp</button>`:""}<button class="btn sm ghost" data-act="editEntry" data-id="${e.id}">изменить</button></div>`:""}
   </div></div></div>`;
 }
 function stateBlock(date){
@@ -1845,7 +1869,7 @@ ${cat}
 
 задача:
 1. посмотри, логично ли навыки разложены по сферам, нет ли дублей и навыков, которыми я не пользуюсь.
-2. предложи, как сделать набор понятным: переименовать (коротко, с маленькой буквы, до 30 знаков), перенести в другую сферу, объединить дубли, поставить на паузу лишнее, добавить недостающее. ориентир: 6–12 активных навыков и хотя бы по одному в тех сферах, которые для меня важны.
+2. предложи, как сделать набор понятным: переименовать (коротко, с маленькой буквы, до 30 знаков), перенести в другую сферу, объединить дубли, поставить на паузу лишнее, добавить недостающее. ориентир: 5–12 активных навыков и хотя бы по одному в тех сферах, которые для меня важны.
 3. не придумывай за меня цели. опирайся на мои записи и навыки.
 
 ответь так:
@@ -2385,6 +2409,58 @@ function confirmSheet(title,text,okLabel,onOk){
   sheet(`<h2>${esc(title)}</h2><p>${esc(text)}</p><div class="row" style="margin-top:16px"><button class="btn accent" id="okBtn">${esc(okLabel)}</button><button class="btn ghost" data-act="close">отмена</button></div>`,el=>{el.querySelector("#okBtn").onclick=()=>{closeSheet();onOk()}});
 }
 function hintSheet(k){const[h,t]=HELP[k];sheet(`<span class="pill">подсказка</span><h2 style="margin-top:10px">${esc(h)}</h2><div style="white-space:pre-line">${esc(t)}</div><button class="btn accent wide" style="margin-top:16px" data-act="close">понятно</button>`)}
+
+/* ================= новости и обновления ================= */
+/* как добавить новость: допиши объект в NEWS (приложение) или в news.json рядом с index.html (без выпуска приложения).
+   kind: "update" | "news". acts: до двух кнопок {l:"посмотреть"|"протестировать", go:"..."}.
+   куда ведёт go: tab:home|path|skills|quests|rewards · path:feed · hint:<ключ из HELP> · add:plan · add:done */
+const APP_V="v60";
+const NEWS=[
+  {id:"u60-news",date:"2026-10-22",kind:"update",title:"здесь теперь новости и обновления",text:"колокольчик вверху показывает, сколько новостей ты ещё не открыл{а|}. если новость про обновление, под ней будут кнопки «посмотреть» и «протестировать»."},
+  {id:"u60-hints",date:"2026-10-22",kind:"update",title:"подсказки в форме дела совпадают с приложением",text:"форма подписана под режим: «сделал{а|}» или «планирую». подсказка к типу дела появляется под кнопками, а не поверх заголовков. в «?» описаны все четыре шага и поля под «ещё».",acts:[{l:"посмотреть",go:"hint:add"},{l:"протестировать",go:"add:plan"}]},
+  {id:"u60-layout",date:"2026-10-22",kind:"update",title:"карточки дел стали ровнее",text:"в «пути» карточки одного ряда одной высоты, кнопка «изменить» внизу, длинные названия переносятся.",acts:[{l:"посмотреть",go:"path:feed"}]},
+  {id:"u60-qstep",date:"2026-10-22",kind:"update",title:"этап квеста больше не задваивается в планах",text:"раньше двойное нажатие у следующего шага создавало две одинаковые карточки, и опыт за этап шёл дважды. теперь этап добавляется в планы один раз.",acts:[{l:"посмотреть",go:"tab:quests"},{l:"протестировать",go:"tab:home"}]}
+];
+let NEWS_REMOTE=[];
+const NEWS_LS="prk-news-read";
+const NEWS_GO=["tab","path","hint","add"];
+const newsClean=n=>n&&typeof n==="object"&&n.id&&n.title&&String(n.title).length<=140;
+const newsAll=()=>{const m=new Map();NEWS.concat(NEWS_REMOTE).forEach(n=>{if(newsClean(n))m.set(String(n.id),n)});return[...m.values()].sort((a,b)=>String(b.date||"").localeCompare(String(a.date||"")))};
+const newsRead=()=>{const s=new Set(lsGet(NEWS_LS,[]));((S.profile&&S.profile.newsRead)||[]).forEach(x=>s.add(String(x)));return s};
+const newsUnread=()=>{const r=newsRead();return newsAll().filter(n=>!r.has(String(n.id)))};
+function newsMark(ids){
+  const r=newsRead();const before=r.size;ids.forEach(i=>r.add(String(i)));if(r.size===before)return;
+  const arr=[...r].slice(-200);lsSet(NEWS_LS,arr);const P=S.profile;if(P){P.newsRead=arr;try{Store.saveProfile()}catch(x){}}paintNews();
+}
+function paintNews(){
+  const b=$("#newsBadge");if(!b)return;const n=newsUnread().length;
+  b.hidden=!n;b.textContent=n>9?"9+":String(n);
+  const btn=$("#newsBtn");if(btn)btn.setAttribute("aria-label",n?"новости и обновления, новых: "+n:"новости и обновления");
+}
+async function newsLoad(){
+  try{const r=await fetch("news.json?t="+Date.now(),{cache:"no-store"});if(!r.ok)return;const j=await r.json();
+    if(Array.isArray(j)){NEWS_REMOTE=j.filter(newsClean).slice(0,50);paintNews()}}catch(x){/* файла нет или это не json: живём со встроенными новостями */}
+}
+function newsGo(go){
+  const[k,v]=String(go||"").split(":");if(!NEWS_GO.includes(k))return;
+  closeSheet();
+  if(k==="tab"&&["home","path","skills","quests","rewards"].includes(v)){S.view=v;render();window.scrollTo(0,0);if(v==="quests")TQ.load()}
+  else if(k==="path"){S.view="path";if(v==="feed")S.pathMode="feed";render();window.scrollTo(0,0)}
+  else if(k==="hint"&&HELP[v])hintSheet(v);
+  else if(k==="add"){openEntry(null,{plan:v==="plan",date:v==="plan"?addDays(today(),1):undefined});if(v==="plan")toast("попробуй: выбери день и тип, подписи в форме поменяются")}
+}
+function newsSheet(){
+  const list=newsAll();const read=newsRead();const fresh=new Set(list.filter(n=>!read.has(String(n.id))).map(n=>String(n.id)));
+  const dt=s=>/^\d{4}-\d{2}-\d{2}$/.test(String(s||""))?fmtD(s):"";
+  const card=n=>{const id=String(n.id);const acts=(Array.isArray(n.acts)?n.acts:[]).filter(a=>a&&a.l&&NEWS_GO.includes(String(a.go||"").split(":")[0])).slice(0,2);
+    return`<div class="card nw ${fresh.has(id)?"fresh":""}"><div class="nw-h"><span class="pill">${n.kind==="update"?"обновление":"новость"}</span>${fresh.has(id)?'<span class="tag good">новое</span>':""}<span class="small muted nw-d">${esc(dt(n.date))}</span></div>
+    <div class="nw-t">${esc(n.title)}</div>${n.text?`<div class="small muted nw-x">${esc(n.text)}</div>`:""}
+    ${acts.length?`<div class="nw-a">${acts.map(a=>`<button class="btn sm ${/тест/.test(a.l)?"accent":"ghost"}" data-act="newsGo" data-n="${esc(id)}" data-go="${esc(a.go)}">${esc(String(a.l).slice(0,24))}</button>`).join("")}</div>`:""}</div>`};
+  sheet(`<div class="sheet-h"><h2>новости и обновления</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
+  ${list.length?`<div class="nw-list">${list.map(card).join("")}</div>`:`<div class="card nw-empty"><b>пока тихо</b><p class="small muted" style="margin:6px 0 0">как только появится что-то новое, здесь загорится счётчик.</p></div>`}
+  <p class="small muted" style="margin:14px 0 0;text-align:center">версия приложения ${APP_V}</p>`);
+  newsMark([...fresh]);
+}
 function showLevelUp(c){
   const el=document.createElement("div");el.className="lvlup";el.setAttribute("role","dialog");
   let burst="";for(let i=0;i<34;i++)burst+=`<i style="left:${Math.random()*100}%;animation-delay:${Math.random()*0.8}s;opacity:${.4+Math.random()*.6}"></i>`;
@@ -2454,13 +2530,13 @@ function openEntry(e,opts){
   F=e?clone(e):{id:uid(),date:opts.date||today(),title:"",type:"",primary:opts.skill||lastSk||"",autoSk:!opts.skill&&!!lastSk,secondary:[],first:false,fear:false,note:"",link:"",money:"",planned:!!opts.plan,img:null};
   if(!F.secondary)F.secondary=[];
   const isEdit=!!e;REC=isEdit?[]:recentList();
-  sheet(`<div class="sheet-h"><h2>${isEdit?"действие":F.planned?"что планируешь?":"что сделал{а|}?"}</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
+  sheet(`<div class="sheet-h"><h2 id="fH" ${isEdit?'data-edit="1"':""}>${isEdit?"действие":F.planned?"что планируешь?":"что сделал{а|}?"}</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
   <div class="seg" role="group" aria-label="статус"><button type="button" data-f="plannedNo" aria-pressed="${!F.planned}">сделал{а|}</button><button type="button" data-f="plannedYes" aria-pressed="${F.planned}">планирую</button></div>
   ${REC.length?`<div class="field"><span class="lbl">повторить недавнее в одно касание</span><div class="chips">${REC.map((r,i)=>`<button type="button" class="chip" data-f="rep" data-i="${i}">↺ ${esc(r.title)}</button>`).join("")}</div></div>`:""}
   ${sampleNs?`<div class="field"><label for="fAi">или расскажи словами, claude разложит</label><div class="row" style="flex-wrap:nowrap"><input class="in-text" id="fAi" placeholder="например: впервые собрал{а|} бота для заявок"><button class="btn sm" type="button" data-f="ai" aria-label="разобрать">${IC.spark}</button></div></div>`:""}
   <div id="fCore">
-  <div class="field"><label for="fTitle">${isEdit?"":"1. "}напиши своё или выбери ниже</label><input class="in-text" id="fTitle" value="${esc(F.title)}" placeholder="например: записал{а|} рилс про свой процесс"></div>
-  <div class="field"><span class="lbl">${isEdit?"":"2. "}что это было (от этого зависит опыт)</span><div id="fTypes"></div><div class="small muted" id="fTypeHint" style="margin-top:6px"></div></div>
+  <div class="field"><label for="fTitle" id="fLbl1">${isEdit?"":"1. "}напиши своё или выбери готовое ниже</label><input class="in-text" id="fTitle" value="${esc(F.title)}" placeholder="например: записал{а|} рилс про свой процесс"></div>
+  <div class="field"><span class="lbl" id="fLbl2">${isEdit?"":"2. "}что это было (от этого зависит опыт)</span><div id="fTypes"></div><div class="small muted" id="fTypeHint" style="margin-top:6px;min-height:2.6em"></div></div>
   </div>
   <div class="field" id="fDayField" style="display:none"><span class="lbl">на какой день</span><div class="chips" id="fDays"></div><div class="small muted" id="fDayHint" style="margin-top:6px"></div></div>
   <div class="field" id="fSkillField"><span class="lbl">${isEdit?"":"3. "}к какому навыку это относится</span>${activeSkills().length>10?`<input class="in-text fskq" id="fSkQ" type="search" placeholder="найти навык" autocomplete="off" aria-label="найти навык">`:""}<div class="chips" id="fPrim"></div></div>
@@ -2480,6 +2556,12 @@ function openEntry(e,opts){
   <div class="xpprev"><div><b class="num" id="fXp">+0 xp</b> <span class="small muted" id="fXpSub"></span></div><button class="btn accent" type="button" data-f="save" id="fSave">сохранить</button></div>
   ${isEdit?`<button class="link" type="button" data-f="del" style="margin-top:14px">удалить действие</button>`:""}`,el=>{
     el.addEventListener("click",formClick);el.addEventListener("input",formSync);el.addEventListener("change",formChange);
+    /* подсказка к типу показывается под группами при наведении и фокусе, а не системным всплывающим окном поверх заголовков */
+    const typeHintOf=ev=>{const c=ev.target.closest&&ev.target.closest('[data-f="type"]');return c?c.dataset.id:null};
+    const showTypeHint=id=>{const th=el.querySelector("#fTypeHint");if(!th||!F)return;const t=TY[id||F.type];th.textContent=t?gx(t.hint):"выбери, что ближе всего. от этого зависит опыт."};
+    el.addEventListener("mouseover",ev=>{const id=typeHintOf(ev);if(id)showTypeHint(id)});
+    el.addEventListener("focusin",ev=>{const id=typeHintOf(ev);if(id)showTypeHint(id)});
+    el.addEventListener("mouseout",ev=>{if(typeHintOf(ev))showTypeHint(null)});
     paintForm();
   });
 }
@@ -2502,7 +2584,7 @@ function paintForm(){
     if(q&&!list.length)h+=`<div class="small muted">ничего не нашлось. добавить навык можно через каталог на экране «навыки».</div>`;
     return h})()+(F.primary&&skillById(F.primary)?(()=>{const sp=sphereById(sphereOf(skillById(F.primary)));return`<div class="fsph">${sphIc(sp.id,15)}<span>качает сферу <b>${esc(sp.n)}</b> в портрете героя</span></div>`})():"")+(F.autoSk&&F.primary?`<div class="small muted" style="width:100%;margin-top:4px">подставила навык сама, можно поменять</div>`:""));
   put("#fTpls",F.primary?gx(tplsFor(F.primary).map((t,i)=>`<button type="button" class="chip" data-f="tpl" data-i="${i}" aria-pressed="${F.title===t.t&&F.type===t.type}">${esc(t.t)}</button>`).join("")):`<span class="small muted">сначала выбери навык, и тут появятся варианты</span>`);
-  const tb=t=>`<button type="button" class="chip" data-f="type" data-id="${t.id}" aria-pressed="${F.type===t.id}" title="${esc(t.hint)}">${esc(t.label)} · ${t.xp}</button>`;
+  const tb=t=>`<button type="button" class="chip" data-f="type" data-id="${t.id}" aria-pressed="${F.type===t.id}" aria-describedby="fTypeHint">${esc(t.label)} · ${t.xp}</button>`;
   put("#fTypes",gx(EFF.slice().reverse().map(g=>`<div class="tgrp"><div class="tgl">${esc(g.n)}</div><div class="chips">${g.types.map(id=>tb(TY[id])).join("")}</div></div>`).join("")+`<div class="tgrp"><div class="tgl">рутина</div><div class="chips">${tb(TY.routine)}</div></div>`));
   put("#fSec",ch.filter(s=>s.id!==F.primary).map(s=>`<button type="button" class="chip sec2" data-f="sec" data-id="${s.id}" aria-pressed="${F.secondary.includes(s.id)}">${esc(s.name)}</button>`).join(""));
   el.querySelectorAll('[data-f="plannedNo"],[data-f="plannedYes"]').forEach(b=>b.setAttribute("aria-pressed",String((b.dataset.f==="plannedYes")===!!F.planned)));
@@ -2513,6 +2595,13 @@ function paintForm(){
   if(F.type==="routine"&&!F.planned)setNox(F);else if(F.type!=="routine")delete F.nox;
   const x=F.type?xpOf(F):0;
   {const th=el.querySelector("#fTypeHint");if(th){const t=TY[F.type];th.textContent=t?gx(t.hint):"выбери, что ближе всего. от этого зависит опыт."}}
+  /* тексты формы подстраиваются под режим: «сделал» или «планирую» */
+  {const hd=el.querySelector("#fH"),ed=!!(hd&&hd.dataset.edit==="1"),pl=!!F.planned;
+    const l2=el.querySelector("#fLbl2"),ti=el.querySelector("#fTitle"),sv=el.querySelector("#fSave");
+    if(hd&&!ed)hd.textContent=gx(pl?"что планируешь?":"что сделал{а|}?");
+    if(l2)l2.textContent=(ed?"":"2. ")+(pl?"что это будет":"что это было")+" (от этого зависит опыт)";
+    if(ti)ti.placeholder=gx(pl?"например: записать рилс про свой процесс":"например: записал{а|} рилс про свой процесс");
+    if(sv&&!ed)sv.textContent=pl?"запланировать":"сохранить"}
   el.querySelector("#fXp").textContent=F.planned?"в планы":"+"+x+" xp";
   el.querySelector("#fXpSub").textContent=F.planned?gx("опыт придёт, когда отметишь «сделал{а|}»"):(x?"+"+coinsW(coinsOf(x)):F.type==="routine"?"лимит опыта по рутине на сегодня выбран, но серия засчитается":"выбери тип действия");
 }
@@ -3310,6 +3399,7 @@ document.addEventListener("click",ev=>{
       <div class="card" style="margin-top:10px"><b>«около N монет в день»</b><p class="small muted" style="margin:6px 0 0">это твой темп за последние 7 дней. по нему я считаю, через сколько дней хватит на награду.</p></div>`);break;
     case"qStepPlan":{const c=P.challenges.find(x=>x.id===id);const st=c&&(c.steps||[]).find(x=>x.id===b.dataset.s);if(!st)break;
       const sk=P.active.includes(c.skill)?c.skill:P.active[0];if(!sk){toast("сначала выбери навыки");break}
+      if(live().some(e=>e.planned&&e.qref&&e.qref.c===c.id&&e.qref.s===st.id)){toast("этот этап уже в планах");afterChange();break}
       Store.putEntry({id:uid(),date:today(),title:st.t,type:"create",primary:sk,secondary:[],planned:true,note:"этап квеста «"+c.title+"»",qref:{c:c.id,s:st.id}});
       toast("добавила на сегодня. отметишь, и этап закроется в квесте");afterChange();break}
     case"qStep":{const c=P.challenges.find(x=>x.id===id);const st=c&&(c.steps||[]).find(x=>x.id===b.dataset.s);if(!st||c.status!=="active")break;st.done=!st.done;Store.saveProfile();
@@ -3379,6 +3469,8 @@ document.addEventListener("click",ev=>{
     case"tourSkip":tourSkip();break;
     case"introGo":introGo();break;
     case"help":helpSheet();break;
+    case"news":newsSheet();break;
+    case"newsGo":newsMark([b.dataset.n]);newsGo(b.dataset.go);break;
     case"rules":rulesSheet();break;
     case"sync":syncSheet();break;
     case"allowCloud":allowCloud();break;
@@ -3440,6 +3532,8 @@ if(TG){try{TG.ready();TG.expand();if(TG.disableVerticalSwipes)TG.disableVertical
 applyTheme();
 setTimeout(()=>pushSync(true),5000);
 setTimeout(ownerLoad,2500);
+setTimeout(newsLoad,1500);
+{let nT=0;document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&Date.now()-nT>300000){nT=Date.now();newsLoad()}})}
 try{if(TG&&TG.requestWriteAccess&&!localStorage.getItem("prk-wa")){localStorage.setItem("prk-wa","1");setTimeout(()=>{try{TG.requestWriteAccess(()=>{})}catch(x){}},6000)}}catch(x){}
 const loc=Store.loadLocal();
 S.profile=loc.p?normalize(loc.p):defaultProfile();
