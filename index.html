@@ -643,6 +643,8 @@ html.tt,html.tt *{transition:background-color .4s ease,color .4s ease,border-col
 .skmenu{display:flex;flex-direction:column;gap:2px;margin-top:16px}.skmenu button{display:flex;align-items:flex-start;gap:12px;background:none;border:0;color:inherit;font:inherit;font-size:15px;text-align:left;padding:12px 4px;border-top:1px solid var(--line);cursor:pointer}.skmenu button svg{flex:none;margin-top:1px}.skmenu small{display:block;font-size:12.5px;color:var(--muted);margin-top:2px}
 .tq-sk{display:flex;align-items:center;gap:10px;width:100%;margin:0 0 12px;padding:10px 12px;border-radius:12px;border:1px dashed var(--line);background:none;color:inherit;font:inherit;font-size:13.5px;text-align:left;cursor:pointer}.tq-sk .link{font-size:13px;white-space:nowrap}
 .q-sk{display:inline-flex;align-items:center;gap:5px;margin-left:auto;opacity:.8;font-weight:600}
+.ai-steps{display:flex;flex-direction:column;gap:14px;margin-top:16px}.ai-st{display:flex;gap:12px;align-items:flex-start}.ai-st>b{flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:#fff;font-size:13px}
+.ai-list{display:flex;flex-direction:column}.ai-ch{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-top:1px solid var(--line);font-size:14px;cursor:pointer}.ai-ch input{margin-top:3px;accent-color:var(--accent);width:17px;height:17px;flex:none}
 .mgbox{margin-top:14px;border:1.5px solid var(--line);border-radius:16px;padding:12px 14px}
 .pstrip{display:flex;align-items:center;gap:12px;width:100%;margin-top:12px;padding:8px 12px 8px 8px;border-radius:16px;background:var(--panel-soft);border:0;color:inherit;font:inherit;text-align:left;cursor:pointer}
 .pstrip svg{display:block;flex:none}.ps-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.ps-t b{font-size:13.5px;font-weight:600}.ps-up{color:var(--s-accent-t)}.ps-s{font-size:12.5px;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ps-ar{opacity:.6}
@@ -1819,6 +1821,87 @@ function tqSkSheet(qid){const P=S.profile;const cur=(P.tqSkill||{})[qid];
   sheet(`<div class="sheet-h"><h2 style="font-size:28px">мой навык в квесте</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div><p class="small muted" style="margin:0 0 10px">у каждого участника свой навык. за каждую закрытую тобой задачу +20 xp пойдут в него и в его сферу.</p><div id="tqsBox">${skPickHTML(cur,'data-tqs="1"')}</div><button class="btn ghost wide" style="margin-top:14px" data-act="tqOpen" data-id="${esc(qid)}">назад к квесту</button>`,el=>{
     el.addEventListener("click",ev=>{const b=ev.target.closest("[data-tqs]");if(!b)return;P.tqSkill=Object.assign({},P.tqSkill||{},{[qid]:b.dataset.id});Store.saveProfile();toast("опыт за задачи пойдёт в «"+skillById(b.dataset.id).name+"»");tqSheet(qid)})});
 }
+/* разбор навыков с chatgpt / claude: копируем запрос с данными, человек вставляет ответ, показываем изменения и применяем */
+const SPH_GRP={work:"work",money:"sales",people:"life",body:"body",soul:"craft",mind:"mind"};
+function aiSkillsPrompt(){
+  const P=S.profile;const d=derive();const since=addDays(today(),-60);
+  const recent=live().filter(e=>!e.planned&&e.date>=since);
+  const line=k=>{const x=d.skills[k.id];const es=recent.filter(e=>e.primary===k.id);const ex=[...new Set(es.map(e=>e.title))].slice(0,5);
+    return`- id: ${k.id} | «${k.name}» | сфера: ${sphereById(sphereOf(k)).n} (${sphereOf(k)}) | уровень ${x.level} | записей за 60 дней: ${es.length}${ex.length?` | примеры: ${ex.map(t=>"«"+t+"»").join(", ")}`:""}`};
+  const act=activeSkills();const pz=(P.paused||[]).map(skillById).filter(Boolean);
+  const noSkill=recent.filter(e=>!e.primary&&e.type!=="bonus").slice(0,8).map(e=>"«"+e.title+"»");
+  const profs=(P.profs||[]).map(id=>(PROFS.find(x=>x.id===id)||{}).n).filter(Boolean);
+  const cat=allSkills().filter(k=>!(P.active||[]).includes(k.id)&&!(P.paused||[]).includes(k.id)&&!k.custom).map(k=>`${k.id}:${k.name}:${sphereOf(k)}`).join("; ");
+  return`ты помогаешь навести порядок в навыках в приложении-трекере «прокачка». это игра-прокачка жизни: человек записывает дела, каждое дело относится к одному навыку, опыт идёт в навык, а навыки складываются в 6 сфер портрета героя.
+
+сферы:
+${SPHERES.map(s=>`- ${s.id} — ${s.n}: ${s.d}`).join("\n")}
+
+${profs.length?`чем я занимаюсь: ${profs.join(", ")}\n\n`:""}мои навыки сейчас (${act.length}):
+${act.map(line).join("\n")}
+${pz.length?`\nна паузе:\n${pz.map(line).join("\n")}\n`:""}${noSkill.length?`\nзаписи без навыка: ${noSkill.join(", ")}\n`:""}
+навыки из каталога, которые можно добавить (id:название:сфера):
+${cat}
+
+задача:
+1. посмотри, логично ли навыки разложены по сферам, нет ли дублей и навыков, которыми я не пользуюсь.
+2. предложи, как сделать набор понятным: переименовать (коротко, с маленькой буквы, до 30 знаков), перенести в другую сферу, объединить дубли, поставить на паузу лишнее, добавить недостающее. ориентир: 6–12 активных навыков и хотя бы по одному в тех сферах, которые для меня важны.
+3. не придумывай за меня цели. опирайся на мои записи и навыки.
+
+ответь так:
+сначала коротко по-человечески, 5–8 строк, что и почему меняешь.
+потом один блок json строго такого вида (пустые списки оставь пустыми, id бери только из списков выше):
+\`\`\`json
+{"rename":[{"id":"","name":""}],"move":[{"id":"","sphere":"work|money|people|body|soul|mind"}],"merge":[{"from":"id, который исчезнет","into":"id, который останется","name":"новое название или пусто"}],"pause":["id"],"add":[{"id":"id из каталога или пусто для своего","name":"название","sphere":"work|money|people|body|soul|mind"}]}
+\`\`\``;
+}
+function aiParsePlan(txt){
+  const m=txt.match(/```(?:json)?\s*([\s\S]*?)```/i);let raw=m?m[1]:"";if(!raw){const a=txt.indexOf("{"),b=txt.lastIndexOf("}");if(a>=0&&b>a)raw=txt.slice(a,b+1)}
+  let j;try{j=JSON.parse(raw)}catch(x){return null}
+  const P=S.profile;const isAct=id=>(P.active||[]).includes(id)||(P.paused||[]).includes(id);const SP=SPHERES.map(s=>s.id);const ch=[];
+  (j.rename||[]).forEach(r=>{const k=r&&skillById(r.id);const n=String(r&&r.name||"").trim().slice(0,40);if(k&&isAct(k.id)&&n&&n!==k.name)ch.push({k:"rename",id:k.id,name:n,t:`переименовать «${k.name}» → «${n}»`})});
+  (j.move||[]).forEach(r=>{const k=r&&skillById(r.id);if(k&&isAct(k.id)&&SP.includes(r.sphere)&&r.sphere!==sphereOf(k))ch.push({k:"move",id:k.id,sp:r.sphere,t:`«${k.name}»: сфера ${sphereById(sphereOf(k)).n} → ${sphereById(r.sphere).n}`})});
+  (j.merge||[]).forEach(r=>{const a=r&&skillById(r.from),b=r&&skillById(r.into);if(a&&b&&a.id!==b.id&&(P.active||[]).includes(a.id)&&(P.active||[]).includes(b.id))ch.push({k:"merge",a:a.id,b:b.id,name:String(r.name||"").trim().slice(0,40),t:`объединить «${a.name}» и «${b.name}»${r.name?` → «${String(r.name).trim()}»`:""}`})});
+  (j.pause||[]).forEach(id=>{const k=skillById(id);if(k&&(P.active||[]).includes(k.id))ch.push({k:"pause",id:k.id,t:`на паузу: «${k.name}»`})});
+  (j.add||[]).forEach(r=>{if(!r)return;const k=r.id&&skillById(r.id);const sp=SP.includes(r.sphere)?r.sphere:null;
+    if(k&&!isAct(k.id))ch.push({k:"add",id:k.id,sp:sp&&sp!==sphereOf(k)?sp:null,name:"",t:`добавить «${k.name}»${sp?" · "+sphereById(sp).n:""}`});
+    else if(!k&&r.name&&sp)ch.push({k:"add",id:"",sp,name:String(r.name).trim().slice(0,40),t:`добавить свой навык «${String(r.name).trim()}» · ${sphereById(sp).n}`})});
+  return ch;
+}
+function aiApply(list){
+  const P=S.profile;let n=0;
+  list.forEach(c=>{try{
+    if(c.k==="rename"){P.skNames=Object.assign({},P.skNames||{},{[c.id]:c.name});n++}
+    else if(c.k==="move"){P.sphereMap=Object.assign({},P.sphereMap||{},{[c.id]:c.sp});n++}
+    else if(c.k==="pause"){P.active=P.active.filter(x=>x!==c.id);P.paused=[...new Set((P.paused||[]).concat(c.id))];P.focus=(P.focus||[]).filter(x=>x!==c.id);n++}
+    else if(c.k==="add"){let id=c.id;if(!id){id="c"+uid();P.custom=(P.custom||[]).concat({id,name:c.name,g:SPH_GRP[c.sp]||"craft",d:"свой навык"})}
+      if(!P.active.includes(id))P.active.push(id);P.paused=(P.paused||[]).filter(x=>x!==id);if(P.startLevels[id]==null)P.startLevels[id]=1;if(c.sp)P.sphereMap=Object.assign({},P.sphereMap||{},{[id]:c.sp});n++}
+  }catch(x){}});
+  Store.saveProfile();
+  list.filter(c=>c.k==="merge").forEach(c=>{if(P.active.includes(c.a)&&P.active.includes(c.b)){doMerge(c.a,c.b,c.name);n++}});
+  afterChange();return n;
+}
+function aiSkillsSheet(){
+  const prompt=aiSkillsPrompt();
+  sheet(`<div class="sheet-h"><h2>разобрать навыки с ии</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
+  <p style="margin:0">запутал{ась|ся} в навыках или их стало слишком много? chatgpt или claude посмотрит на твой набор и записи и предложит, как навести порядок: переименовать, разложить по сферам, объединить дубли, убрать лишнее.</p>
+  <div class="ai-steps">
+    <div class="ai-st"><b>1</b><div><div style="font-weight:600">скопируй запрос</div><div class="small muted">в нём названия твоих навыков, уровни и названия записей за 2 месяца. больше ничего.</div><button class="btn accent" id="aiCopy" style="margin-top:8px">${IC.spark} скопировать запрос</button></div></div>
+    <div class="ai-st"><b>2</b><div><div style="font-weight:600">вставь его в чат с нейросетью</div><div class="row" style="margin-top:8px;gap:8px"><button class="btn ghost sm" data-act="openUrl" data-url="https://chatgpt.com/">открыть chatgpt</button><button class="btn ghost sm" data-act="openUrl" data-url="https://claude.ai/new">открыть claude</button></div></div></div>
+    <div class="ai-st"><b>3</b><div style="flex:1;min-width:0"><div style="font-weight:600">вставь сюда весь ответ</div><div class="small muted">я найду в нём список изменений и покажу их. ничего не поменяется, пока не нажмёшь «применить».</div><textarea class="in-text" id="aiAns" style="min-height:110px;margin-top:8px" placeholder="вставь ответ chatgpt или claude целиком"></textarea><button class="btn wide" id="aiShow" style="margin-top:8px">показать изменения</button></div></div>
+  </div>
+  <div id="aiPlan"></div>`,el=>{
+    el.querySelector("#aiCopy").onclick=()=>{const done=()=>{toast("запрос скопирован, вставь его в чат");el.querySelector("#aiCopy").innerHTML="✓ скопировано"};
+      try{navigator.clipboard.writeText(prompt).then(done).catch(()=>fallback())}catch(x){fallback()}
+      function fallback(){const t=document.createElement("textarea");t.value=prompt;document.body.appendChild(t);t.select();try{document.execCommand("copy");done()}catch(e){toast("не получилось скопировать")}t.remove()}};
+    el.querySelector("#aiShow").onclick=()=>{const list=aiParsePlan(el.querySelector("#aiAns").value||"");const box=el.querySelector("#aiPlan");
+      if(list===null){box.innerHTML=`<p class="small" style="color:var(--warn);margin:12px 0 0">не нашла в ответе блок json. попроси нейросеть: «пришли ещё раз только блок json».</p>`;return}
+      if(!list.length){box.innerHTML=`<p class="small muted" style="margin:12px 0 0">нейросеть не предложила изменений, которые можно применить. похоже, набор и так в порядке.</p>`;return}
+      box.innerHTML=gx(`<div class="small muted" style="margin:16px 0 6px">отметь, что применить</div><div class="ai-list">${list.map((c,i)=>`<label class="ai-ch"><input type="checkbox" data-i="${i}" checked><span>${esc(c.t)}</span></label>`).join("")}</div><button class="btn accent wide" id="aiGo" style="margin-top:12px">применить</button><div class="small muted" style="text-align:center;margin-top:6px">объединения можно разъединить 30 дней, остальное поправить через «⋯» у навыка</div>`);
+      box.querySelector("#aiGo").onclick=()=>{const sel=[...box.querySelectorAll("input[data-i]")].filter(x=>x.checked).map(x=>list[+x.dataset.i]);if(!sel.length){toast("ничего не выбрано");return}const n=aiApply(sel);closeSheet();toast("готово: "+n+" "+plural(n,"изменение","изменения","изменений"))};
+      box.scrollIntoView({behavior:"smooth",block:"start"})};
+  });
+}
 function miniPortrait(d){
   const sp=spheresOf(d);const n=sp.length;const S0=46,c=S0/2,R=18;const max=Math.max(5,Math.ceil(Math.max(...sp.map(x=>x.val))));
   const pt=(i,v)=>{const a=-Math.PI/2+i*2*Math.PI/n;const r=R*Math.max(.08,Math.min(1,v/max));return[(c+r*Math.cos(a)).toFixed(1),(c+r*Math.sin(a)).toFixed(1)]};
@@ -1854,7 +1937,7 @@ function vSkills(d){
   const act=activeSkills();const P=S.profile;
   return`${act.length?`${secTitle("герой","skills")}${portraitCard(d)}${isNew()?"":focusCard()}`:""}
   ${secTitle("мои навыки","skills")}
-  <div class="row" style="margin-top:12px" id="skillBtns"><button class="btn accent" data-act="skillCat" id="skillCatBtn">выбрать навыки</button><button class="btn ghost" data-act="startLevels" id="startLvlBtn">стартовые уровни</button><button class="btn ghost" data-act="profPick">подобрать по профессии</button></div>
+  <div class="row" style="margin-top:12px" id="skillBtns"><button class="btn accent" data-act="skillCat" id="skillCatBtn">выбрать навыки</button><button class="btn ghost" data-act="startLevels" id="startLvlBtn">стартовые уровни</button><button class="btn ghost" data-act="profPick">подобрать по профессии</button><button class="btn ghost" data-act="aiSkills">${IC.spark} разобрать с ии</button></div>
   ${!act.length&&!(P.paused||[]).length?`<div class="card empty" style="margin-top:12px"><div class="big">пока пусто</div><p class="muted">выбери 5–12 навыков, которые хочешь качать в этом сезоне.</p></div>`:skManager(d)}`;
 }
 /* навыки по сферам: сортировка, перетаскивание, меню навыка */
@@ -3270,6 +3353,7 @@ document.addEventListener("click",ev=>{
     case"skSort":P.skSort=id;Store.saveProfile();render();break;
     case"sphTog":S.sphClosed=Object.assign({},S.sphClosed||{},{[id]:!(S.sphClosed||{})[id]});try{localStorage.setItem("prk-sphc",JSON.stringify(S.sphClosed))}catch(x){}render();break;
     case"skMenu":skMenuSheet(id);break;
+    case"aiSkills":aiSkillsSheet();break;
     case"tqSkPick":tqSkSheet(b.dataset.q);break;
     case"skRename":skRenameSheet(id);break;
     case"skMerge":skMergeSheet(id);break;
