@@ -581,7 +581,7 @@ html.tt,html.tt *{transition:background-color .4s ease,color .4s ease,border-col
 .gantt{margin-top:12px}
 .gsc{overflow-x:auto;border-radius:12px;background:var(--tile,transparent);scrollbar-width:thin}
 .grow{display:flex;min-height:38px;align-items:stretch;width:max-content;min-width:100%}.grow.ghead{min-height:44px;position:sticky;top:0}
-.gl{flex:none;width:132px;position:sticky;left:0;z-index:3;background:var(--card);display:flex;align-items:center;padding:0 8px 0 2px;border-right:1px solid var(--line)}
+.gl{flex:none;width:132px;position:sticky;left:0;z-index:3;background:var(--tile,#F1F3FF);display:flex;align-items:center;padding:0 8px 0 2px;border-right:1px solid var(--line)}
 .glb{font-size:12.5px;text-align:left;line-height:1.2;color:#171C24;background:none;border:0;padding:0;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;cursor:pointer}
 .glb.ok{text-decoration:line-through;opacity:.55}.glb.st{font-weight:700;font-size:12px;letter-spacing:.01em}.glb.qh{font-weight:700;font-size:13px}
 .grow.gr-stage{background:color-mix(in srgb,var(--accent) 6%,transparent)}.grow.gr-quest{border-top:1px solid var(--line)}
@@ -591,13 +591,25 @@ html.tt,html.tt *{transition:background-color .4s ease,color .4s ease,border-col
 .gwe{position:absolute;top:0;bottom:0;width:30px;background:color-mix(in srgb,var(--ink) 4%,transparent)}
 .gtoday{position:absolute;top:0;bottom:0;width:2px;margin-left:-1px;background:var(--accent);opacity:.8;z-index:1}
 .gbar{position:absolute;top:8px;height:22px;border-radius:7px;display:flex;align-items:center;gap:5px;padding:0 4px;overflow:hidden;cursor:pointer;z-index:2;white-space:nowrap}
-.gbar.tk{background:color-mix(in srgb,var(--accent) 22%,var(--card));border:1.5px solid var(--accent)}
-.gbar.tk.ok{background:var(--accent);border-color:var(--accent);color:#fff}.gbar.tk.late{background:color-mix(in srgb,#C9567A 18%,var(--card));border-color:#C9567A}
+.gbar.tk{background:color-mix(in srgb,var(--accent) 22%,var(--tile,#F1F3FF));color:#171C24;border:1.5px solid var(--accent)}
+.gbar.tk.ok{background:var(--accent);border-color:var(--accent);color:#fff}.gbar.tk.late{background:color-mix(in srgb,#C9567A 18%,var(--tile,#F1F3FF));border-color:#C9567A}
 .gbar.tk.nodl{border-style:dashed}
 .gbar .gtx{font-size:11px;font-weight:600;color:inherit;opacity:.85}
 .gbar.st{top:15px;height:8px;border-radius:4px;background:color-mix(in srgb,var(--accent) 25%,transparent)}.gbar.st .gfill,.gbar.qb .gfill{position:absolute;left:0;top:0;bottom:0;background:var(--accent);border-radius:inherit}
 .gbar.qb{top:9px;height:20px;border-radius:10px;background:color-mix(in srgb,var(--accent) 22%,transparent)}.gbar.qb .gtx{position:relative;margin-left:6px;color:inherit}
-.gms{position:absolute;top:13px;width:12px;height:12px;margin-left:-6px;background:var(--card);border:2.5px solid var(--accent);transform:rotate(45deg);border-radius:2px;z-index:3}.gms.ok{background:var(--accent)}
+.gms{position:absolute;top:13px;width:12px;height:12px;margin-left:-6px;background:var(--tile,#F1F3FF);border:2.5px solid var(--accent);transform:rotate(45deg);border-radius:2px;z-index:3}.gms.ok{background:var(--accent)}
+.gfull.sheet{max-width:none;width:100%;height:100%;max-height:100%;border-radius:0;margin:0;padding-top:calc(12px + env(safe-area-inset-top,0px) + var(--tg-content-safe-area-inset-top,0px));display:flex;flex-direction:column;animation:none}
+.gfull .gfh{display:flex;align-items:center;justify-content:space-between;gap:10px;flex:none}
+.gfull .gfh h2{font-size:28px;margin:0}
+.gfull .chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;flex:none;margin-top:10px}.gfull .chips::-webkit-scrollbar{display:none}
+.gfull .chip{white-space:nowrap;flex:none}
+.gfull .gantt{flex:1;min-height:0;display:flex;flex-direction:column}.gfull .gsc{flex:0 1 auto;min-height:0;overflow:auto}
+.gfull .gl{width:140px}@media (min-width:600px){.gfull .gl{width:200px}}
+.gxbtn{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--accent-t);background:none;border:0;padding:4px 0;cursor:pointer}
+.gxbtn svg{width:16px;height:16px}
+.gclose{width:40px;height:40px;border-radius:50%;background:var(--tile);border:1.5px solid var(--tile-line);font-size:18px;line-height:1;color:#171C24;cursor:pointer;flex:none}
+@media (min-width:1000px){.gfull .gl{width:240px}}
+.gl .muted{color:#667385}.gm{color:#171C24!important}.gsc{color:#171C24}
 .glegend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px}.glegend .lg{display:inline-block;width:14px;height:9px;border-radius:3px;vertical-align:middle;margin-right:5px;background:color-mix(in srgb,var(--accent) 22%,transparent);border:1.5px solid var(--accent)}
 .glegend .lg.ok{background:var(--accent)}.glegend .lg.late{border-color:#C9567A;background:color-mix(in srgb,#C9567A 18%,transparent)}.glegend .lg.ms{width:9px;height:9px;transform:rotate(45deg);border-radius:2px;background:transparent}.glegend .lg.td{width:2px;height:12px;border:0;background:var(--accent);border-radius:0}
 @media (min-width:1000px){.gl{width:200px}}
@@ -931,7 +943,7 @@ function stateIcon(k,n){
 }
 
 /* ================= профиль ================= */
-const S={tqView:(()=>{try{return localStorage.getItem("prk-tqview")||"list"}catch(x){return"list"}})(),hist:[],qTab:(()=>{try{return localStorage.getItem("prk-qtab")||"mine"}catch(x){return"mine"}})(),grpOpen:(()=>{try{return JSON.parse(localStorage.getItem("prk-grp"))||{}}catch(x){return{}}})(),profile:null,entries:[],view:"home",pathMode:"feed",pathFilter:null,thenDate:null,lastW:null};
+const S={gq:(()=>{try{return localStorage.getItem("prk-gq")||"all"}catch(x){return"all"}})(),gBack:"",tqView:(()=>{try{return localStorage.getItem("prk-tqview")||"list"}catch(x){return"list"}})(),hist:[],qTab:(()=>{try{return localStorage.getItem("prk-qtab")||"mine"}catch(x){return"mine"}})(),grpOpen:(()=>{try{return JSON.parse(localStorage.getItem("prk-grp"))||{}}catch(x){return{}}})(),profile:null,entries:[],view:"home",pathMode:"feed",pathFilter:null,thenDate:null,lastW:null};
 function defaultProfile(){
   const t=today();
   return {v:2,fresh:true,upd:0,seasonStart:t,seasonDays:90,active:[],custom:[],startLevels:{},fears:"",
@@ -1817,15 +1829,32 @@ function ganttHTML(groups,opt){
 }
 function ganttScroll(root){(root||document).querySelectorAll(".gsc[data-gx]").forEach(el=>{if(!el._sx){el.scrollLeft=+el.dataset.gx;el._sx=1}})}
 /* «путь» → квесты: все квесты на одном таймлайне */
-function pathQuests(d){
-  const P=S.profile;const t=today();const groups=[];
+function questGroups(){
+  const P=S.profile;const t=today();const out=[];
   TQ.list.forEach(q=>{const p=tqProgress(q);const rows=ganttRows(q);const s0=rows.length?rows.reduce((m,r)=>r.start<m?r.start:m,dOf(q.created)||t):(dOf(q.created)||t);const e0=q.deadline||(rows.length?rows.reduce((m,r)=>r.end>m?r.end:m,s0):s0);
-    groups.push({head:{kind:"quest",q:q.id,title:"👥 "+q.title,start:s0<e0?s0:e0,end:e0>s0?e0:s0,pr:p.pr,done:p.all&&p.dn===p.all},rows})});
+    out.push({key:"t:"+q.id,name:"👥 "+q.title,g:{head:{kind:"quest",q:q.id,title:"👥 "+q.title,start:s0<e0?s0:e0,end:e0>s0?e0:s0,pr:p.pr,done:p.all&&p.dn===p.all},rows}})});
   P.challenges.filter(c=>c.status==="active").forEach(c=>{const len={day:1,week:7,month:30}[c.period]||7;const s0=c.created&&c.created<=c.due?c.created:addDays(c.due,-(len-1));const steps=c.steps||[];
-    groups.push({head:{kind:"quest",pq:c.id,title:(QNAME[c.period]||"квест")+": "+c.title,start:s0,end:c.due,pr:steps.length?Math.round(steps.filter(x=>x.done).length/steps.length*100):0},rows:[]})});
-  const head=`<div class="card" style="margin-top:12px"><div class="row" style="justify-content:space-between;flex-wrap:nowrap"><div class="row" style="gap:6px;flex-wrap:nowrap"><b>путь квестов</b><button class="q" data-act="hint" data-k="gantt" aria-label="что это">?</button></div><span class="small muted">${groups.length} ${plural(groups.length,"квест","квеста","квестов")}</span></div>`;
-  if(!groups.length)return head+`<p class="small muted" style="margin:8px 0 0">активных квестов нет. возьми свой или командный во вкладке «квесты».</p></div>`;
-  return head+ganttHTML(groups)+`</div>`;
+    out.push({key:"p:"+c.id,name:c.title,g:{head:{kind:"quest",pq:c.id,title:(QNAME[c.period]||"квест")+": "+c.title,start:s0,end:c.due,pr:steps.length?Math.round(steps.filter(x=>x.done).length/steps.length*100):0},rows:[]}})});
+  return out;
+}
+const GX_ICON=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>`;
+function gqPick(all){const k=S.gq||"all";return k!=="all"&&all.some(x=>x.key===k)?k:"all"}
+function gqChips(all,act){const k=gqPick(all);return all.length>1?`<div class="chips" style="margin-top:10px"><button class="chip" data-act="${act}" data-id="all" aria-pressed="${k==="all"}">все</button>${all.map(x=>`<button class="chip" data-act="${act}" data-id="${esc(x.key)}" aria-pressed="${k===x.key}">${esc(x.name)}</button>`).join("")}</div>`:""}
+function pathQuests(d){
+  const all=questGroups();const k=gqPick(all);const groups=all.filter(x=>k==="all"||x.key===k).map(x=>x.g);
+  const head=`<div class="card" style="margin-top:12px"><div class="row" style="justify-content:space-between;flex-wrap:nowrap"><div class="row" style="gap:6px;flex-wrap:nowrap"><b>путь квестов</b><button class="q" data-act="hint" data-k="gantt" aria-label="что это">?</button></div>${all.length?`<button class="gxbtn" data-act="gFull" data-id="${esc(k)}">${GX_ICON}на весь экран</button>`:`<span class="small muted">0 квестов</span>`}</div>`;
+  if(!all.length)return head+`<p class="small muted" style="margin:8px 0 0">активных квестов нет. возьми свой или командный во вкладке «квесты».</p></div>`;
+  return head+gqChips(all,"gqSel")+ganttHTML(groups)+`</div>`;
+}
+/* таймлайн на весь экран с выбором квеста */
+function ganttFull(k,back){
+  if(k)S.gq=k;try{localStorage.setItem("prk-gq",S.gq||"all")}catch(x){}
+  if(back!==undefined)S.gBack=back;
+  const all=questGroups();const kk=gqPick(all);const sel=all.find(x=>x.key===kk);const groups=all.filter(x=>kk==="all"||x.key===kk).map(x=>x.g);
+  try{TG&&TG.expand&&TG.expand()}catch(x){}
+  sheet(`<div class="gfh"><h2>${kk==="all"?"путь квестов":"таймлайн"}</h2><button class="gclose" data-act="gFullClose" aria-label="закрыть">✕</button></div>
+  ${sel?`<div class="small muted" style="margin-top:4px">${esc(sel.name)}</div>`:""}
+  ${gqChips(all,"gqFull")}${ganttHTML(groups)}`,el=>{el.classList.add("gfull");el.parentNode.style.alignItems="stretch";ganttScroll(el)});
 }
 
 function tqSection(noHead){
@@ -1893,6 +1922,7 @@ function tqSheet(qid,keep){
   ${(q.members||[]).map(m=>`<div class="mem">${avatar(m,32)}<span>${esc(m.name)}${m.uid===TQ.me()?' <span class="muted small">это ты</span>':""}</span></div>`).join("")}</div>
   <div class="card" style="margin-top:10px"><div class="row" style="justify-content:space-between"><b>задачи</b><button class="btn sm accent" data-act="tqTask" data-q="${esc(q.id)}" data-id="">${IC.plus} задача</button></div>
   <div class="seg" role="group" aria-label="вид" style="margin-top:10px"><button data-act="tqView" data-id="list" data-q="${esc(q.id)}" aria-pressed="${S.tqView!=="gantt"}">список</button><button data-act="tqView" data-id="gantt" data-q="${esc(q.id)}" aria-pressed="${S.tqView==="gantt"}">таймлайн</button></div>
+  ${S.tqView==="gantt"?`<div style="margin-top:8px"><button class="gxbtn" data-act="gFull" data-id="t:${esc(q.id)}" data-back="${esc(q.id)}">${GX_ICON}на весь экран</button></div>`:""}
   ${S.tqView==="gantt"?ganttHTML([{rows:ganttRows(q)}]):free.map(t=>tqTaskRow(q,t)).join("")+st.map(stBlock).join("")}
   ${!tasks.length?`<p class="small muted" style="margin:8px 0 0">добавь первую задачу: что сделать, кто отвечает и до какого числа.</p>`:""}</div>
   <div class="card" style="margin-top:10px"><b>этапы</b>
@@ -2869,6 +2899,10 @@ document.addEventListener("click",ev=>{
   if(a==="closeShade"){if(ev.target===b)closeSheet();return}
   switch(a){
     case"close":closeSheet();break;
+    case"gFull":ganttFull(id,b.dataset.back||"");break;
+    case"gqFull":ganttFull(id);break;
+    case"gqSel":S.gq=id;try{localStorage.setItem("prk-gq",id)}catch(x){}render();break;
+    case"gFullClose":{const bk=S.gBack;S.gBack="";if(bk&&TQ.q(bk))tqSheet(bk);else{closeSheet();if(S.view==="path")render()}}break;
     case"hint":hintSheet(b.dataset.k);break;
     case"tab":S.view=id;closeSheet();render();window.scrollTo(0,0);if(id==="quests")TQ.load();break;
     case"add":{const dd=b.dataset.day;openEntry(null,{plan:b.dataset.plan==="1",skill:b.dataset.skill,date:dd==="tomorrow"?addDays(today(),1):dd==="today"?today():(dd&&/^\d{4}-/.test(dd)?dd:undefined)});break}
