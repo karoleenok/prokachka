@@ -475,6 +475,7 @@ html.tt,html.tt *{transition:background-color .4s ease,color .4s ease,border-col
   .toast{bottom:32px;left:calc(50% + 108px)}
   .wish-grid,.ach-grid,.wishes,.achs{gap:16px}
 }
+@media (min-width:1000px){.card .hm{--hc:44px;gap:6px}}
 @media (min-width:1500px){.wrap{max-width:1240px}.hero .big{font-size:150px}}
 
 .br-all{display:flex;justify-content:space-between;align-items:baseline;font-size:14px;color:var(--muted);padding:2px 2px 8px;border-bottom:1px solid var(--line)}
@@ -527,6 +528,28 @@ html.tt,html.tt *{transition:background-color .4s ease,color .4s ease,border-col
 .wish{position:relative}
 .hq-next{margin-top:10px;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.12)}.hq-next .btn{background:#fff;color:#171C24}
   @media (min-width:1000px){.hero .hq .hq-next{grid-column:1}}
+
+.rank-btn{display:block;background:none;border:0;padding:0;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.rk{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--line)}.rk:last-child{border-bottom:0}
+.rk-l{flex:none;width:46px;font-weight:700;color:var(--muted)}.rk-n{font-weight:700}.rk.cur .rk-l{color:var(--accent)}.rk:not(.got){opacity:.6}
+.rk-ic{flex:none;width:22px;height:22px;color:var(--accent)}
+.hm{--hc:26px;display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,auto);gap:4px;margin-top:12px}.hm-d{font-size:10px;color:var(--muted);align-self:center;line-height:1}
+.hm button{aspect-ratio:1;border-radius:5px;background:var(--chip);border:0;padding:0;min-width:0;position:relative}
+.hm button.l1{background:color-mix(in srgb,var(--accent) 30%,var(--chip))}.hm button.l2{background:color-mix(in srgb,var(--accent) 55%,var(--chip))}.hm button.l3{background:color-mix(in srgb,var(--accent) 78%,var(--chip))}.hm button.l4{background:var(--accent)}
+.hm button.fut{opacity:.35}.hm button.on{outline:2.5px solid var(--ink);outline-offset:1px}.hm button.tdy::after{content:"";position:absolute;inset:35%;border-radius:50%;background:#fff;opacity:.9}
+.hm-wd{display:grid;grid-template-rows:repeat(7,1fr);gap:4px;margin-top:10px;font-size:10px;color:var(--muted);align-items:center}
+.hm-legend{display:flex;gap:4px;align-items:center;font-size:11px;color:var(--muted)}.hm-legend i{width:11px;height:11px;border-radius:3px;display:inline-block;background:var(--chip)}
+.cmp-big{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;text-align:center;margin-top:12px}
+.cmp-big .v{font-family:var(--f-display,inherit);font-size:44px;line-height:1;font-weight:700}
+.cmp-big .arrow{font-size:22px;color:var(--accent)}
+.gbar{height:12px;border-radius:6px;background:var(--chip);overflow:hidden;display:flex;margin-top:6px}
+.gbar i{display:block;height:100%;width:0;transition:width .9s cubic-bezier(.2,.8,.2,1)}
+.gbar i.a{background:color-mix(in srgb,var(--accent) 40%,var(--chip))}.gbar i.b{background:var(--accent)}
+.wkbar{display:block;width:100%;max-width:34px;border-radius:6px;background:var(--accent);height:3px;transition:height .8s cubic-bezier(.2,.8,.2,1)}
+.wkbar.cur{background:#F5A524}
+.fade-up{animation:fadeUp .45s cubic-bezier(.2,.8,.2,1) both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.prog i,.ratio i,.xpbar i{transition:width .9s cubic-bezier(.2,.8,.2,1)}
 </style>
 
 </head>
@@ -1170,6 +1193,25 @@ function skillLevel(total){let L=1;while(L<MAXL&&skillCum(L+1)<=total)L++;const 
 const seasonCum=n=>{let s=0;for(let k=1;k<n;k++)s+=100+40*(k-1);return s};
 function seasonLevel(xp){let L=1;while(seasonCum(L+1)<=xp)L++;const cur=seasonCum(L),nxt=seasonCum(L+1);return{level:L,into:xp-cur,need:nxt-cur,frac:(xp-cur)/(nxt-cur)}}
 const rankOf=L=>{let r=RANKS[0][1];RANKS.forEach(([l,n])=>{if(L>=l)r=n});return r};
+const LVL_COINS=10,RANK_COINS=50;
+const RANK_D={"стажёр":"разбираешься, пробуешь, набираешь первые очки","оператор":"действуешь регулярно, есть серия и первые результаты","{изобретательница|изобретатель}":"создаёшь своё, пробуешь новое без страха","архитектор":"строишь систему: квесты, цели, привычки работают вместе","{основательница|основатель}":"твои дела приносят результат другим людям и деньги","легенда":"сезон пройден на максимум. тебя ставят в пример"};
+function ranksSheet(){
+  const d=derive();const L=d.level;
+  const rows=RANKS.map(([l,n],i)=>{const nx=RANKS[i+1];const cur=L>=l&&(!nx||L<nx[0]);const got=L>=l;const xp=seasonCum(l);
+    return`<div class="rk ${cur?"cur":""} ${got?"got":""}"><div class="rk-l num">${l}${nx?"–"+(nx[0]-1):"+"}</div><div style="flex:1;min-width:0"><div class="rk-n">${esc(n)}${cur?' <span class="tag">ты здесь</span>':""}</div><div class="small muted">${esc(RANK_D[n]||"")}</div><div class="small" style="margin-top:4px">${l===1?"старт":"с "+xp+" xp · +"+RANK_COINS+" монет за звание"}</div></div><div class="rk-ic">${got?IC.check:""}</div></div>`}).join("");
+  const nxR=RANKS.find(([l])=>l>L);
+  sheet(`<div class="sheet-h"><h2>уровни и звания</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
+  <div class="card"><div class="row" style="justify-content:space-between"><b>уровень ${L} · ${esc(rankOf(L))}</b><span class="small muted num">${d.season} xp за сезон</span></div>
+  <div class="xpbar sm" style="margin-top:8px" aria-hidden="true"><i style="width:${Math.max(2,Math.round(d.lv.frac*100))}%"></i></div>
+  <p class="small muted" style="margin:8px 0 0">до уровня ${L+1}: ${d.lv.need-d.lv.into} xp${nxR?" · до звания «"+esc(nxR[1])+"»: "+(seasonCum(nxR[0])-d.season)+" xp":""}</p></div>
+  <div class="card" style="margin-top:10px"><b>что дают уровни</b>
+  <p class="small" style="margin:6px 0 0">• каждый новый уровень: <b>+${LVL_COINS} монет</b> на награды</p>
+  <p class="small" style="margin:4px 0 0">• новое звание: <b>+${RANK_COINS} монет</b> и новый титул под уровнем</p>
+  <p class="small" style="margin:4px 0 0">• уровень сезона растёт от всего опыта: действия, квесты, шаги целей. каждый следующий уровень чуть дороже предыдущего</p>
+  <p class="small muted" style="margin:6px 0 0">за уже набранные уровни ты получил{а|} ${d.lvlBonus} ${plural(d.lvlBonus,"монету","монеты","монет")}.</p></div>
+  <div class="sec"><div class="sec-l"><span class="sel plain">звания</span></div></div>
+  <div class="card" style="margin-top:12px;padding:4px 14px">${rows}</div>`);
+}
 function streakOf(done){
   const days=new Set(done.map(e=>e.date));const t=today();
   if(!days.size)return{cur:0,best:0,freezes:0,activeToday:false};
@@ -1201,7 +1243,9 @@ function derive(upTo){
   let spent=0;P.purchases.forEach(p=>{if(p.at<=lim)spent+=p.price});
   const skills={};allSkills().forEach(s=>{const base=skillCum(P.startLevels[s.id]||1);skills[s.id]=Object.assign({xp:sx[s.id]},skillLevel(base+sx[s.id]))});
   const lv=seasonLevel(season);
-  const d={done,skills,season,coins:coins-spent,earned:coins,byType,fear,bossDone,purchases:P.purchases.length,streak:streakOf(done),level:lv.level,lv};
+  // награда за рост: +10 монет за каждый новый уровень сезона и +50 за каждое новое звание
+  const lvlBonus=(lv.level-1)*LVL_COINS+RANKS.filter(([l])=>l>1&&lv.level>=l).length*RANK_COINS;coins+=lvlBonus;
+  const d={done,skills,season,coins:coins-spent,earned:coins,lvlBonus,byType,fear,bossDone,purchases:P.purchases.length,streak:streakOf(done),level:lv.level,lv};
   d.bySkill=bySkill;d.questsDone=P.challenges.filter(c=>c.status==="done"&&(c.doneAt||"")<=lim).length;
   d.ach=ACH.filter(a=>{try{return a.f(d)}catch(x){return false}}).map(a=>a.id);
   (P.achCustom||[]).forEach(a=>{const r=a.rule||{k:"manual"};let ok=false;if(r.k==="manual")ok=!!a.got&&a.got<=lim;else{const pr=ruleProgress(r,d);ok=!!pr&&pr[0]>=pr[1]}
@@ -1209,6 +1253,13 @@ function derive(upTo){
   return d;
 }
 
+/* лёгкая анимация после отрисовки: числа досчитываются, столбики и полоски вырастают */
+function animateIn(root){
+  if(!root)return;let rm=false;try{rm=matchMedia("(prefers-reduced-motion: reduce)").matches}catch(x){}
+  root.querySelectorAll("[data-h]").forEach(el=>{if(rm){el.style.height=el.dataset.h;return}el.style.height="3px";requestAnimationFrame(()=>requestAnimationFrame(()=>{el.style.height=el.dataset.h}))});
+  root.querySelectorAll("[data-gw]").forEach(el=>{if(rm){el.style.width=el.dataset.gw;return}requestAnimationFrame(()=>requestAnimationFrame(()=>{el.style.width=el.dataset.gw}))});
+  root.querySelectorAll("[data-count]").forEach(el=>{const to=+el.dataset.count||0;if(rm||to<=0){el.textContent=to;return}const t0=performance.now(),dur=900;const step=t=>{const k=Math.min(1,(t-t0)/dur);el.textContent=Math.round(to*(1-Math.pow(1-k,3)));if(k<1)requestAnimationFrame(step)};requestAnimationFrame(step)});
+}
 /* ================= изменения и празднования ================= */
 let celebrateQ=[];
 function refresh(){afterChange(true)}
@@ -1236,6 +1287,7 @@ function render(d){
   {const vw=$("#view");vw.classList.toggle("enter",S._lv!==S.view);vw.dataset.v=S.view;S._lv=S.view}
   $("#view").innerHTML=gx({home:vHome,path:vPath,skills:vSkills,quests:vQuests,rewards:vRewards,plan:vPlan}[S.view](d));
   requestAnimationFrame(()=>document.querySelectorAll("[data-w]").forEach(el=>{el.style.width=el.dataset.w;S.lastW=el.dataset.w}));
+  animateIn($("#view"));
   paintSync();
 }
 const PLAIN_SEC=new Set(["сделано сегодня","в планах","состояние","ветки навыков","цели сезона","ачивки","закрытые"]);
@@ -1307,7 +1359,7 @@ function vHome(d){
   ${!Store.lsOk&&Store.status!=="cloud"?`<div class="warnbox">сейчас данные не сохраняются. открой приложение через бота в телеграме.</div>`:""}
   <section class="hero" aria-label="уровень сезона" style="margin-top:4px">
     <div class="big num">уровень ${d.level}</div>
-    <div class="rank">${esc(rankOf(d.level))}</div>
+    <button class="rank rank-btn" data-act="ranks" aria-label="уровни и звания">${esc(rankOf(d.level))} <span style="opacity:.7;font-weight:500">· что дают уровни →</span></button>
     <div class="xpbar" role="progressbar" aria-valuemin="0" aria-valuemax="${d.lv.need}" aria-valuenow="${d.lv.into}"><i style="width:${S.lastW||"0%"}" data-w="${Math.max(2,Math.round(d.lv.frac*100))}%"></i></div>
     <div class="xpmeta num"><span>${d.lv.into} xp</span><span>до ${d.level+1} ур.: ${d.lv.need-d.lv.into}</span></div>
     <div class="stats" id="statsRow">
@@ -1445,10 +1497,29 @@ function pathFeed(){
   const f=S.pathFilter;
   const list=live().filter(e=>!e.planned&&(!f||e.primary===f||(e.secondary||[]).includes(f))).sort((a,b)=>a.date===b.date?(b.ts||0)-(a.ts||0):(a.date<b.date?1:-1));
   const chips=`<div class="chips" style="margin-top:12px"><button class="chip" data-act="pfilter" data-id="" aria-pressed="${!f}">все</button>${activeSkills().map(s=>`<button class="chip" data-act="pfilter" data-id="${s.id}" aria-pressed="${f===s.id}">${esc(s.name)}</button>`).join("")}</div>`;
-  if(!list.length)return chips+`<div class="card empty" style="margin-top:12px"><div class="big">путь начинается здесь</div><p class="muted">тут будут все твои записи по дням. можно загрузить и то, что было раньше.</p><div class="row" style="justify-content:center"><button class="btn accent" data-act="add">${IC.plus} действие</button><button class="btn ghost" data-act="importPast">загрузить прошлое</button></div></div><div class="ghost-v" aria-hidden="true"><div class="gd">пн, 12 окт</div>${[["записал рилс про процесс","+20"],["разобрал референсы","+10"]].map(x=>`<div class="g"><div style="flex:1"><div style="font-weight:600;font-size:14px">${x[0]}</div><i style="width:40%;margin-top:8px"></i></div><b style="font-size:16px">${x[1]}</b></div>`).join("")}<div class="gd" style="text-align:center">так будет выглядеть твой путь</div></div>`;
+  if(!list.length)return chips+pathFeedEmpty();
+  // календарь сезона: клетка = день, цвет = сколько опыта
+  const P=S.profile;const t=today();const start=wkStart(P.seasonStart<list[list.length-1].date?P.seasonStart:list[list.length-1].date);
+  const sEnd=addDays(P.seasonStart,P.seasonDays-1);const end=addDays(wkStart(sEnd>t?sEnd:t),6);const byDay={};list.forEach(e=>{byDay[e.date]=(byDay[e.date]||0)+xpOf(e)});
+  const days=[];for(let d=start;d<=end;d=addDays(d,1))days.push(d);
+  const maxX=Math.max(1,...Object.values(byDay));
+  const lvl=x=>!x?"":x<maxX*.25?"l1":x<maxX*.5?"l2":x<maxX*.8?"l3":"l4";
+  const sel=S.feedDay&&S.feedDay<=t?S.feedDay:(byDay[t]?t:list[0].date);
+  const cells=days.map(d=>`<button class="${lvl(byDay[d])} ${d>t?"fut":""} ${d===sel?"on":""} ${d===t?"tdy":""}" data-act="feedDay" data-d="${d}" ${d>t?"disabled":""} aria-label="${esc(fmtDay(d))}: ${byDay[d]?"+"+byDay[d]+" xp":"пусто"}" title="${esc(fmtD(d))}${byDay[d]?" · +"+byDay[d]+" xp":""}"></button>`).join("");
+  const dayList=list.filter(e=>e.date===sel);const st=P.states[sel];
+  const cal=`<div class="card" style="margin-top:12px"><div class="row" style="justify-content:space-between"><b>карта сезона</b><span class="hm-legend">меньше <i></i><i style="background:color-mix(in srgb,var(--accent) 30%,var(--chip))"></i><i style="background:color-mix(in srgb,var(--accent) 55%,var(--chip))"></i><i style="background:var(--accent)"></i> больше</span></div>
+  <div class="small muted" style="margin-top:2px">клетка — день. нажми на любой, чтобы посмотреть, что ты делал{а|}.</div>
+  <div class="hm" style="grid-template-columns:18px repeat(${Math.ceil(days.length/7)},minmax(0,var(--hc)))">${["пн","","ср","","пт","","вс"].map(x=>`<span class="hm-d" aria-hidden="true">${x}</span>`).join("")}${cells}</div></div>`;
+  const head=`${secTitle(fmtDay(sel),"",`<span class="small muted num">${byDay[sel]?"+"+byDay[sel]+" xp":""}</span>`)}${st&&(st.health||st.mood||st.bright)?`<div class="small muted" style="margin-top:6px">${STATES.map(s=>st[s.k]?s.n+": "+s.labels[st[s.k]-1]:"").filter(Boolean).join(" · ")}</div>`:""}`;
+  const dayHtml=dayList.length?`<div class="stack">${dayList.map((e,i)=>`<div class="fade-up" style="animation-delay:${i*50}ms">${entryCard(e)}</div>`).join("")}</div>`:`<div class="card small muted" style="margin-top:12px">в этот день записей нет.</div>`;
+  const all=S.feedAll?pathFeedList(list):"";
+  return chips+cal+head+dayHtml+`<button class="btn ghost wide" style="margin-top:14px" data-act="feedAll">${S.feedAll?"скрыть всю ленту":"показать всю ленту списком"}</button>`+all;
+}
+function pathFeedEmpty(){return `<div class="card empty" style="margin-top:12px"><div class="big">путь начинается здесь</div><p class="muted">тут будут все твои записи по дням. можно загрузить и то, что было раньше.</p><div class="row" style="justify-content:center"><button class="btn accent" data-act="add">${IC.plus} действие</button><button class="btn ghost" data-act="importPast">загрузить прошлое</button></div></div><div class="ghost-v" aria-hidden="true"><div class="gd">пн, 12 окт</div>${[["записал рилс про процесс","+20"],["разобрал референсы","+10"]].map(x=>`<div class="g"><div style="flex:1"><div style="font-weight:600;font-size:14px">${x[0]}</div><i style="width:40%;margin-top:8px"></i></div><b style="font-size:16px">${x[1]}</b></div>`).join("")}<div class="gd" style="text-align:center">так будет выглядеть твой путь</div></div>`}
+function pathFeedList(list){
   let h="",last="";
   list.forEach(e=>{if(e.date!==last){const st=S.profile.states[e.date];h+=`<div class="day">${fmtDay(e.date)}${st&&(st.health||st.mood||st.bright)?` <span class="small muted" style="text-transform:none;letter-spacing:0;font-family:var(--f-body)">· ${STATES.map(s=>st[s.k]?s.n+": "+s.labels[st[s.k]-1]:"").filter(Boolean).join(" · ")}</span>`:""}</div>`;last=e.date}h+=`<div style="margin-top:8px">${entryCard(e)}</div>`});
-  return chips+h;
+  return h;
 }
 function niceStep(v){const p=Math.pow(10,Math.floor(Math.log10(v||1)));const m=v/p;return(m<=1?1:m<=2?2:m<=5?5:10)*p}
 function pathChart(d){
@@ -1491,23 +1562,31 @@ function pathChart(d){
    <div class="ratio" aria-hidden="true" style="margin-top:10px">${EFF.map(g=>`<i style="width:${share(g.id)}%;background:${g.c}"></i>`).join("")}</div>
    <div style="margin-top:8px">${EFF.map(g=>`<div class="eff-row"><span><i style="background:${g.c}"></i>${esc(g.n)} <span class="muted small">${esc(g.d)}</span></span><b class="num" style="white-space:nowrap">${cw[g.id]} xp${lwt?` <span class="small muted" style="font-weight:400">(было ${lw[g.id]})</span>`:""}</b></div>`).join("")}</div>
    <p style="margin:10px 0 0;font-weight:600">${verdict}</p></div>
-  <div class="card" style="margin-top:10px"><div class="lbl">ты против себя</div>
-   <div class="row" style="justify-content:space-between;margin-top:8px"><span>эта неделя</span><b class="num">${thisW} xp${prevTo?` <span class="small" style="color:${diff>=0?"#30A46C":"#E5484D"}">${diff>=0?"↑":"↓"} ${Math.abs(diff)}%</span>`:""}</b></div>
+  <div class="card" style="margin-top:10px"><div class="lbl">бой с тенью 🥊</div><div class="small muted" style="margin-top:2px">соревнуешься только с собой прошлой</div>
+   <div class="row" style="justify-content:space-between;margin-top:8px"><span>эта неделя</span><b class="num"><span data-count="${thisW}">${thisW}</span> xp${prevTo?` <span class="small" style="color:${diff>=0?"#30A46C":"#E5484D"}">${diff>=0?"↑":"↓"} ${Math.abs(diff)}%</span>`:""}</b></div>
    ${prevTo?`<div class="small muted">к этому дню прошлой недели было ${prevTo} xp</div>`:""}
-   <div class="rec"><div><b class="num">${prevW}</b><span class="small muted">прошлая неделя</span></div><div><b class="num">${bestW}</b><span class="small muted">рекорд недели</span></div><div><b class="num">${d.streak.best||0}</b><span class="small muted">лучшая серия, дней</span></div></div>
+   <div class="rec"><div><b class="num" data-count="${prevW}">${prevW}</b><span class="small muted">прошлая неделя</span></div><div><b class="num" data-count="${bestW}">${bestW}</b><span class="small muted">рекорд недели</span></div><div><b class="num" data-count="${d.streak.best||0}">${d.streak.best||0}</b><span class="small muted">лучшая серия, дней</span></div></div>
    <p class="small muted" style="margin:10px 0 0">${[thisW&&thisW>=bestW?"это твоя лучшая неделя за сезон!":bestW?"до рекорда недели: "+(bestW-thisW)+" xp.":"",bestD?"лучший день сезона: +"+bestD+" xp.":""].filter(Boolean).join(" ")}</p></div>
-  <div class="card" style="margin-top:10px"><div class="lbl">действий по неделям</div>
-   <div style="display:grid;grid-template-columns:repeat(${weeks.length},1fr);gap:6px;align-items:end;height:90px;margin-top:10px">${weeks.map((n,i)=>`<div style="display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end"><span class="small num" style="font-weight:600">${n}</span><i style="display:block;width:100%;max-width:34px;border-radius:6px;background:var(--accent);height:${Math.max(3,n/wmax*60)}px"></i><span class="small muted num">${i+1}</span></div>`).join("")}</div></div>`;
+  <div class="card" style="margin-top:10px"><div class="lbl">дел по неделям сезона</div>
+   <div class="small muted" style="margin-top:2px">каждый столбик — одна неделя сезона, цифра сверху — сколько дел ты записал{а|}. жёлтый — эта неделя.</div>
+   <div style="display:grid;grid-template-columns:repeat(${weeks.length},1fr);gap:6px;align-items:end;height:110px;margin-top:12px">${weeks.map((n,i)=>{const cur=diffDays(start,t)>=i*7&&diffDays(start,t)<(i+1)*7;return`<div style="display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end"><span class="small num" style="font-weight:600">${n||""}</span><i class="wkbar ${cur?"cur":""}" data-h="${Math.max(3,Math.round(n/wmax*70))}px"></i><span class="small muted num" style="font-size:11px">${i+1}</span></div>`}).join("")}</div>
+   <div class="small muted" style="text-align:center;margin-top:4px">недели</div></div>`;
 }
 function pathCompare(d){
   const P=S.profile;const def=addDays(today(),-30);const minD=live().reduce((m,e)=>e.date<m?e.date:m,P.seasonStart);
   const then=S.thenDate||(def<minD?minD:def);const thenD=derive(addDays(then,-1));
   const wk=live().filter(e=>!e.planned&&e.date>=then&&e.date<=addDays(then,6));
-  return`<div class="card" style="margin-top:12px"><div class="field" style="margin-top:0"><label for="thenDate">сравнить с днём</label><input class="in-text" type="date" id="thenDate" value="${then}" max="${today()}"></div>
-  <div style="overflow-x:auto;margin-top:10px"><table class="cmp"><thead><tr><th>навык</th><th style="text-align:right">тогда</th><th style="text-align:right">сейчас</th><th style="text-align:right">рост</th></tr></thead><tbody>
-  ${activeSkills().map(s=>{const a=thenD.skills[s.id],b=d.skills[s.id];const dx=b.xp-a.xp;return`<tr><td>${esc(s.name)}</td><td class="n">${a.level}</td><td class="n">${b.level}</td><td class="n ${dx>0?"delta":""}">${dx>0?"+"+dx+" xp":"–"}</td></tr>`}).join("")}
-  <tr><td><b>уровень сезона</b></td><td class="n">${thenD.level}</td><td class="n">${d.level}</td><td class="n ${d.season-thenD.season>0?"delta":""}">${d.season-thenD.season>0?"+"+(d.season-thenD.season)+" xp":"–"}</td></tr>
-  </tbody></table></div></div>
+  const grow=d.season-thenD.season;
+  const rows=activeSkills().map(s=>{const a=thenD.skills[s.id],b=d.skills[s.id];return{s,a,b,dx:b.xp-a.xp}});
+  const up=rows.filter(r=>r.dx>0).sort((x,y)=>y.dx-x.dx),still=rows.filter(r=>r.dx<=0);
+  const mx=Math.max(1,...up.map(r=>r.b.xp));
+  return`<div class="card" style="margin-top:12px"><div class="row" style="justify-content:space-between;flex-wrap:nowrap;gap:10px"><label for="thenDate" class="lbl" style="margin:0">сравниваю с</label><input class="in-text" type="date" id="thenDate" value="${then}" max="${today()}" style="width:auto;padding:7px 10px"></div>
+  <div class="cmp-big fade-up"><div><div class="small muted">тогда</div><div class="v num" data-count="${thenD.season}">${thenD.season}</div><div class="small muted">xp · уровень ${thenD.level}</div></div><div class="arrow">→</div><div><div class="small muted">сейчас</div><div class="v num" style="color:var(--accent)" data-count="${d.season}">${d.season}</div><div class="small muted">xp · уровень ${d.level}</div></div></div>
+  <p style="text-align:center;margin:12px 0 0;font-weight:600">${grow>0?`+<span data-count="${grow}">${grow}</span> xp за ${diffDays(then,today())} ${plural(diffDays(then,today()),"день","дня","дней")}${d.level>thenD.level?" · +"+(d.level-thenD.level)+" "+plural(d.level-thenD.level,"уровень","уровня","уровней"):""}`:"с этого дня опыт пока не прибавился"}</p></div>
+  ${up.length?`${secTitle("что выросло")}<div class="card" style="margin-top:12px">${up.map((r,i)=>`<div class="fade-up" style="animation-delay:${i*60}ms;margin-top:${i?14:0}px"><div class="row" style="justify-content:space-between;flex-wrap:nowrap;gap:10px"><span style="font-weight:600;min-width:0">${esc(r.s.name)}</span><span class="small num" style="white-space:nowrap">ур. ${r.a.level} → <b>${r.b.level}</b> · <b style="color:var(--accent)">+${r.dx} xp</b></span></div>
+    <div class="gbar" aria-hidden="true"><i class="a" data-gw="${Math.round(r.a.xp/mx*100)}%"></i><i class="b" data-gw="${Math.max(1,Math.round(r.dx/mx*100))}%"></i></div></div>`).join("")}
+    <div class="row small muted" style="gap:14px;margin-top:12px"><span><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:color-mix(in srgb,var(--accent) 40%,var(--chip));margin-right:5px"></i>было</span><span><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--accent);margin-right:5px"></i>прибавилось</span></div></div>`:""}
+  ${still.length?`${secTitle("пока не задействованы")}<div class="card" style="margin-top:12px"><p class="small muted" style="margin:0 0 10px">в этих навыках с ${esc(fmtD(then))} ничего не прибавилось. одно маленькое действие сдвинет их с места.</p><div class="chips">${still.map(r=>`<button class="chip" data-act="add" data-skill="${r.s.id}">${esc(r.s.name)} · ур. ${r.b.level}</button>`).join("")}</div></div>`:""}
   ${secTitle("неделя с "+fmtD(then))}
   ${wk.length?`<div class="stack">${wk.map(entryCard).join("")}</div>`:`<div class="card small muted" style="margin-top:12px">в ту неделю записей нет. со временем здесь будет видно, с чего ты начинал{а|}.</div>`}`;
 }
@@ -1745,7 +1824,7 @@ function hintSheet(k){const[h,t]=HELP[k];sheet(`<span class="pill">подска�
 function showLevelUp(c){
   const el=document.createElement("div");el.className="lvlup";el.setAttribute("role","dialog");
   let burst="";for(let i=0;i<34;i++)burst+=`<i style="left:${Math.random()*100}%;animation-delay:${Math.random()*0.8}s;opacity:${.4+Math.random()*.6}"></i>`;
-  el.innerHTML=gx(`<div class="burst">${burst}</div><span class="pill soft pop">новый уровень</span><div class="big pop num">${c.level}</div><div style="font-size:20px;font-weight:600;margin-top:8px" class="pop">${c.rankUp?"новое звание: ":""}${esc(c.rank)}</div><p style="opacity:.85;max-width:320px">можно заглянуть в вишлист и выбрать себе что-нибудь.</p><button class="btn" style="margin-top:14px;background:var(--panel-ink);color:var(--panel)">ура!</button>`);
+  el.innerHTML=gx(`<div class="burst">${burst}</div><span class="pill soft pop">новый уровень</span><div class="big pop num">${c.level}</div><div style="font-size:20px;font-weight:600;margin-top:8px" class="pop">${c.rankUp?"новое звание: ":""}${esc(c.rank)}</div><p style="opacity:.85;max-width:320px"><b>+${LVL_COINS+(c.rankUp?RANK_COINS:0)} монет</b> за ${c.rankUp?"уровень и новое звание":"новый уровень"}. загляни в награды: может, уже хватает на что-то из вишлиста.</p><button class="btn" style="margin-top:14px;background:var(--panel-ink);color:var(--panel)">ура!</button>`);
   document.body.appendChild(el);el.querySelector("button").onclick=()=>{el.remove();if(celebrateQ.length)showLevelUp(celebrateQ.shift())};el.querySelector("button").focus();
 }
 
@@ -2609,6 +2688,9 @@ document.addEventListener("click",ev=>{
     case"achAll":S.achAll=!S.achAll;render();break;
     case"qMenu":{const c=P.challenges.find(x=>x.id===id);if(!c)break;sheet(`<div class="sheet-h"><span class="pill">${esc(c.title.slice(0,40))}</span><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div><div class="stack"><button class="btn wide" data-act="qInfo" data-id="${c.id}">в чём суть</button><button class="btn wide" data-act="qReview" data-id="${c.id}">разбор</button>${Store.online()?`<button class="btn wide" data-act="qToTeam" data-id="${c.id}">сделать командным</button>`:""}</div>`);break}
     case"qToTeam":questToTeam(id);break;
+    case"ranks":ranksSheet();break;
+    case"feedDay":S.feedDay=b.dataset.d;render();break;
+    case"feedAll":S.feedAll=!S.feedAll;render();break;
     case"coinHelp":sheet(`<div class="sheet-h"><h2>как копятся монеты</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
       <div class="card"><b>1 монета за каждые 10 xp</b><p class="small muted" style="margin:6px 0 0">любое действие даёт опыт, а вместе с ним монеты. например, «создал{а|}» = 40 xp = 4 монеты, «выпустил{а|} или показал{а|}» = 60 xp = 6 монет.</p></div>
       <div class="card" style="margin-top:10px"><b>квесты дают больше всего</b><p class="small muted" style="margin:6px 0 0">квест дня +5 монет, квест недели +15, квест месяца +50 сверху к опыту.</p></div>
