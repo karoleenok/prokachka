@@ -176,6 +176,35 @@ async function offerIfNeeded(env, uid, tz) {
   return r;
 }
 
+// /members: кто открывал прокачку, свежие сверху. имена берём из записи; у давних людей их нет, дотягиваем у телеграма понемногу
+async function membersText(env) {
+  const rows = []; let cursor, budget = 35, missing = 0;
+  do {
+    const l = await env.USERS.list({ prefix: "u:", cursor });
+    for (const k of l.keys) {
+      const id = Number(k.name.slice(2)); if (!id || id === OWNER) continue;
+      const r = await env.USERS.get(k.name, "json"); if (!r) continue;
+      if (!r.nm && !r.nmx) {
+        if (budget > 0) {
+          budget--;
+          const c = await tg(env, "getChat", { chat_id: id });
+          if (c.ok) { r.nm = cut([c.result.first_name, c.result.last_name].filter(Boolean).join(" "), 40) || "без имени"; r.un = cut(c.result.username, 40); }
+          else r.nmx = 1; // телеграм не отдал имя (например, человек удалил аккаунт): больше не спрашиваем
+          await env.USERS.put(k.name, JSON.stringify(r));
+        } else missing++;
+      }
+      rows.push({ nm: r.nm || "", un: r.un || "", first: r.first || "" });
+    }
+    cursor = l.list_complete ? undefined : l.cursor;
+  } while (cursor);
+  const opened = rows.filter(x => x.first).sort((a, b) => a.first < b.first ? 1 : a.first > b.first ? -1 : 0);
+  const onlyStart = rows.length - opened.length;
+  const line = x => ddmm(x.first) + " · " + (x.nm || "без имени") + (x.un ? " @" + x.un : "");
+  return "в прокачке: " + opened.length + " " + plural(opened.length, "человек", "человека", "человек") + " (открывали приложение)" +
+    (onlyStart ? "\nещё " + onlyStart + " нажали /start, но приложение не открывали" : "") + "\n\n" +
+    (opened.length ? opened.map(line).join("\n") : "пока никого") +
+    (missing ? "\n\nу " + missing + " пока нет имени: пришли /members ещё раз, дотяну" : "");
+}
 // сколько всего людей: считаем только ключи, значения не читаем, поэтому дёшево
 async function userCount(env) {
   let n = 0, cursor;
@@ -206,10 +235,10 @@ const SUP_TEXT = "это поддержка прокачки 🛟\n\nнапиш�
 const SUP_KB = { inline_keyboard: [[{ text: "готово", callback_data: "sup:off" }]] };
 const menuKb = r => ({ inline_keyboard: [[{ text: "открыть прокачку", web_app: { url: APP } }], [{ text: "написать в поддержку", callback_data: "sup:on" }], [r && r.news === false ? { text: "снова присылать новости", callback_data: "nw:on" } : { text: "не присылать новости", callback_data: "x:news" }]] });
 async function setCommands(env) {
-  if (await env.USERS.get("cmds:v2")) return;
+  if (await env.USERS.get("cmds:v3")) return;
   await tg(env, "setMyCommands", { commands: [{ command: "menu", description: "меню" }, { command: "support", description: "написать в поддержку" }, { command: "start", description: "открыть прокачку" }] });
-  await tg(env, "setMyCommands", { scope: { type: "chat", chat_id: OWNER }, commands: [{ command: "menu", description: "меню" }, { command: "support", description: "написать в поддержку" }, { command: "send", description: "рассылка новостей" }, { command: "stats", description: "статистика" }, { command: "start", description: "открыть прокачку" }] });
-  await env.USERS.put("cmds:v2", "1");
+  await tg(env, "setMyCommands", { scope: { type: "chat", chat_id: OWNER }, commands: [{ command: "menu", description: "меню" }, { command: "support", description: "написать в поддержку" }, { command: "send", description: "рассылка новостей" }, { command: "stats", description: "статистика" }, { command: "members", description: "кто в прокачке" }, { command: "start", description: "открыть прокачку" }] });
+  await env.USERS.put("cmds:v3", "1");
 }
 async function supStart(env, chat, rec) {
   rec.sup = Date.now(); rec.supId = rec.sup; await env.USERS.put("u:" + chat, JSON.stringify(rec));
@@ -798,6 +827,7 @@ export default {
       // первый вход: записи ещё нет или человек нажимал /start, но приложение не открывал
       const firstOpen = url.pathname === "/sync" && !r.jn && !r.first;
       if (firstOpen) r.jn = 1;
+      if (url.pathname === "/sync") { r.nm = who.name || r.nm || ""; r.un = who.username || ""; }
       r.tz = Math.max(-840, Math.min(840, parseInt(b.tz, 10) || 0));
       if (url.pathname === "/sync") {
         const lt = localNow(r.tz).date;
@@ -975,6 +1005,11 @@ export default {
           await bcSend(env, chat, b, BC_KB);
           return new Response("ok");
         }
+        if (/^\/members(@\w+)?\s*$/.test(m.text || "") && m.from && m.from.id === OWNER && env.USERS) {
+          const parts = bcParts(await membersText(env), []);
+          for (const p of parts) await tg(env, "sendMessage", { chat_id: chat, text: p.text, disable_web_page_preview: true });
+          return new Response("ok");
+        }
         if (/^\/stats/.test(m.text || "") && m.from && m.from.id === OWNER && env.USERS) {
           const d = await statsPage(env, true);
           const L = ["статистика прокачки", "",
@@ -1010,6 +1045,7 @@ export default {
           // 2) настройка напоминаний
           const res = await tg(env, "sendMessage", { chat_id: chat, text: offerText, reply_markup: offerKb });
           rec.offered = !!res.ok; rec.err = res.ok ? "" : String(res.description || "fail");
+          rec.nm = cut([m.from.first_name, m.from.last_name].filter(Boolean).join(" "), 40); rec.un = cut(m.from.username, 40);
           await env.USERS.put("u:" + chat, JSON.stringify(rec));
         } else {
           await tg(env, "sendMessage", { chat_id: chat, text: pick(HELLO), reply_markup: appBtn("открыть прокачку") });
