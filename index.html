@@ -738,24 +738,18 @@ html.tt,html.tt *{transition:background-color .4s ease,color .4s ease,border-col
 .hero .hq .avs .av{border-color:#fff}
 @media (min-width:1000px){.hero .big{font-size:96px}.hero .stats{grid-row:6}.hero .hq{grid-row:auto}.hero .hq .hq-b{align-self:end}}
 
-/* v65: страница навыков */
-.sk-acts{display:flex;gap:8px;align-items:center}
-.skadd{background:var(--accent);color:#fff;border:0;border-radius:999px;padding:8px 14px;font:inherit;font-size:13px;font-weight:700;cursor:pointer}
-.skmore{background:#fff;color:#171C24;border:0;border-radius:999px;width:34px;height:34px;font-size:18px;line-height:1;cursor:pointer}
-.por-row{display:flex;align-items:center;gap:12px;width:100%;text-align:left;font:inherit;border:0;cursor:pointer;padding:12px 14px;margin-top:12px}
-.por-row svg{flex:none;color:#C9D1FF}
-.por-t{flex:1;min-width:0}.por-t b{display:block;font-size:15px}.por-t small{display:block;font-size:12.5px;color:var(--muted);margin-top:2px}
-.por-go{font-size:22px;color:var(--muted)}
-.sk-sort .seg{background:transparent;padding:0;gap:6px;grid-auto-flow:column;grid-auto-columns:auto;justify-content:start}
-.sk-sort .seg button{background:transparent;color:var(--panel-ink,#fff);opacity:.75;border-radius:999px;padding:7px 14px;font-size:13px}
-.sk-sort .seg button[aria-pressed="true"]{background:#fff;color:#171C24;opacity:1}
-.skseg{display:grid;grid-template-columns:repeat(10,1fr);gap:3px;margin-top:9px}
-.skseg i{height:8px;border-radius:3px;background:var(--chip);position:relative;overflow:hidden}
-.skseg i.on{background:var(--accent)}.skseg i.cur::after{content:"";position:absolute;inset:0;width:var(--p);background:var(--accent)}
-.sknx{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;color:var(--muted);margin-top:6px}.sknx b{color:var(--accent-t);font-weight:700;white-space:nowrap}
-.skl{font-family:var(--f-body)!important;font-size:15px!important;font-weight:700;line-height:1.3!important;background:var(--chip);color:var(--ink);border-radius:8px;padding:2px 9px}
-.skt{align-items:center}
-.sphc{padding:2px 14px 6px}
+/* v66: строки навыков как список: иконка, название, шкала, уровень */
+.skr{align-items:center}
+.sk-ic{flex:none;width:34px;height:34px;border-radius:11px;border:0;background:var(--chip);color:var(--ink);display:grid;place-items:center;cursor:pointer;padding:0;align-self:flex-start;margin-top:0}
+.skrow{display:flex;align-items:center;gap:10px;min-height:34px}
+.skn{flex:1;min-width:0;font-size:15px;line-height:1.2;overflow-wrap:anywhere}
+.skrow .skbar{flex:none;width:76px;height:8px;border-radius:999px;background:var(--chip);margin:0;overflow:hidden}
+.skrow .skbar i{display:block;height:100%;background:var(--accent);border-radius:inherit}
+.skrow .skl{flex:none;min-width:22px;text-align:right;font-family:var(--f-body)!important;font-size:17px!important;font-weight:700;line-height:1!important;color:var(--ink)}
+.ic-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.ic-b{aspect-ratio:1;border-radius:14px;border:1.5px solid var(--tile-line);background:var(--tile);color:#171C24;display:grid;place-items:center;cursor:pointer}
+.ic-b[aria-pressed="true"]{background:var(--accent);color:#fff;border-color:var(--accent-t)}
+.skr .skm{align-self:flex-start;margin-top:5px}
 </style>
 
 </head>
@@ -2006,38 +2000,54 @@ function focusCard(){
   <div class="chips">${act.map(s=>`<button class="chip" data-act="focusTog" data-id="${s.id}" aria-pressed="${f.includes(s.id)}">${f.includes(s.id)?"★ ":""}${esc(s.name)}</button>`).join("")}</div></div>`;
 }
 
-function portraitNote(d){
-  const now=spheresOf(d);const then=spheresOf(derive(addDays(today(),-30)));
-  const up=now.map((x,i)=>({n:x.sp.n,dx:x.total-then[i].total})).filter(x=>x.dx>0).sort((a,b)=>b.dx-a.dx);
-  const weak=now.slice().sort((a,b)=>a.val-b.val||a.total-b.total)[0];const strong=now.slice().sort((a,b)=>b.val-a.val)[0];
-  if(up.length)return`выросло: ${esc(up[0].n)}${weak&&weak.sp.n!==up[0].n?` · подтянуть: ${esc(weak.sp.n)}`:""}`;
-  return strong&&strong.val>1?`сильнее всего: ${esc(strong.sp.n)}${weak&&weak.sp.n!==strong.sp.n?` · подтянуть: ${esc(weak.sp.n)}`:""}`:"нажми, чтобы увидеть сферы героя";
-}
 function vSkills(d){
   const act=activeSkills();const P=S.profile;
-  const right=act.length?`<div class="sk-acts"><button class="skadd" data-act="skillCat" id="skillCatBtn">+ навык</button><button class="skmore" id="skMore" data-act="skMore" aria-label="ещё: стартовые уровни, подбор по профессии, разбор с ии">⋯</button></div>`:"";
-  return`${secTitle("мои навыки","skills",right)}
-  ${act.length?`<button class="card por-row" data-act="portraitOpen" aria-label="портрет героя"><svg viewBox="0 0 40 40" width="38" height="38" fill="none" aria-hidden="true"><polygon points="20,4 35,13 35,29 20,38 5,29 5,13" stroke="currentColor" stroke-opacity=".35" stroke-width="1.5"/><polygon points="20,12 31,15 28,27 20,30 12,26 14,17" fill="var(--accent)" fill-opacity=".3" stroke="var(--accent)" stroke-width="2"/></svg><span class="por-t"><b>портрет героя</b><small>${portraitNote(d)}</small></span><span class="por-go" aria-hidden="true">›</span></button>`:""}
-  ${act.length?"":`<div class="row" style="margin-top:12px" id="skillBtns"><button class="btn accent" data-act="skillCat" id="skillCatBtn">выбрать навыки</button><button class="btn ghost" data-act="startLevels" id="startLvlBtn">стартовые уровни</button><button class="btn ghost" data-act="profPick">подобрать по профессии</button><button class="btn ghost" data-act="aiSkills">${IC.spark} разобрать с ии</button></div>`}
-  ${!act.length&&!(P.paused||[]).length?`<div class="card empty" style="margin-top:12px"><div class="big">пока пусто</div><p class="muted">выбери 5–12 навыков, которые хочешь качать в этом сезоне.</p></div>`:skManager(d)}
-  ${act.length&&!isNew()?focusCard():""}`;
+  return`${act.length?`${secTitle("герой","skills")}${portraitCard(d)}${isNew()?"":focusCard()}`:""}
+  ${secTitle("мои навыки","skills")}
+  <div class="row" style="margin-top:12px" id="skillBtns"><button class="btn accent" data-act="skillCat" id="skillCatBtn">выбрать навыки</button><button class="btn ghost" data-act="startLevels" id="startLvlBtn">стартовые уровни</button><button class="btn ghost" data-act="profPick">подобрать по профессии</button><button class="btn ghost" data-act="aiSkills">${IC.spark} разобрать с ии</button></div>
+  ${!act.length&&!(P.paused||[]).length?`<div class="card empty" style="margin-top:12px"><div class="big">пока пусто</div><p class="muted">выбери 5–12 навыков, которые хочешь качать в этом сезоне.</p></div>`:skManager(d)}`;
 }
-function skMoreSheet(){
-  sheet(`<div class="sheet-h"><h2>навыки</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
-  <div class="skmenu" style="margin-top:4px">
-    <button data-act="startLevels" id="startLvlBtn"><span>стартовые уровни<small>укажи, на каком уровне ты уже сейчас</small></span></button>
-    <button data-act="profPick"><span>подобрать по профессии<small>готовый набор навыков под твою работу</small></span></button>
-    <button data-act="aiSkills"><span>разобрать с ии<small>вставь своё описание, а ии предложит навыки</small></span></button>
-  </div>`);
-}
-/* шкала навыка: десять ячеек до следующего звания */
-function skSeg(k){
-  const nt=sktNext(k.level);const lo=[...SKT].reverse().find(([l])=>l<=k.level)[0];const hi=nt?nt[0]:MAXL;
-  const a=skillCum(lo),b=skillCum(hi);const tot=skillCum(k.level)+k.into;
-  const p=b>a?Math.max(0,Math.min(1,(tot-a)/(b-a))):1;const f=p*10;
-  const cells=Array.from({length:10},(_,i)=>f>=i+1?`<i class="on"></i>`:f>i?`<i class="cur" style="--p:${Math.round((f-i)*100)}%"></i>`:`<i></i>`).join("");
-  const left=k.level<MAXL?k.need-k.into:0;
-  return`<div class="skseg" role="img" aria-label="${k.level<MAXL?"до "+(k.level+1)+" уровня осталось "+left+" xp":"максимальный уровень"}">${cells}</div><div class="sknx"><span>${k.level<MAXL?"до ур. "+(k.level+1)+" · ещё "+left+" xp":"максимальный уровень"}</span>${nt?`<b>★ «${esc(nt[1])}» на ур. ${nt[0]}</b>`:""}</div>`;
+/* библиотека иконок навыков: 30 штук в одном стиле, выбираются нажатием на иконку навыка */
+const SK_ICONS={
+briefcase:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M3 13h18"/>',
+code:'<path d="M8 8l-4 4 4 4M16 8l4 4-4 4M13.5 5l-3 14"/>',
+pen:'<path d="M4 20l1-4L16.5 4.5a2 2 0 0 1 3 3L8 19zM14 7l3 3"/>',
+palette:'<path d="M12 3a9 9 0 1 0 0 18c1.5 0 2-1 1.5-2-.6-1.3.2-2.5 1.7-2.5H17a4 4 0 0 0 4-4c0-5-4-9.5-9-9.5z"/><path d="M8 11h.01M12 7.5h.01M16 10h.01"/>',
+camera:'<path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/>',
+music:'<path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/>',
+mic:'<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M9 21h6"/>',
+book:'<path d="M4 5a1 1 0 0 1 1-1h6v16H5a1 1 0 0 1-1-1zM20 5a1 1 0 0 0-1-1h-6v16h6a1 1 0 0 0 1-1z"/>',
+chart:'<path d="M5 20V12M12 20V5M19 20v-9"/>',
+coin:'<circle cx="12" cy="12" r="9"/><path d="M14.5 9.5c-.5-1-1.5-1.5-2.5-1.5-1.5 0-2.5.8-2.5 2s1 1.7 2.5 2 2.5.8 2.5 2-1 2-2.5 2c-1 0-2-.5-2.5-1.5M12 6.5V8M12 16v1.5"/>',
+heart:'<path d="M12 20s-8-4.8-8-10.5A4.5 4.5 0 0 1 12 7a4.5 4.5 0 0 1 8 2.5C20 15.2 12 20 12 20z"/>',
+dumbbell:'<path d="M6 8v8M3.5 10v4M18 8v8M20.5 10v4M6 12h12"/>',
+bolt:'<path d="M13 3L5 14h6l-1 7 8-11h-6z"/>',
+leaf:'<path d="M5 19c0-9 5-14 14-14 0 9-5 14-14 14zM5 19c3-5 6-8 10-10"/>',
+home:'<path d="M4 11l8-7 8 7M6 10v9h12v-9M10 19v-5h4v5"/>',
+chat:'<path d="M4 5h16v11H10l-4 4v-4H4z"/>',
+globe:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>',
+target:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><path d="M12 12h.01"/>',
+bulb:'<path d="M9 17h6M10 20h4M12 3a6 6 0 0 0-3.5 10.9c.5.4.5 1 .5 1.6V17h6v-1.5c0-.6 0-1.2.5-1.6A6 6 0 0 0 12 3z"/>',
+wrench:'<path d="M15 4a4.5 4.5 0 0 0-4 6l-7 7a2 2 0 0 0 3 3l7-7a4.5 4.5 0 0 0 6-4l-3 3-3-1-1-3z"/>',
+gamepad:'<rect x="3" y="8" width="18" height="10" rx="5"/><path d="M8 11v4M6 13h4M15.5 12.5h.01M17.5 14.5h.01"/>',
+utensils:'<path d="M6 4v6a2 2 0 0 0 4 0V4M8 12v8M16 4c-2 2-2 6 0 8v8"/>',
+paw:'<circle cx="6.5" cy="11" r="1.7"/><circle cx="10.5" cy="6.5" r="1.7"/><circle cx="15.5" cy="6.5" r="1.7"/><circle cx="19" cy="11" r="1.7"/><path d="M8 18c0-3 2-5 4-5s4 2 4 5c0 1.5-1.5 2-4 2s-4-.5-4-2z"/>',
+star:'<path d="M12 3l2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.8 6.6 19.7l1.1-6.1L3.2 9.4l6.1-.8z"/>',
+flag:'<path d="M5 21V4M5 5h12l-2 4 2 4H5"/>',
+mountain:'<path d="M3 19l6-11 4 7 2-3 6 7z"/>',
+laptop:'<rect x="5" y="5" width="14" height="10" rx="1.5"/><path d="M3 19h18"/>',
+megaphone:'<path d="M4 10v4h3l8 4V6L7 10zM18 9a4 4 0 0 1 0 6"/>',
+scissors:'<circle cx="6" cy="7" r="2.5"/><circle cx="6" cy="17" r="2.5"/><path d="M8 8.5L20 17M8 15.5L20 7"/>',
+compass:'<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/>'
+};
+const skIconSvg=(id,sz)=>`<svg class="sphic" viewBox="0 0 24 24" width="${sz||20}" height="${sz||20}" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${SK_ICONS[id]||""}</svg>`;
+const skIconOf=(s,sz)=>{const m=(S.profile.skIcons||{})[s.id];return m&&SK_ICONS[m]?skIconSvg(m,sz):sphIc(sphereOf(s),sz)};
+function skIconSheet(id){
+  const P=S.profile;const k=skillById(id);if(!k)return;const cur=(P.skIcons||{})[id]||"";
+  sheet(`<div class="sheet-h"><h2 style="font-size:28px">${esc(k.name)}</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
+  <div class="small muted" style="margin:0 0 10px">иконка навыка</div>
+  <div class="ic-grid" role="group" aria-label="иконки">${Object.keys(SK_ICONS).map(n=>`<button class="ic-b" data-ic="${n}" aria-pressed="${cur===n}" aria-label="${n}">${skIconSvg(n,24)}</button>`).join("")}</div>
+  <button class="btn ghost wide" style="margin-top:14px" data-ic="">как у сферы</button>`,el=>{el.addEventListener("click",ev=>{const b=ev.target.closest("[data-ic]");if(!b)return;const m=Object.assign({},P.skIcons||{});if(b.dataset.ic)m[id]=b.dataset.ic;else delete m[id];P.skIcons=m;Store.saveProfile();closeSheet();render()})});
 }
 /* навыки по сферам: сортировка, перетаскивание, меню навыка */
 function skManager(d){
@@ -2049,11 +2059,9 @@ function skManager(d){
     if(manual){const o=P.skOrder||[];return list.slice().sort((a,b)=>(o.indexOf(a.id)+1||999)-(o.indexOf(b.id)+1||999))}
     return list.slice().sort((a,b)=>v(b)-v(a))};
   const row=s=>{const k=d.skills[s.id];const g=k.xp-((old.skills[s.id]||{}).xp||0);const last=lastOf[s.id];const dust=last&&diffDays(last.date,today())>=14;const nt=sktNext(k.level);const open=S.skOpen===s.id;
-    return`<div class="skr ${dust?"dusty":""} ${open?"open":""}" data-sk="${s.id}">${manual?`<span class="skh" aria-label="перетащить" role="button">⋮⋮</span>`:""}<div class="skb" data-act="skOpen" data-id="${s.id}">
-      <div class="skt"><b>${inFocus(s.id)?'<span style="color:var(--accent-t)">★</span> ':""}${esc(s.name)}</b><span class="skl num">${k.level}</span></div>
-      <div class="sks">${esc(sktOf(k.level))}${g>0?` · <b class="sph-up">+${g} xp</b> за месяц`:dust?` · 🕸 давно не качал{а|}`:""}</div>
-      ${skSeg(k)}
-      ${open?`<div class="small muted" style="margin-top:8px">${k.level<MAXL?k.into+" / "+k.need+" xp до "+(k.level+1)+" ур.":"максимальный уровень"}${nt?` · до звания «${esc(nt[1])}»: ${skillCum(nt[0])-skillCum(k.level)-k.into} xp`:""}</div>${last?`<div class="small" style="margin-top:4px">последнее: ${esc(last.title)} · ${fmtDay(last.date)}</div>`:""}
+    return`<div class="skr ${dust?"dusty":""} ${open?"open":""}" data-sk="${s.id}">${manual?`<span class="skh" aria-label="перетащить" role="button">⋮⋮</span>`:""}<button class="sk-ic" data-act="skIcon" data-id="${s.id}" aria-label="сменить иконку: ${esc(s.name)}">${skIconOf(s,20)}</button><div class="skb" data-act="skOpen" data-id="${s.id}">
+      <div class="skrow"><b class="skn">${inFocus(s.id)?'<span style="color:var(--accent-t)">★</span> ':""}${esc(s.name)}</b><span class="skbar" aria-hidden="true"><i style="width:${Math.max(4,Math.round(k.frac*100))}%"></i></span><span class="skl num" aria-label="уровень ${k.level}">${k.level}</span></div>
+      ${open?`<div class="sks" style="margin-top:6px">${esc(sktOf(k.level))}${g>0?` · <b class="sph-up">+${g} xp</b> за месяц`:dust?` · 🕸 давно не качал{а|}`:""}</div><div class="small muted" style="margin-top:4px">${k.level<MAXL?k.into+" / "+k.need+" xp до "+(k.level+1)+" ур.":"максимальный уровень"}${nt?` · до звания «${esc(nt[1])}»: ${skillCum(nt[0])-skillCum(k.level)-k.into} xp`:""}</div>${last?`<div class="small" style="margin-top:4px">последнее: ${esc(last.title)} · ${fmtDay(last.date)}</div>`:""}
       <div class="row" style="margin-top:8px"><button class="btn sm ghost" data-act="add" data-skill="${s.id}">${IC.plus} действие</button><button class="btn sm ghost" data-act="pfilterGo" data-id="${s.id}">путь навыка</button></div>`:""}
     </div><button class="skm" data-act="skMenu" data-id="${s.id}" aria-label="действия с навыком ${esc(s.name)}">⋯</button></div>`};
   const sp=spheresOf(d);
@@ -2085,6 +2093,7 @@ function skMenuSheet(id){
   sheet(`<div class="sheet-h"><h2 style="font-size:28px">${esc(k.name)}</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
   <div class="small muted" style="margin:0 0 6px">сфера в портрете героя</div><div class="chips">${SPHERES.map(o=>`<button class="chip" data-mv="${o.id}" aria-pressed="${o.id===cur}"><span class="row" style="gap:6px;flex-wrap:nowrap">${sphIc(o.id,14)}${esc(o.n)}</span></button>`).join("")}</div>
   <div class="skmenu">
+    <button data-act="skIcon" data-id="${id}">${skI("rn")}<span>сменить иконку</span></button>
     <button data-act="skRename" data-id="${id}">${skI("rn")}<span>переименовать</span></button>
     <button data-act="skMerge" data-id="${id}">${skI("mg")}<span>объединить с другим навыком<small>если навыки дублируют друг друга: опыт сложится</small></span></button>
     ${mg?`<button data-act="skUnmerge" data-id="${id}">${skI("um")}<span>разъединить<small>вернуть «${esc(mg.aName)}» отдельным навыком</small></span></button>`:""}
@@ -2507,7 +2516,7 @@ function hintSheet(k){const[h,t]=HELP[k];sheet(`<span class="pill">подска�
    как добавить новость: допиши объект в NEWS (приложение) или в news.json рядом с index.html (без выпуска приложения).
    kind: "update" | "news". acts: до двух кнопок {l:"посмотреть"|"протестировать", go:"..."}.
    куда ведёт go: tab:home|path|skills|quests|rewards · path:feed · hint:<ключ из HELP> · add:plan · add:done */
-const APP_V="v65";
+const APP_V="v66";
 const NEWS=[
   {id:"u61-quests",date:"2026-10-23",kind:"update",title:"квест можно создать сразу: свой или командный",text:"если квестов ещё нет, в разделе «квесты» сразу две кнопки: свой квест или командный. а ниже пример того, как будет выглядеть таймлайн квеста с этапами, ответственными и дедлайнами.",acts:[{l:"посмотреть",go:"tab:quests"}]},
   {id:"u61-mood",date:"2026-10-23",kind:"update",title:"«как ты сегодня» теперь в «пути»",text:"отметить энергию, настроение и насыщенность дня можно в «пути», в ленте за сегодня. прошлые отметки на месте.",acts:[{l:"посмотреть",go:"path:feed"}]},
@@ -3367,7 +3376,7 @@ const TOUR=[
   {id:"path",t:".nav [data-id='path']",h:"путь",p:"здесь вся твоя история.",tap:"нажми «путь»",until:()=>S.view==="path"},
   {id:"seg",v:"path",t:"#pathSeg",h:"три вида",p:"в ленте все действия по дням. на графике видно, как растёт опыт. «до и после» сравнивает тебя сейчас и в любой прошлый день."},
   {id:"skills",t:".nav [data-id='skills']",h:"навыки",p:"здесь все твои навыки.",tap:"нажми «навыки»",until:()=>S.view==="skills"},
-  {id:"lvl",v:"skills",t:"#skMore",h:"с чего начинаешь",p:"укажи, на каком уровне ты уже сейчас, чтобы не начинать с нуля там, где давно умеешь.",tap:"нажми «⋯», затем «стартовые уровни»",until:()=>!!$("#slList")},
+  {id:"lvl",v:"skills",t:"#startLvlBtn",h:"с чего начинаешь",p:"укажи, на каком уровне ты уже сейчас, чтобы не начинать с нуля там, где давно умеешь.",tap:"нажми «стартовые уровни»",until:()=>!!$("#slList")},
   {id:"lvlpick",t:"#slList",h:"нажимай цифры",p:"1 значит только начинаю, 5 уверенно, 10 сильный профи, 15 и выше топ. всё сохраняется сразу.",free:true,back:"lvl",leave:()=>closeSheet()},
   {id:"quests",t:".nav [data-id='quests']",h:"квесты",p:"здесь задания посложнее.",tap:"нажми «квесты»",until:()=>S.view==="quests"},
   {id:"qa",v:"quests",t:"#questAdd",h:"как взять квест",p:"по кнопке «предложи квест» приложение подберёт задание для навыка, который сейчас отстаёт, и объяснит зачем. а можно придумать своё."},
@@ -3472,6 +3481,7 @@ document.addEventListener("click",ev=>{
     case"qMenu":{const c=P.challenges.find(x=>x.id===id);if(!c)break;sheet(`<div class="sheet-h"><span class="pill">${esc(c.title.slice(0,40))}</span><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div><div class="stack"><button class="btn wide" data-act="qInfo" data-id="${c.id}">в чём суть</button><button class="btn wide" data-act="qReview" data-id="${c.id}">разбор</button>${Store.online()?`<button class="btn wide" data-act="qToTeam" data-id="${c.id}">сделать командным</button>`:""}</div>`);break}
     case"qToTeam":questToTeam(id);break;
     case"ranks":ranksSheet();break;
+    case"skIcon":skIconSheet(id);break;
     case"skOpen":S.skOpen=S.skOpen===id?null:id;render();break;
     case"goalSk":{const g=P.goals.find(x=>x.id===b.dataset.g);if(!g)break;let L=(g.skills||[]).slice();
       const paint=el=>{el.querySelector("#gsk").innerHTML=activeSkills().map(s=>`<button class="chip" data-gs="${s.id}" aria-pressed="${L.includes(s.id)}">${esc(s.name)}</button>`).join("")};
@@ -3537,8 +3547,6 @@ document.addEventListener("click",ev=>{
     case"skSort":P.skSort=id;Store.saveProfile();render();break;
     case"sphTog":S.sphClosed=Object.assign({},S.sphClosed||{},{[id]:!(S.sphClosed||{})[id]});try{localStorage.setItem("prk-sphc",JSON.stringify(S.sphClosed))}catch(x){}render();break;
     case"skMenu":skMenuSheet(id);break;
-    case"skMore":skMoreSheet();break;
-    case"portraitOpen":sheet(`<div class="sheet-h" style="justify-content:flex-end"><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>${portraitCard(derive()).replace("margin-top:12px","margin-top:0")}`);break;
     case"aiSkills":aiSkillsSheet();break;
     case"tqSkPick":tqSkSheet(b.dataset.q);break;
     case"skRename":skRenameSheet(id);break;
