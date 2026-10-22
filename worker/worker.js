@@ -259,11 +259,90 @@ async function calLinks(env, origin) {
   const k = await calKey(env), n = Object.keys((await env.USERS.get("cal:data", "json") || { ev: {} }).ev).length;
   return "📅 календарь\nсобытий в ленте: " + n + "\n\nподписка (один раз, потом обновляется сама): открой в safari на айфоне\n" + origin + "/cal/" + k + "/go\n\nпросто добавить события один раз (без подписки):\n" + origin + "/cal/" + k + ".ics\n\nчтобы добавить новые события, пришли мне сюда .ics файлом: они допишутся в ленту.";
 }
+
+// текстовые команды календаря без нейросетей: /add 24.11 18:30 эфир 2ч !1ч, /list, /del 3
+const MSK = 3 * 3600000;
+const MONTHS = ["январ", "феврал", "март", "апрел", "ма", "июн", "июл", "август", "сентябр", "октябр", "ноябр", "декабр"];
+const p2 = n => String(n).padStart(2, "0");
+const icsEsc = t => t.replace(/\\/g, "\\\\").replace(/;/g, "\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
+const fmtL = d => "" + d.getUTCFullYear() + p2(d.getUTCMonth() + 1) + p2(d.getUTCDate()) + "T" + p2(d.getUTCHours()) + p2(d.getUTCMinutes()) + "00";
+const fmtD = d => "" + d.getUTCFullYear() + p2(d.getUTCMonth() + 1) + p2(d.getUTCDate());
+function parseEv(line) {
+  let t = line.trim().replace(/^[-—•*]\s*/, ""); if (!t) return null;
+  let dd, mm, yy, m;
+  if ((m = t.match(/^(\d{1,2})[.\/](\d{1,2})(?:[.\/](\d{2,4}))?(?=\s|$)\s*/))) { dd = +m[1]; mm = +m[2]; yy = m[3] ? +m[3] : 0; }
+  else if ((m = t.match(/^(\d{1,2})\s+([а-яё]+)\s*/i))) { const i = MONTHS.findIndex(x => m[2].toLowerCase().startsWith(x)); if (i < 0) return { err: "не поняла дату в строке: " + line }; dd = +m[1]; mm = i + 1; yy = 0; }
+  else return { err: "не поняла дату в строке: " + line };
+  t = t.slice(m[0].length);
+  if (yy && yy < 100) yy += 2000;
+  const now = new Date(Date.now() + MSK);
+  if (!yy) { yy = now.getUTCFullYear(); const cand = Date.UTC(yy, mm - 1, dd); if (cand < Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) - 86400000) yy++; }
+  if (mm < 1 || mm > 12 || dd < 1 || dd > 31) return { err: "не поняла дату в строке: " + line };
+  let hh = null, mi = 0;
+  if ((m = t.match(/^(?:в\s+)?(\d{1,2})[:.](\d{2})(?=\s|$)\s*/i))) { hh = +m[1]; mi = +m[2]; t = t.slice(m[0].length); if (hh > 23 || mi > 59) return { err: "не поняла время в строке: " + line }; }
+  let alarm = null;
+  if ((m = t.match(/(?:^|\s)!\s*(нет|0|(\d+(?:[.,]\d+)?)\s*(мин\w*|ч\w*|д\w*))(?=\s|$)/i))) {
+    if (/^(нет|0)$/i.test(m[1])) alarm = 0; else { const n = parseFloat(m[2].replace(",", ".")), u = m[3].toLowerCase(); alarm = Math.round(n * (u.startsWith("м") ? 1 : u.startsWith("ч") ? 60 : 1440)); }
+    t = t.replace(m[0], " ");
+  }
+  let dur = 60;
+  if (hh !== null && (m = t.match(/(?:^|\s)(\d+(?:[.,]\d+)?)\s?(ч|час|часа|часов|мин)(?=\s|$)/i))) { const n = parseFloat(m[1].replace(",", ".")); dur = Math.round(n * (m[2].toLowerCase() === "мин" ? 1 : 60)); t = t.replace(m[0], " "); }
+  const title = t.replace(/\s+/g, " ").trim() || "событие";
+  const uid = "tg" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) + "@prokachka";
+  const L = ["BEGIN:VEVENT", "UID:" + uid, "DTSTAMP:" + fmtL(new Date()) .slice(0, 15) + "Z", "SUMMARY:" + icsEsc(title)];
+  let when;
+  if (hh === null) {
+    const s0 = new Date(Date.UTC(yy, mm - 1, dd)), e0 = new Date(Date.UTC(yy, mm - 1, dd + 1));
+    L.push("DTSTART;VALUE=DATE:" + fmtD(s0), "DTEND;VALUE=DATE:" + fmtD(e0));
+    when = p2(dd) + "." + p2(mm) + "." + yy + " весь день";
+    if (alarm === null) alarm = -540; // 9:00 в день события
+  } else {
+    const s0 = new Date(Date.UTC(yy, mm - 1, dd, hh, mi)), e0 = new Date(s0.getTime() + dur * 60000);
+    L.push("DTSTART;TZID=Europe/Moscow:" + fmtL(s0), "DTEND;TZID=Europe/Moscow:" + fmtL(e0));
+    when = p2(dd) + "." + p2(mm) + "." + yy + " " + p2(hh) + ":" + p2(mi);
+    if (alarm === null) alarm = 60;
+  }
+  if (alarm) L.push("BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:" + icsEsc(title), "TRIGGER:" + (alarm > 0 ? "-PT" + alarm + "M" : "PT" + (-alarm) + "M"), "END:VALARM");
+  L.push("END:VEVENT");
+  return { uid, body: L.join("\r\n"), title, when };
+}
+const MSK_TZ = "BEGIN:VTIMEZONE\r\nTZID:Europe/Moscow\r\nBEGIN:STANDARD\r\nDTSTART:19700101T000000\r\nTZOFFSETFROM:+0300\r\nTZOFFSETTO:+0300\r\nTZNAME:MSK\r\nEND:STANDARD\r\nEND:VTIMEZONE";
+async function calAdd(env, text) {
+  const cur = await env.USERS.get("cal:data", "json") || { tz: [], ev: {} };
+  if (!cur.tz.some(x => x.includes("TZID:Europe/Moscow"))) cur.tz.push(MSK_TZ);
+  const ok = [], bad = [];
+  for (const line of text.split(/\r?\n/)) { if (!line.trim()) continue; const e = parseEv(line); if (!e) continue; if (e.err) bad.push(e.err); else { cur.ev[e.uid] = e.body; ok.push(e.when + " · " + e.title); } }
+  if (ok.length) await env.USERS.put("cal:data", JSON.stringify(cur));
+  return { ok, bad };
+}
+function evInfo(body) {
+  const g = re => { const m = body.match(re); return m ? m[1] : ""; };
+  const st = g(/^DTSTART[^:\r\n]*:(\d{8}(?:T\d{6})?)/m), title = g(/^SUMMARY:(.*)$/m).replace(/\\([,;])/g, "$1").replace(/\\n/g, " ");
+  const d = st.slice(6, 8) + "." + st.slice(4, 6) + "." + st.slice(0, 4), tm = st.length > 8 ? " " + st.slice(9, 11) + ":" + st.slice(11, 13) : " весь день";
+  return { key: st.slice(0, 8) + (st.slice(9, 13) || "0000"), text: d + tm + " · " + title };
+}
+async function calList(env) {
+  const cur = await env.USERS.get("cal:data", "json") || { tz: [], ev: {} };
+  const now = new Date(Date.now() + MSK), today = fmtD(now);
+  const rows = Object.entries(cur.ev).map(([uid, b]) => ({ uid, ...evInfo(b) })).filter(r => r.key.slice(0, 8) >= today).sort((a, b) => a.key < b.key ? -1 : 1);
+  await env.USERS.put("cal:list", JSON.stringify(rows.map(r => r.uid)), { expirationTtl: 86400 });
+  return rows.length ? rows.map((r, i) => (i + 1) + ". " + r.text).join("\n") + "\n\nчтобы удалить: /del 2 (можно несколько: /del 1 3)" : "ближайших событий нет. добавить: /add 24.11 18:30 эфир";
+}
+async function calDel(env, nums) {
+  const ids = await env.USERS.get("cal:list", "json");
+  if (!ids) return "сначала пришли /list, чтобы я знала номера";
+  const cur = await env.USERS.get("cal:data", "json") || { tz: [], ev: {} }, gone = [];
+  for (const n of nums) { const uid = ids[n - 1]; if (uid && cur.ev[uid]) { gone.push(evInfo(cur.ev[uid]).text); delete cur.ev[uid]; } }
+  if (!gone.length) return "не нашла события с такими номерами. пришли /list";
+  await env.USERS.put("cal:data", JSON.stringify(cur)); await env.USERS.delete("cal:list");
+  return "удалила:\n" + gone.join("\n") + "\n\nномера сбросились, пришли /list ещё раз";
+}
+const CAL_HELP = "📅 как добавить событие:\n/add 24.11 18:30 эфир с куратором\n\nможно несколько, каждое с новой строки:\n/add\n23.10 11:00 эфир\n26.11 23:59 дедлайн проекта\n\nформаты: дата 24.11 или 24 ноября (год по желанию), время 18:30 (без времени = на весь день). длительность: 2ч или 90мин (по умолчанию 1 час). напоминание: !30мин, !2ч, !1д или !нет (по умолчанию за час, а для события на весь день в 9:00).";
 async function setCommands(env) {
-  if (await env.USERS.get("cmds:v4")) return;
+  if (await env.USERS.get("cmds:v5")) return;
   await tg(env, "setMyCommands", { commands: [{ command: "menu", description: "меню" }, { command: "support", description: "написать в поддержку" }, { command: "start", description: "открыть прокачку" }] });
-  await tg(env, "setMyCommands", { scope: { type: "chat", chat_id: OWNER }, commands: [{ command: "menu", description: "меню" }, { command: "support", description: "написать в поддержку" }, { command: "send", description: "рассылка новостей" }, { command: "stats", description: "статистика" }, { command: "members", description: "кто в прокачке" }, { command: "calendar", description: "календарь для айфона" }, { command: "start", description: "открыть прокачку" }] });
-  await env.USERS.put("cmds:v4", "1");
+  await tg(env, "setMyCommands", { scope: { type: "chat", chat_id: OWNER }, commands: [{ command: "menu", description: "меню" }, { command: "support", description: "написать в поддержку" }, { command: "send", description: "рассылка новостей" }, { command: "stats", description: "статистика" }, { command: "members", description: "кто в прокачке" }, { command: "calendar", description: "календарь для айфона" }, { command: "add", description: "добавить событие в календарь" }, { command: "list", description: "ближайшие события" }, { command: "del", description: "удалить событие по номеру" }, { command: "start", description: "открыть прокачку" }] });
+  await env.USERS.put("cmds:v5", "1");
 }
 async function supStart(env, chat, rec) {
   rec.sup = Date.now(); rec.supId = rec.sup; await env.USERS.put("u:" + chat, JSON.stringify(rec));
@@ -976,6 +1055,22 @@ export default {
         if (/^\/news(@\w+)?\s*$/.test(raw) && rec) {
           rec.news = true; await env.USERS.put("u:" + chat, JSON.stringify(rec));
           await tg(env, "sendMessage", { chat_id: chat, text: "хорошо, новости снова буду присылать." });
+          return new Response("ok");
+        }
+        if (m.from && m.from.id === OWNER && env.USERS && /^\/add(@\w+)?(\s|$)/.test(raw)) {
+          const body = raw.replace(/^\/add(@\w+)?\s*/, "");
+          if (!body.trim()) { await tg(env, "sendMessage", { chat_id: chat, text: CAL_HELP }); return new Response("ok"); }
+          const r = await calAdd(env, body);
+          await tg(env, "sendMessage", { chat_id: chat, text: (r.ok.length ? "добавила 📅\n" + r.ok.join("\n") + "\n\nв календаре на айфоне появится в течение часа" : "") + (r.bad.length ? (r.ok.length ? "\n\n" : "") + r.bad.join("\n") + "\n\nпример: /add 24.11 18:30 эфир" : "") });
+          return new Response("ok");
+        }
+        if (m.from && m.from.id === OWNER && env.USERS && /^\/list(@\w+)?\s*$/.test(raw)) {
+          await tg(env, "sendMessage", { chat_id: chat, text: await calList(env) });
+          return new Response("ok");
+        }
+        if (m.from && m.from.id === OWNER && env.USERS && /^\/del(@\w+)?(\s|$)/.test(raw)) {
+          const nums = (raw.match(/\d+/g) || []).map(Number);
+          await tg(env, "sendMessage", { chat_id: chat, text: nums.length ? await calDel(env, nums) : "укажи номер из /list, например: /del 2" });
           return new Response("ok");
         }
         if (m.from && m.from.id === OWNER && env.USERS && /^\/calendar(@\w+)?\s*$/.test(raw)) {
