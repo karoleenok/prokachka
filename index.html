@@ -541,9 +541,11 @@ html.tt,html.tt *{transition:background-color .4s ease,color .4s ease,border-col
 .hq-t{font-weight:700;font-size:16px;margin-top:4px;overflow-wrap:anywhere}
 .hq-m{font-size:13px;opacity:.85;margin-top:4px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .hq-b{display:flex;gap:8px;margin-top:10px}.hq-b .btn{background:#fff;color:#171C24}.hq-b .btn.ghost{background:rgba(255,255,255,.18);color:inherit}
-.rt-strip{border-bottom:1px solid var(--line);padding:4px 0 12px;margin-bottom:4px}
+.rt-strip{border-top:1px solid var(--line);padding:0 0 4px;margin-top:12px}
 .rt-strip .chip .cnt{margin-left:6px;font-weight:700}
-.rt-strip .chip.on{background:var(--soft);color:#171C24;border-color:var(--accent)}
+.rt-strip .chip{background:var(--chip);border:0;color:var(--muted);font-weight:500}
+.rt-strip .chip.dash{background:transparent;border:0;color:var(--muted);text-decoration:underline;text-underline-offset:3px;padding-left:6px;padding-right:6px}
+.rt-strip .chip.on{background:var(--soft);color:#171C24}
 .piggy .wl{display:flex;gap:12px;align-items:center;padding:9px 0;border-top:1px solid var(--line)}
 .piggy .wl:first-of-type{border-top:0}
 .piggy .wi{width:44px;height:44px;border-radius:12px;background:var(--chip);flex:none;background-size:cover;background-position:center;display:grid;place-items:center}
@@ -1573,7 +1575,6 @@ function vHome(d){
     <button class="rank rank-btn" data-act="ranks" aria-label="уровни и звания">${esc(rankOf(d.level))} <span style="opacity:.7;font-weight:500">· что дают уровни →</span></button>
     <div class="xpbar" role="progressbar" aria-valuemin="0" aria-valuemax="${d.lv.need}" aria-valuenow="${d.lv.into}"><i style="width:${S.lastW||"0%"}" data-w="${Math.max(2,Math.round(d.lv.frac*100))}%"></i></div>
     <div class="xpmeta num"><span>${d.lv.into} xp</span><span>до ${d.level+1} ур.: ${d.lv.need-d.lv.into}</span></div>
-    ${noSkills?"":miniPortrait(d)}
     <div class="stats" id="statsRow">
       ${d.coins>0?`<span class="stat num">${IC.coin} ${coinsW(d.coins)}</span>`:""}
       ${d.streak.cur>0?`<span class="stat num">${IC.flame} серия ${d.streak.cur} ${plural(d.streak.cur,"день","дня","дней")}</span>`:""}
@@ -2432,7 +2433,7 @@ function hintSheet(k){const[h,t]=HELP[k];sheet(`<span class="pill">подска�
    как добавить новость: допиши объект в NEWS (приложение) или в news.json рядом с index.html (без выпуска приложения).
    kind: "update" | "news". acts: до двух кнопок {l:"посмотреть"|"протестировать", go:"..."}.
    куда ведёт go: tab:home|path|skills|quests|rewards · path:feed · hint:<ключ из HELP> · add:plan · add:done */
-const APP_V="v61";
+const APP_V="v62";
 const NEWS=[
   {id:"u61-quests",date:"2026-10-23",kind:"update",title:"квест можно создать сразу: свой или командный",text:"если квестов ещё нет, в разделе «квесты» сразу две кнопки: свой квест или командный. а ниже пример того, как будет выглядеть таймлайн квеста с этапами, ответственными и дедлайнами.",acts:[{l:"посмотреть",go:"tab:quests"}]},
   {id:"u61-mood",date:"2026-10-23",kind:"update",title:"«как ты сегодня» теперь в «пути»",text:"отметить энергию, настроение и насыщенность дня можно в «пути», в ленте за сегодня. прошлые отметки на месте.",acts:[{l:"посмотреть",go:"path:feed"}]},
@@ -2757,10 +2758,10 @@ function planCard(){
   const cur=L.filter(e=>e.date<=t).sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:(a.ts||0)-(b.ts||0));
   const od=L.filter(e=>e.date<t).length;const fut=L.filter(e=>e.date>t).sort((a,b)=>a.date<b.date?-1:1);
   return`<section class="card" id="planCard" style="margin-top:12px" aria-label="на сегодня"><div class="row" style="justify-content:space-between;flex-wrap:nowrap"><b style="font-size:17px">на сегодня</b><button class="link" data-act="planOpen">неделя →</button></div>
-  ${routineStrip()}
   ${od?overdueRow(od):""}
   ${cur.length?`<div style="margin-top:6px">${cur.map(planRow).join("")}</div>`:`<p class="small muted" style="margin:10px 0 0">пока ничего не запланировано. добавь дело или загляни в неделю.</p>`}
   ${fut.length?`<div class="small muted" style="margin-top:8px">впереди: ${fut.length} ${plural(fut.length,"дело","дела","дел")}, ближайшее ${fut[0].date===addDays(t,1)?"завтра":fmtD(fut[0].date)}</div>`:""}
+  ${routineStrip()}
   ${(()=>{const dn=live().filter(e=>e.date===t&&!e.planned&&e.type!=="routine").sort((a,b)=>(b.ts||0)-(a.ts||0));if(!dn.length)return"";const xp=live().filter(e=>e.date===t&&!e.planned).reduce((a,e)=>a+xpOf(e),0);
     return`<details class="donebox" id="todaySec" ${S.doneOpen?"open":""}><summary><span>сделано сегодня · ${dn.length}</span><b class="num" style="color:var(--accent-t)">+${xp} xp</b></summary>${dn.map(doneRow).join("")}</details>`})()}
   <div class="row" style="margin-top:12px;flex-wrap:nowrap"><button class="btn ghost" style="flex:1" data-act="add" data-plan="1" data-day="today">+ на сегодня</button><button class="btn ghost" style="flex:1" data-act="add" data-plan="1" data-day="tomorrow">+ другой день</button></div></section>`;
