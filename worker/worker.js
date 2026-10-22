@@ -179,25 +179,58 @@ async function offerIfNeeded(env, uid, tz) {
 // рассылка: черновик лежит в KV под ключом bc:cur, отправка идёт пачками (лимит бесплатного cloudflare: ~45 внешних запросов за запуск)
 const NEWS_KB = { inline_keyboard: [[{ text: "открыть прокачку", web_app: { url: APP } }], [{ text: "не присылать новости", callback_data: "x:news" }]] };
 const BC_KB = { inline_keyboard: [[{ text: "отправить всем", callback_data: "b:go" }, { text: "отмена", callback_data: "b:no" }]] };
-function bcSend(env, chat, b, kb) {
-  const cap = b.text.slice(0, 1000);
-  if (b.type === "photo") return tg(env, "sendPhoto", { chat_id: chat, photo: b.file, caption: cap, reply_markup: kb });
-  if (b.type === "animation") return tg(env, "sendAnimation", { chat_id: chat, animation: b.file, caption: cap, reply_markup: kb });
-  if (b.type === "video") return tg(env, "sendVideo", { chat_id: chat, video: b.file, caption: cap, reply_markup: kb });
-  return tg(env, "sendMessage", { chat_id: chat, text: b.text.slice(0, 4000), reply_markup: kb });
+// длинный текст режем на сообщения до 4096 знаков по абзацам, форматирование (жирный и т.п.) переносим
+function bcParts(text, ents) {
+  const out = []; let pos = 0; const L = 4000;
+  while (pos < text.length) {
+    let end = Math.min(text.length, pos + L);
+    if (end < text.length) { const cut = Math.max(text.lastIndexOf("\n\n", end), text.lastIndexOf("\n", end)); if (cut > pos + 500) end = cut; else { const sp = text.lastIndexOf(" ", end); if (sp > pos + 500) end = sp; } }
+    const t = text.slice(pos, end);
+    const en = (ents || []).filter(x => x.offset >= pos && x.offset + x.length <= end).map(x => Object.assign({}, x, { offset: x.offset - pos }));
+    if (t.trim()) out.push({ text: t, entities: en });
+    pos = end; while (text[pos] === "\n") pos++;
+  }
+  return out;
+}
+const CAP = 1024;
+// одна рассылка одному человеку: картинки/видео, текст подписью если влезает, иначе отдельным сообщением следом
+async function bcSend(env, chat, b, kb) {
+  const text = (b.text || "").trim() ? b.text : "";
+  const ents = b.ents || [];
+  const fits = text && text.length <= CAP;
+  const parts = text && !fits ? bcParts(text, ents) : [];
+  const last = !parts.length;
+  let first = null;
+  const keep = r => { if (!first) first = r; return r; };
+  if (b.type === "photo" || b.type === "animation" || b.type === "video") {
+    const m = b.type === "photo" ? "sendPhoto" : b.type === "animation" ? "sendAnimation" : "sendVideo";
+    const body = { chat_id: chat, [b.type]: b.file };
+    if (fits) { body.caption = text; if (ents.length) body.caption_entities = ents; }
+    if (last) body.reply_markup = kb;
+    keep(await tg(env, m, body));
+  } else if (b.type === "album") {
+    const media = b.files.map((f, i) => i === 0 && fits ? Object.assign({ type: "photo", media: f, caption: text }, ents.length ? { caption_entities: ents } : {}) : { type: "photo", media: f });
+    keep(await tg(env, "sendMediaGroup", { chat_id: chat, media }));
+    if (!first.ok) return first;
+    if (last) await tg(env, "sendMessage", { chat_id: chat, text: "что нового в прокачке ↑", reply_markup: kb });
+  } else if (!parts.length) {
+    keep(await tg(env, "sendMessage", Object.assign({ chat_id: chat, text: text || " ", reply_markup: kb }, ents.length ? { entities: ents } : {})));
+  }
+  if (first && !first.ok) return first;
+  for (let i = 0; i < parts.length; i++) {
+    const body = { chat_id: chat, text: parts[i].text };
+    if (parts[i].entities.length) body.entities = parts[i].entities;
+    if (i === parts.length - 1) body.reply_markup = kb;
+    keep(await tg(env, "sendMessage", body));
+  }
+  return first || { ok: false };
 }
 // альбом: фото из группы копятся по одному в KV (bcp:<id группы>:<номер сообщения>), до 5 штук берём в рассылку
 async function albumFiles(env, gid) {
   const l = await env.USERS.list({ prefix: "bcp:" + gid + ":" });
   const out = [];
-  for (const k of l.keys.slice(0, 5)) { const f = await env.USERS.get(k.name); if (f) out.push(f); }
+  for (const k of l.keys.slice(0, 10)) { const f = await env.USERS.get(k.name); if (f) out.push(f); }
   return { files: out, total: l.keys.length };
-}
-const albumMedia = b => b.files.map((f, i) => i === 0 ? { type: "photo", media: f, caption: b.text.slice(0, 1000) } : { type: "photo", media: f });
-async function bcAlbum(env, chat, b) {
-  const res = await tg(env, "sendMediaGroup", { chat_id: chat, media: albumMedia(b) });
-  if (res.ok) await tg(env, "sendMessage", { chat_id: chat, text: "что нового в прокачке ↑", reply_markup: NEWS_KB });
-  return res;
 }
 async function albumPreview(env, chat, b) {
   await new Promise(r => setTimeout(r, 3000)); // ждём, пока телеграм доставит все фото альбома
@@ -206,9 +239,8 @@ async function albumPreview(env, chat, b) {
   b.files = files;
   if (files.length === 1) { b.type = "photo"; b.file = files[0]; }
   await env.USERS.put("bc:cur", JSON.stringify(b));
-  await tg(env, "sendMessage", { chat_id: chat, text: "так увидят люди" + (total > 5 ? " (взяла первые 5 фото из " + total + ")" : "") });
-  if (b.type === "album") await tg(env, "sendMediaGroup", { chat_id: chat, media: albumMedia(b) });
-  else await bcSend(env, chat, b, { inline_keyboard: [] });
+  await tg(env, "sendMessage", { chat_id: chat, text: "так увидят люди" + (total > 10 ? " (взяла первые 10 фото из " + total + ")" : "") });
+  await bcSend(env, chat, b, { inline_keyboard: [] });
   await tg(env, "sendMessage", { chat_id: chat, text: "отправляем всем?", reply_markup: BC_KB });
 }
 async function bcRun(env) {
@@ -224,8 +256,8 @@ async function bcRun(env) {
       if (!r || r.bc === b.id) continue;
       if (r.news === false || r.err) { r.bc = b.id; b.skip = (b.skip || 0) + 1; await env.USERS.put(k.name, JSON.stringify(r)); continue; }
       if (budget <= 0) { left = true; break outer; }
-      budget -= b.type === "album" ? 2 : 1;
-      const res = b.type === "album" ? await bcAlbum(env, Number(k.name.slice(2)), b) : await bcSend(env, Number(k.name.slice(2)), b, NEWS_KB);
+      budget -= (b.type === "album" ? 2 : 1) + ((b.text || "").length > CAP ? Math.ceil(b.text.length / 4000) : 0);
+      const res = await bcSend(env, Number(k.name.slice(2)), b, NEWS_KB);
       r.bc = b.id;
       if (res.ok) b.ok = (b.ok || 0) + 1;
       else { b.fail = (b.fail || 0) + 1; if (res.error_code === 403) { r.on = false; r.err = "403"; } }
@@ -773,19 +805,25 @@ export default {
           if (!/^\/send/.test(raw)) return new Response("ok");
         }
         if (/^\/send(@\w+)?(\s|$)/.test(raw) && m.from && m.from.id === OWNER && env.USERS) {
-          const text = raw.replace(/^\/send(@\w+)?\s*/, "").trim();
+          const pre = raw.length - raw.replace(/^\/send(@\w+)?\s*/, "").length;
+          const text = raw.slice(pre).replace(/\s+$/, "");
+          const ents = (m.entities || m.caption_entities || []).filter(x => x.offset >= pre && x.offset + x.length <= pre + text.length && x.type !== "bot_command").map(x => Object.assign({}, x, { offset: x.offset - pre }));
           let type = "text", file = "";
           if (m.photo && m.photo.length) { type = m.media_group_id ? "album" : "photo"; file = m.photo[m.photo.length - 1].file_id; }
           else if (m.animation) { type = "animation"; file = m.animation.file_id; }
           else if (m.video) { type = "video"; file = m.video.file_id; }
           const cur = await env.USERS.get("bc:cur", "json");
           if (cur && cur.state === "sending") { await tg(env, "sendMessage", { chat_id: chat, text: "прошлая рассылка ещё идёт, подожди отчёта." }); return new Response("ok"); }
-          if (!text && type === "text") { await tg(env, "sendMessage", { chat_id: chat, text: "напиши так: /send текст новости\nили пришли картинку, гифку или видео и в подписи начни с /send" }); return new Response("ok"); }
-          if (type !== "text" && text.length > 1000) { await tg(env, "sendMessage", { chat_id: chat, text: "подпись к картинке не длиннее 1000 знаков, сейчас " + text.length + ". сократи или отправь без картинки." }); return new Response("ok"); }
-          const b = { id: Date.now().toString(36), text: text || " ", type, file, state: "draft", ok: 0, fail: 0, skip: 0 };
-          if (type === "album") { b.gid = m.media_group_id; await env.USERS.put("bc:cur", JSON.stringify(b)); ctx.waitUntil(albumPreview(env, chat, b)); return new Response("ok"); }
+          if (!text && type === "text") { await tg(env, "sendMessage", { chat_id: chat, text: "как отправить новость:\n\n1) /send и текст — любой длины, жирный и ссылки сохранятся\n2) потом картинки, гифку или видео с подписью /send — приклею их к этому тексту\n\nможно и сразу картинки с текстом в подписи. если текст длиннее подписи, он придёт отдельным сообщением сразу под картинками." }); return new Response("ok"); }
+          const b = { id: Date.now().toString(36), text: text || "", ents, type, file, state: "draft", ok: 0, fail: 0, skip: 0 };
+          // склейка черновика: сначала текст, потом картинки (или наоборот)
+          if (cur && cur.state === "draft" && Date.now() - parseInt(cur.id, 36) < 3600000) {
+            if (type !== "text" && !text && cur.text) { b.text = cur.text; b.ents = cur.ents || []; }
+            if (type === "text" && cur.type !== "text") { b.type = cur.type; b.file = cur.file; b.files = cur.files; b.gid = cur.gid; }
+          }
+          if (b.type === "album" && type === "album") { b.gid = m.media_group_id; await env.USERS.put("bc:cur", JSON.stringify(b)); ctx.waitUntil(albumPreview(env, chat, b)); return new Response("ok"); }
           await env.USERS.put("bc:cur", JSON.stringify(b));
-          await tg(env, "sendMessage", { chat_id: chat, text: "так увидят люди. отправляем всем?" });
+          await tg(env, "sendMessage", { chat_id: chat, text: "так увидят люди" + (b.type === "text" ? ". можно ещё прислать картинки с подписью /send, приклею к тексту." : "") + (b.text.length > CAP && b.type !== "text" ? "\n(текст длиннее подписи, поэтому придёт отдельным сообщением под картинками)" : "") });
           await bcSend(env, chat, b, BC_KB);
           return new Response("ok");
         }
