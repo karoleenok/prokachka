@@ -1591,9 +1591,9 @@ function pathChart(d){
    <div class="ratio" aria-hidden="true" style="margin-top:10px">${EFF.map(g=>`<i style="width:${share(g.id)}%;background:${g.c}"></i>`).join("")}</div>
    <div style="margin-top:8px">${EFF.map(g=>`<div class="eff-row"><span><i style="background:${g.c}"></i>${esc(g.n)} <span class="muted small">${esc(g.d)}</span></span><b class="num" style="white-space:nowrap">${cw[g.id]} xp${lwt?` <span class="small muted" style="font-weight:400">(было ${lw[g.id]})</span>`:""}</b></div>`).join("")}</div>
    <p style="margin:10px 0 0;font-weight:600">${verdict}</p></div>
-  <div class="card" style="margin-top:10px"><div class="lbl">бой с тенью 🧿</div><div class="small muted" style="margin-top:2px">игра с самим собой: сравниваю только с тем, как было у тебя раньше</div>
+  <div class="card" style="margin-top:10px"><div class="lbl">бой с тенью 🧿</div><div class="small muted" style="margin-top:2px">или игра с самим собой</div>
    <div class="row" style="justify-content:space-between;margin-top:8px"><span>эта неделя</span><b class="num"><span data-count="${thisW}">${thisW}</span> xp${prevTo?` <span class="small" style="color:${diff>=0?"var(--accent-t)":"var(--muted)"}">${diff>=0?"↑":"↓"} ${Math.abs(diff)}%</span>`:""}</b></div>
-   ${prevTo?`<div class="small muted">к этому дню прошлой недели было ${prevTo} xp</div>`:""}
+
    <div class="rec"><div><b class="num" data-count="${prevW}">${prevW}</b><span class="small muted">прошлая неделя</span></div><div><b class="num" data-count="${bestW}">${bestW}</b><span class="small muted">рекорд недели</span></div><div><b class="num" data-count="${d.streak.best||0}">${d.streak.best||0}</b><span class="small muted">лучшая серия, дней</span></div></div>
    <p class="small muted" style="margin:10px 0 0">${[thisW&&thisW>=bestW?"это твоя лучшая неделя за сезон!":bestW?"до рекорда недели: "+(bestW-thisW)+" xp.":"",bestD?"лучший день сезона: +"+bestD+" xp.":""].filter(Boolean).join(" ")}</p></div>
   <div class="card" style="margin-top:10px"><div class="lbl">дел по неделям сезона</div>
