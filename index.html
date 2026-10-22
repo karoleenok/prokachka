@@ -578,41 +578,56 @@ html.tt,html.tt *{transition:background-color .4s ease,color .4s ease,border-col
 .donebox summary::-webkit-details-marker{display:none}.donebox summary span::after{content:" ›";opacity:.5}.donebox[open] summary span::after{content:" ⌄"}
 .card.mood .need3{margin-top:10px}
 .card{border-color:transparent}
-.gantt{margin-top:12px}
-.gsc{overflow-x:auto;border-radius:12px;background:var(--tile,transparent);scrollbar-width:thin}
-.grow{display:flex;min-height:46px;align-items:stretch;width:max-content;min-width:100%}.grow.ghead{min-height:44px;position:sticky;top:0}
-.gl{flex:none;width:132px;position:sticky;left:0;z-index:3;background:var(--tile,#F1F3FF);display:flex;align-items:center;padding:7px 12px 7px 10px;border-right:1px solid var(--line)}
-.glb{font-size:12.5px;text-align:left;line-height:1.2;color:#171C24;background:none;border:0;padding:0;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;max-height:2.45em;cursor:pointer;width:100%}
-.glb.ok{text-decoration:line-through;opacity:.55}.glb.st{font-weight:700;font-size:12px;letter-spacing:.01em}.glb.qh{font-weight:700;font-size:13px}
-.grow.gr-stage{background:color-mix(in srgb,var(--accent) 6%,transparent)}.grow.gr-quest{border-top:1px solid var(--line)}
+.gantt{margin-top:12px;--glw:132px;--g-bg:var(--bg);--g-line:color-mix(in srgb,currentColor 9%,transparent);--g-late:#E0708F}
+.card .gantt{--g-bg:var(--card)}
+.gsc{overflow-x:auto;border-radius:14px;scrollbar-width:thin;border:1px solid var(--g-line)}
+.grow{display:flex;min-height:46px;align-items:stretch;width:max-content;min-width:100%}
+.grow.ghead{min-height:44px;position:sticky;top:0;z-index:5;background:var(--g-bg);border-bottom:1px solid var(--g-line)}
+.gl{flex:none;width:var(--glw);position:sticky;left:0;z-index:4;background:var(--g-bg);display:flex;align-items:center;padding:7px 12px 7px 12px;border-right:1px solid var(--g-line)}
+.glb{font-size:12.5px;text-align:left;line-height:1.22;color:inherit;background:none;border:0;padding:0;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;max-height:2.45em;cursor:pointer;width:100%}
+.glb.ok{text-decoration:line-through;opacity:.45}.glb.st{font-weight:700;font-size:12px}.glb.qh{font-weight:700;font-size:13px}.glb.nd{opacity:.6;font-size:12px;cursor:default}
+.glb .gc,.gside .gc{opacity:.5;font-weight:600}
+.grow.gr-stage .gt,.grow.gr-stage .gl{background-image:linear-gradient(color-mix(in srgb,var(--accent) 6%,transparent),color-mix(in srgb,var(--accent) 6%,transparent))}
+.grow.gr-quest{border-top:1px solid var(--g-line)}.grow.gr-quest:first-of-type{border-top:0}
 .gt{position:relative;flex:none}
-.gms-row,.gds-row{position:relative;height:20px}.gm,.gd{position:absolute;top:2px;font-size:11px;color:var(--muted)}.gm{font-weight:700;color:inherit;padding-left:4px}
-.gd{width:30px;text-align:center}.gd.we{opacity:.55}.gd.td{color:#fff;background:var(--accent);border-radius:999px}
-.gwe{position:absolute;top:0;bottom:0;width:30px;background:color-mix(in srgb,var(--ink) 4%,transparent)}
-.gtoday{position:absolute;top:0;bottom:0;width:2px;margin-left:-1px;background:var(--accent);opacity:.8;z-index:1}
-.gbar{position:absolute;top:50%;transform:translateY(-50%);height:24px;border-radius:7px;display:flex;align-items:center;gap:5px;padding:0 4px;overflow:hidden;cursor:pointer;z-index:2;white-space:nowrap}
-.gbar.tk{background:color-mix(in srgb,var(--accent) 22%,var(--tile,#F1F3FF));color:#171C24;border:1.5px solid var(--accent)}
-.gbar.tk.ok{background:var(--accent);border-color:var(--accent);color:#fff}.gbar.tk.late{background:color-mix(in srgb,#C9567A 18%,var(--tile,#F1F3FF));border-color:#C9567A}
+.gms-row,.gds-row{position:relative;height:20px}
+.gm,.gd{position:absolute;top:3px;font-size:11px}
+.gm{font-weight:700;padding-left:6px;opacity:.9}
+.gd{text-align:center;opacity:.55;font-variant-numeric:tabular-nums}.gd.mo{opacity:.85;font-weight:600}.gd.we{opacity:.35}
+.gd.td{color:#fff;opacity:1;background:var(--accent);border-radius:999px;font-weight:700}
+.gtk{position:absolute;bottom:3px;width:1px;height:5px;background:currentColor;opacity:.18}
+.gwe{position:absolute;top:0;bottom:0;background:color-mix(in srgb,currentColor 2.5%,transparent)}
+.gtoday{position:absolute;top:0;bottom:0;width:0;border-left:1.5px dashed var(--accent);opacity:.7;z-index:1}
+.gbar{position:absolute;top:50%;transform:translateY(-50%);height:26px;border-radius:8px;display:flex;align-items:center;gap:6px;padding:0 3px;overflow:hidden;cursor:pointer;z-index:2;white-space:nowrap;color:inherit}
+.gbar.tk{background:color-mix(in srgb,var(--accent) 14%,var(--g-bg));border:1px solid color-mix(in srgb,var(--accent) 55%,transparent)}
+.gbar.tk.now{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 2px 8px color-mix(in srgb,var(--accent) 35%,transparent)}
+.gbar.tk.late{background:color-mix(in srgb,var(--g-late) 16%,var(--g-bg));border-color:var(--g-late)}
+.gbar.tk.ok{background:color-mix(in srgb,currentColor 7%,transparent);border-color:transparent;opacity:.55}
+.gbar.tk.ok .av{filter:grayscale(1)}
 .gbar.tk.nodl{border-style:dashed}
-.gbar .gtx{font-size:11px;font-weight:600;color:inherit;opacity:.85}
-.gbar.st{height:8px;border-radius:4px;background:color-mix(in srgb,var(--accent) 25%,transparent)}.gbar.st .gfill,.gbar.qb .gfill{position:absolute;left:0;top:0;bottom:0;background:var(--accent);border-radius:inherit}
-.gbar.qb{height:22px;border-radius:10px;background:color-mix(in srgb,var(--accent) 22%,transparent)}.gbar.qb .gtx{position:relative;margin-left:6px;color:inherit}
-.gms{position:absolute;top:50%;width:12px;height:12px;margin:-6px 0 0 -6px;background:var(--tile,#F1F3FF);border:2.5px solid var(--accent);transform:rotate(45deg);border-radius:2px;z-index:3}.gms.ok{background:var(--accent)}
+.gbar .gtx{font-size:11px;font-weight:600;opacity:.8}
+.gbar.st{height:6px;border-radius:3px;background:var(--g-line);cursor:pointer}
+.gbar.qb{height:10px;border-radius:5px;background:var(--g-line);cursor:default}
+.gbar.st .gfill,.gbar.qb .gfill{position:absolute;left:0;top:0;bottom:0;background:var(--accent);border-radius:inherit}
+.gms{position:absolute;top:50%;width:11px;height:11px;margin:-5.5px 0 0 -5.5px;background:var(--g-bg);border:2px solid var(--accent);transform:rotate(45deg);border-radius:2px;z-index:3}.gms.ok{background:var(--accent)}
+.gside{position:absolute;top:50%;transform:translateY(-50%);font-size:12.5px;white-space:nowrap;z-index:2;max-width:520px;overflow:hidden;text-overflow:ellipsis;background:none;border:0;padding:0;color:inherit;cursor:pointer;text-align:left}
+.gside.qh{font-weight:700;font-size:13.5px}.gside.st{font-weight:700;font-size:12.5px}.gside.ok{text-decoration:line-through;opacity:.45}.gside.meta{opacity:.55;font-size:11.5px;font-weight:600;cursor:default}
+.gnd{position:sticky;left:calc(var(--glw) + 8px);display:flex;gap:6px;align-items:center;height:100%;padding:0 12px;width:max-content;max-width:calc(100vw - 200px);overflow-x:auto;scrollbar-width:none}
+.gnd button{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;padding:3px 9px 3px 3px;border-radius:999px;border:1px dashed var(--g-line);background:none;color:inherit;white-space:nowrap;max-width:190px;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+.gnd button.ok{opacity:.45;text-decoration:line-through}
+.gnd .gndl{font-size:11.5px;opacity:.55;font-weight:600;white-space:nowrap}
+.gantt.wide{--glw:0px}.gantt.wide .grow{min-height:50px}
 .gfull.sheet{max-width:none;width:100%;height:100%;max-height:100%;border-radius:0;margin:0;padding-top:calc(12px + env(safe-area-inset-top,0px) + var(--tg-content-safe-area-inset-top,0px));display:flex;flex-direction:column;animation:none}
 .gfull .gfh{display:flex;align-items:center;justify-content:space-between;gap:10px;flex:none}
 .gfull .gfh h2{font-size:28px;margin:0}
 .gfull .chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;flex:none;margin-top:10px}.gfull .chips::-webkit-scrollbar{display:none}
 .gfull .chip{white-space:nowrap;flex:none}
 .gfull .gantt{flex:1;min-height:0;display:flex;flex-direction:column}.gfull .gsc{flex:0 1 auto;min-height:0;overflow:auto}
-.gfull .grow{min-height:54px}.gfull .grow.ghead{min-height:48px}.gfull .gl{width:128px}.gfull .glb{font-size:13px}.gfull .glb.qh{font-size:14.5px}@media (min-width:600px){.gfull .gl{width:200px}}
+.gfull .grow{min-height:54px}.gfull .grow.ghead{min-height:48px}.gfull .gantt:not(.wide){--glw:128px}.gfull .glb{font-size:13px}.gfull .glb.qh{font-size:14.5px}@media (min-width:600px){.gfull .gantt:not(.wide){--glw:200px}}
 .gxbtn{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--accent-t);background:none;border:0;padding:4px 0;cursor:pointer}
 .gxbtn svg{width:16px;height:16px}
-.gclose{width:40px;height:40px;border-radius:50%;background:var(--tile);border:1.5px solid var(--tile-line);font-size:18px;line-height:1;color:#171C24;cursor:pointer;flex:none}
-@media (min-width:1000px){.gfull .gl{width:240px}}
-.gl .muted{color:#667385}.gm{color:#171C24!important}.gsc{color:#171C24}
-.glegend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px}.glegend .lg{display:inline-block;width:14px;height:9px;border-radius:3px;vertical-align:middle;margin-right:5px;background:color-mix(in srgb,var(--accent) 22%,transparent);border:1.5px solid var(--accent)}
-.glegend .lg.ok{background:var(--accent)}.glegend .lg.late{border-color:#C9567A;background:color-mix(in srgb,#C9567A 18%,transparent)}.glegend .lg.ms{width:9px;height:9px;transform:rotate(45deg);border-radius:2px;background:transparent}.glegend .lg.td{width:2px;height:12px;border:0;background:var(--accent);border-radius:0}
-@media (min-width:1000px){.gl{width:200px}}
+.gclose{width:40px;height:40px;border-radius:50%;background:transparent;border:1px solid color-mix(in srgb,currentColor 20%,transparent);font-size:17px;line-height:1;color:inherit;cursor:pointer;flex:none}
+@media (min-width:1000px){.gantt:not(.wide){--glw:200px}}
 </style>
 
 </head>
@@ -855,7 +870,7 @@ const ACH_RULES=[
 ];
 
 const HELP={
-  gantt:["путь квестов","таймлайн всех активных квестов: личных и командных. полоса квеста идёт от старта до дедлайна, заливка показывает, сколько готово.\n\nпод командным квестом его этапы и задачи: полоса задачи — от начала до дедлайна, на полосе аватарка ответственного. ромбик — дедлайн этапа, вертикальная линия — сегодня.\n\nнажми на задачу, чтобы открыть её. начало задачи ставится в самой задаче."],
+  gantt:["путь квестов","таймлайн квестов: своих и командных.\n\nтонкая полоса квеста: заливка показывает, сколько готово, справа процент и дедлайн.\nэтап: короткая полоса с прогрессом, ромбик — дедлайн этапа.\nзадача: полоса от начала до дедлайна, на ней аватарка ответственного.\n\nцвета задач:\nяркая — идёт сейчас\nсветлая — впереди\nрозовая — просрочена\nприглушённая — готова\nпунктир — нет дедлайна\n\nзадачи совсем без дат собраны в строке «без сроков». пунктирная вертикальная линия — сегодня. нажми на задачу, чтобы открыть её."],
   focus:["фокус сезона","выбери до трёх главных навыков на сезон. действия в них дают ×1,5 опыта, а на карточках и в форме записи они со звёздочкой ★.\n\nускорение действует для новых записей, прошлые не пересчитываются. поменять фокус можно в любой момент."],
   cal:["календарь","каждая клетка — день месяца. чем ярче, тем больше опыта ты получил{а|} в этот день, бледные дни ещё впереди, точка — сегодня.\n\nнажми на день, и ниже появятся дела за него. стрелками листаются месяцы."],
   weeks:["дел по неделям сезона","каждый столбик — одна неделя сезона, цифра сверху — сколько дел ты записал{а|}. светлый столбик — эта неделя."],
@@ -1794,45 +1809,58 @@ const GW=30; // ширина дня в пикселях
 const dOf=ts=>ts?new Date(ts).toISOString().slice(0,10):"";
 function ganttRows(q){
   const tasks=(q.tasks||[]).slice();const st=q.stages||[];const t=today();
-  const tr=x=>{const s0=x.start||dOf(x.created)||t;const e0=x.deadline||s0;return{kind:"task",id:x.id,q:q.id,title:x.title,start:s0<e0?s0:e0,end:e0>s0?e0:s0,done:x.done,who:tqMem(q,x.who),late:!x.done&&x.deadline&&x.deadline<t,noDl:!x.deadline}};
-  const rows=[];
+  const tr=x=>{const s0=x.start||dOf(x.created)||t;const e0=x.deadline||s0;const S0=s0<e0?s0:e0,E0=e0>s0?e0:s0;return{kind:"task",id:x.id,q:q.id,title:x.title,start:S0,end:E0,done:x.done,who:tqMem(q,x.who),late:!x.done&&x.deadline&&x.deadline<t,now:!x.done&&S0<=t&&E0>=t&&!!x.deadline,noDl:!x.deadline}};
+  const undated=x=>!x.deadline&&!x.start;
+  const rows=[];const nd=[];
   const free=tasks.filter(x=>!x.stage||!st.some(s=>s.id===x.stage));
-  free.sort((a,b)=>tr(a).start<tr(b).start?-1:1).forEach(x=>rows.push(tr(x)));
+  free.filter(x=>undated(x)).forEach(x=>nd.push(x));
+  free.filter(x=>!undated(x)).map(tr).sort((a,b)=>a.start<b.start?-1:1).forEach(x=>rows.push(x));
   let prev=dOf(q.created)||t;
-  st.forEach(sg=>{const ts=tasks.filter(x=>x.stage===sg.id).map(tr).sort((a,b)=>a.start<b.start?-1:1);
+  st.forEach(sg=>{const mine=tasks.filter(x=>x.stage===sg.id);mine.filter(undated).forEach(x=>nd.push(x));
+    const ts=mine.filter(x=>!undated(x)).map(tr).sort((a,b)=>a.start<b.start?-1:1);
     const s0=ts.length?ts.reduce((m,x)=>x.start<m?x.start:m,ts[0].start):prev;const e0=sg.deadline||(ts.length?ts.reduce((m,x)=>x.end>m?x.end:m,ts[0].end):s0);
-    rows.push({kind:"stage",id:sg.id,q:q.id,title:sg.title,start:s0<e0?s0:e0,end:e0,done:sg.done,ms:sg.deadline,dn:ts.filter(x=>x.done).length,all:ts.length});
+    rows.push({kind:"stage",id:sg.id,q:q.id,title:sg.title,start:s0<e0?s0:e0,end:e0>s0?e0:s0,done:sg.done,ms:sg.deadline,dn:mine.filter(x=>x.done).length,all:mine.length});
     ts.forEach(x=>rows.push(x));prev=e0});
+  if(nd.length)rows.push({kind:"nodate",q:q.id,items:nd.map(x=>({id:x.id,title:x.title,done:x.done,who:tqMem(q,x.who)}))});
   return rows;
 }
 const G_REG={};let G_N=0;
+const shortD=d=>{const x=parseD(d);return x.getDate()+" "+["янв","фев","мар","апр","мая","июн","июл","авг","сен","окт","нояб","дек"][x.getMonth()]};
 function ganttHTML(groups,opt){
-  opt=opt||{};const t=today();const gid=opt.gid||("g"+(++G_N));G_REG[gid]=groups;let GW=30;
-  const all=groups.flatMap(g=>g.rows.concat(g.head?[g.head]:[]));if(!all.length)return`<p class="small muted" style="margin:8px 0 0">на таймлайне пока пусто: добавь задачам начало и дедлайн.</p>`;
+  opt=opt||{};const t=today();const gid=opt.gid||("g"+(++G_N));G_REG[gid]=groups;let GW=30;const wide=!!opt.wide;
+  const all=groups.flatMap(g=>g.rows.concat(g.head?[g.head]:[])).filter(r=>r.start);
+  if(!all.length&&!groups.some(g=>g.rows.length))return`<p class="small muted" style="margin:8px 0 0">на таймлайне пока пусто: добавь задачам начало и дедлайн.</p>`;
   let a=all.reduce((m,r)=>r.start<m?r.start:m,t),z=all.reduce((m,r)=>r.end>m?r.end:m,t);
-  a=addDays(a,-2);z=addDays(z,3);if(diffDays(a,z)<20)z=addDays(a,20);
+  a=addDays(a,-2);z=addDays(z,wide?14:3);if(diffDays(a,z)<20)z=addDays(a,20);
   if(opt.avail){const n0=diffDays(a,z)+1;GW=Math.max(30,Math.min(56,Math.floor(opt.avail/n0)));const need=Math.floor(opt.avail/GW);if(need>n0)z=addDays(a,need-1)}
   const n=diffDays(a,z)+1;const W=n*GW;const x=d=>diffDays(a,d)*GW;
-  // шапка: месяцы и числа, выходные подсвечены
+  const visible=(opt.avail||300)/GW;const allDays=visible<=16;
   let months="",days="";let curM="";
   for(let i=0;i<n;i++){const d=addDays(a,i);const dt=parseD(d);const wd=dt.getDay();const m=d.slice(0,7);
     if(m!==curM){curM=m;months+=`<span class="gm" style="left:${i*GW}px">${MONN[dt.getMonth()]}</span>`}
-    days+=`<span class="gd ${wd===0||wd===6?"we":""} ${d===t?"td":""}" style="left:${i*GW+(GW-30)/2}px">${dt.getDate()}</span>`}
+    const show=allDays||wd===1||d===t;
+    days+=show?`<span class="gd ${wd===0||wd===6?"we":""} ${wd===1&&!allDays?"mo":""} ${d===t?"td":""}" style="left:${i*GW+(GW-26)/2}px;width:26px">${dt.getDate()}</span>`:`<i class="gtk" style="left:${i*GW+GW/2}px"></i>`}
   const weekendBg=(()=>{let s="";for(let i=0;i<n;i++){const wd=parseD(addDays(a,i)).getDay();if(wd===0||wd===6)s+=`<i class="gwe" style="left:${i*GW}px;width:${GW}px"></i>`}return s})();
   const todayLine=diffDays(a,t)>=0&&diffDays(a,t)<n?`<i class="gtoday" style="left:${x(t)+GW/2}px"></i>`:"";
-  const bar=r=>{const l=x(r.start),w=Math.max(GW,(diffDays(r.start,r.end)+1)*GW);const dur=diffDays(r.start,r.end)+1;
-    if(r.kind==="stage")return`<div class="gbar st ${r.done?"ok":""}" style="left:${l}px;width:${w}px" data-act="tqOpen" data-id="${esc(r.q)}"><span class="gfill" style="width:${r.all?Math.round(r.dn/r.all*100):0}%"></span></div>${r.ms?`<i class="gms ${r.done?"ok":""}" style="left:${x(r.ms)+GW/2}px" title="веха: ${esc(fmtD(r.ms))}"></i>`:""}`;
-    if(r.kind==="quest")return`<div class="gbar qb ${r.done?"ok":""}" style="left:${l}px;width:${w}px"><span class="gfill" style="width:${r.pr||0}%"></span><span class="gtx">${dur} ${plural(dur,"день","дня","дней")}</span></div>`;
-    return`<div class="gbar tk ${r.done?"ok":""} ${r.late?"late":""} ${r.noDl?"nodl":""}" style="left:${l}px;width:${w}px" data-act="tqTask" data-q="${esc(r.q)}" data-id="${esc(r.id)}" title="${esc(r.title)} · ${esc(fmtD(r.start))} – ${esc(fmtD(r.end))}">${r.who?avatar(r.who,20):""}<span class="gtx">${r.done?"✓ ":""}${w>=GW*3?dur+" "+plural(dur,"день","дня","дней"):""}</span></div>`};
-  const label=r=>r.kind==="task"?`<button class="glb tk ${r.done?"ok":""}" data-act="tqTask" data-q="${esc(r.q)}" data-id="${esc(r.id)}">${esc(r.title)}</button>`:r.kind==="stage"?`<div class="glb st">${r.done?"✅ ":""}${esc(r.title)}${r.all?` <span class="muted">${r.dn}/${r.all}</span>`:""}</div>`:`<button class="glb qh" ${r.q?`data-act="tqOpen" data-id="${esc(r.q)}"`:r.pq?`data-act="qInfo" data-id="${esc(r.pq)}"`:""}>${esc(r.title)}</button>`;
-  const rowsH=groups.map(g=>(g.head?[g.head]:[]).concat(g.rows).map(r=>`<div class="grow gr-${r.kind}"><div class="gl">${label(r)}</div><div class="gt" style="width:${W}px">${weekendBg}${todayLine}${bar(r)}</div></div>`).join("")).join("");
-  return`<div class="gantt" data-gid="${gid}" data-gw="${GW}" data-fit="${opt.avail?1:0}"><div class="gsc" data-gx="${Math.max(0,x(t)-GW*4)}"><div class="grow ghead"><div class="gl"></div><div class="gt" style="width:${W}px"><div class="gms-row">${months}</div><div class="gds-row">${days}</div></div></div>${rowsH}</div>
-  <div class="glegend small muted"><span><i class="lg tk"></i>задача</span><span><i class="lg ok"></i>готово</span><span><i class="lg late"></i>просрочено</span><span><i class="lg ms"></i>дедлайн этапа</span><span><i class="lg td"></i>сегодня</span></div></div>`;
+  const side=(l,w,html)=>{const right=l+w+10;return right+220>W?`style="right:${W-l+10}px"`:`style="left:${right}px"`};
+  const qAct=r=>r.q?`data-act="tqOpen" data-id="${esc(r.q)}"`:r.pq?`data-act="qInfo" data-id="${esc(r.pq)}"`:"";
+  const bar=r=>{
+    if(r.kind==="nodate")return`<div class="gnd">${wide?`<span class="gndl">без сроков</span>`:""}${r.items.map(it=>`<button class="${it.done?"ok":""}" data-act="tqTask" data-q="${esc(r.q)}" data-id="${esc(it.id)}">${it.who?avatar(it.who,18):""}${esc(it.title)}</button>`).join("")}</div>`;
+    const l=x(r.start),w=Math.max(GW,(diffDays(r.start,r.end)+1)*GW);const dur=diffDays(r.start,r.end)+1;
+    if(r.kind==="stage"){const pr=r.all?Math.round(r.dn/r.all*100):0;return`<div class="gbar st" style="left:${l}px;width:${w}px" data-act="tqOpen" data-id="${esc(r.q)}"><span class="gfill" style="width:${pr}%"></span></div>${r.ms?`<i class="gms ${r.done?"ok":""}" style="left:${x(r.ms)+GW/2}px" title="дедлайн этапа: ${esc(fmtD(r.ms))}"></i>`:""}${wide?`<div class="gside st" ${side(l,w+(r.ms?8:0))}>${r.done?"✓ ":""}${esc(r.title)} <span class="gc">${r.dn}/${r.all}</span></div>`:""}`}
+    if(r.kind==="quest"){const meta=`${r.pr||0}% · до ${shortD(r.end)}`;return`<div class="gbar qb" style="left:${l}px;width:${w}px"><span class="gfill" style="width:${r.pr||0}%"></span></div>${wide?`<button class="gside qh" ${side(l,w)} ${qAct(r)}>${esc(r.title)} <span class="gc">· ${meta}</span></button>`:`<span class="gside meta" ${side(l,w)}>${meta}</span>`}`}
+    const cls=r.done?"ok":r.late?"late":r.now?"now":"";
+    const inner=`${r.who?avatar(r.who,20):""}${!wide&&w>=GW*3?`<span class="gtx">${r.done?"✓ ":""}${dur} ${plural(dur,"день","дня","дней")}</span>`:r.done?`<span class="gtx">✓</span>`:""}`;
+    return`<div class="gbar tk ${cls} ${r.noDl?"nodl":""}" style="left:${l}px;width:${w}px" data-act="tqTask" data-q="${esc(r.q)}" data-id="${esc(r.id)}" title="${esc(r.title)} · ${esc(fmtD(r.start))} – ${esc(fmtD(r.end))}">${inner}</div>${wide?`<button class="gside ${r.done?"ok":""}" ${side(l,w)} data-act="tqTask" data-q="${esc(r.q)}" data-id="${esc(r.id)}">${esc(r.title)}${!r.done?` <span class="gc">· ${dur} ${plural(dur,"день","дня","дней")}</span>`:""}</button>`:""}`};
+  const label=r=>r.kind==="task"?`<button class="glb tk ${r.done?"ok":""}" data-act="tqTask" data-q="${esc(r.q)}" data-id="${esc(r.id)}">${esc(r.title)}</button>`:r.kind==="stage"?`<div class="glb st">${r.done?"✓ ":""}${esc(r.title)}${r.all?` <span class="gc">${r.dn}/${r.all}</span>`:""}</div>`:r.kind==="nodate"?`<div class="glb nd">без сроков · ${r.items.length}</div>`:`<button class="glb qh" ${qAct(r)}>${esc(r.title)}</button>`;
+  const rowsH=groups.map(g=>(g.head?[g.head]:[]).concat(g.rows).map(r=>`<div class="grow gr-${r.kind}">${wide?"":`<div class="gl">${label(r)}</div>`}<div class="gt" style="width:${W}px">${weekendBg}${todayLine}${bar(r)}</div></div>`).join("")).join("");
+  const gx0=Math.max(0,x(t)-Math.round(Math.min(GW*4,(opt.avail||300)*.22)));
+  return`<div class="gantt ${wide?"wide":""}" data-gid="${gid}" data-fit="${opt.avail?1:0}" data-wide="${wide?1:0}"><div class="gsc" data-gx="${gx0}"><div class="grow ghead">${wide?"":`<div class="gl"></div>`}<div class="gt" style="width:${W}px"><div class="gms-row">${months}</div><div class="gds-row">${days}</div></div></div>${rowsH}</div></div>`;
 }
 function ganttScroll(root){(root||document).querySelectorAll(".gantt[data-gid]").forEach(g=>{
-  const sc=g.querySelector(".gsc");const gl=g.querySelector(".gl");if(!sc)return;
-  const avail=sc.clientWidth-(gl?gl.offsetWidth:0);const groups=G_REG[g.dataset.gid];
-  if(groups&&avail>0&&(g.dataset.fit!=="1"||Math.abs((+g.dataset.aw||0)-avail)>8)){const tmp=document.createElement("div");tmp.innerHTML=gx(ganttHTML(groups,{avail,gid:g.dataset.gid}));const ng=tmp.firstElementChild;ng.dataset.aw=avail;g.replaceWith(ng);const s2=ng.querySelector(".gsc");s2.scrollLeft=+s2.dataset.gx;s2._sx=1;return}
+  const sc=g.querySelector(".gsc");if(!sc)return;const full=sc.clientWidth;if(!full)return;
+  const wide=full>=820;const gl=g.querySelector(".gl");const avail=wide?full-2:full-2-(gl?gl.offsetWidth:132);const groups=G_REG[g.dataset.gid];
+  if(groups&&avail>0&&(g.dataset.fit!=="1"||Math.abs((+g.dataset.aw||0)-avail)>8||(g.dataset.wide==="1")!==wide)){const tmp=document.createElement("div");tmp.innerHTML=gx(ganttHTML(groups,{avail,wide,gid:g.dataset.gid}));const ng=tmp.firstElementChild;ng.dataset.aw=avail;g.replaceWith(ng);const s2=ng.querySelector(".gsc");s2.scrollLeft=+s2.dataset.gx;s2._sx=1;return}
   if(!sc._sx){sc.scrollLeft=+sc.dataset.gx;sc._sx=1}})}
 let gRz;window.addEventListener("resize",()=>{clearTimeout(gRz);gRz=setTimeout(()=>ganttScroll(document),200)});
 /* «путь» → квесты: все квесты на одном таймлайне */
