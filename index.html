@@ -970,7 +970,7 @@ function stateIcon(k,n){
 }
 
 /* ================= профиль ================= */
-const S={qGantt:(()=>{try{return localStorage.getItem("prk-qgantt")==="1"}catch(x){return false}})(),gSurf:"",gq:(()=>{try{return localStorage.getItem("prk-gq")||""}catch(x){return""}})(),gBack:"",tqView:(()=>{try{return localStorage.getItem("prk-tqview")||"list"}catch(x){return"list"}})(),hist:[],qTab:(()=>{try{return localStorage.getItem("prk-qtab")||"mine"}catch(x){return"mine"}})(),grpOpen:(()=>{try{return JSON.parse(localStorage.getItem("prk-grp"))||{}}catch(x){return{}}})(),profile:null,entries:[],view:"home",pathMode:"feed",pathFilter:null,thenDate:null,lastW:null};
+const S={qGantt:(()=>{try{return localStorage.getItem("prk-qgantt2")!=="0"}catch(x){return true}})(),gSurf:"",gq:(()=>{try{return localStorage.getItem("prk-gq")||""}catch(x){return""}})(),gBack:"",tqView:(()=>{try{return localStorage.getItem("prk-tqview")||"list"}catch(x){return"list"}})(),hist:[],qTab:(()=>{try{return localStorage.getItem("prk-qtab")||"mine"}catch(x){return"mine"}})(),grpOpen:(()=>{try{return JSON.parse(localStorage.getItem("prk-grp"))||{}}catch(x){return{}}})(),profile:null,entries:[],view:"home",pathMode:"feed",pathFilter:null,thenDate:null,lastW:null};
 function defaultProfile(){
   const t=today();
   return {v:2,fresh:true,upd:0,seasonStart:t,seasonDays:90,active:[],custom:[],startLevels:{},fears:"",
@@ -1768,7 +1768,7 @@ function vQuests(){
   const team=S.qTab==="team",goalsTab=S.qTab==="goals";const nTeam=TQ.list.length;
   if(S.qGantt)TQ.load();
   const nAll=act.length+(Store.online()?TQ.list.length:0);
-  return`${secTitle("квесты","quest",(nAll||S.qGantt)&&!goalsTab?`<button class="gxbtn" data-act="qGantt">${S.qGantt?"списком":`${GX_ICON_T}таймлайн`}</button>`:"")}
+  return`${secTitle("квесты","quest",!goalsTab?`<button class="gxbtn" data-act="qGantt">${S.qGantt?"списком":`${GX_ICON_T}таймлайн`}</button>`:"")}
   ${S.qGantt&&!goalsTab?`<div id="qgSec">${questGantt()}</div>`:""}
   <div class="seg" role="group" aria-label="какие квесты" style="margin-top:12px"><button data-act="qTab" data-id="mine" aria-pressed="${!team&&!goalsTab}">мои${act.length?" · "+act.length:""}</button>${showTeam?`<button data-act="qTab" data-id="team" aria-pressed="${team}">командные${nTeam?" · "+nTeam:""}</button>`:""}<button data-act="qTab" data-id="goals" aria-pressed="${goalsTab}">цели${P.goals.length?" · "+P.goals.length:""}</button></div>
   ${goalsTab?"":`<div class="addrow" id="questAdd" style="margin-top:12px">${team?`<button class="btn accent" data-act="tqNew">${IC.plus} командный квест</button>`:`<button class="btn accent" data-act="qSuggest">${IC.spark} предложи квест</button><button class="btn" data-act="qNew">${IC.plus} свой</button>${showTeam?`<button class="btn" data-act="qTab" data-id="team">${IC.plus} командный</button>`:""}`}</div>`}
@@ -2961,7 +2961,7 @@ document.addEventListener("click",ev=>{
   switch(a){
     case"close":closeSheet();break;
     case"gFull":ganttFull(id,b.dataset.back||"",b.dataset.surf||"bg");break;
-    case"qGantt":S.qGantt=!S.qGantt;try{localStorage.setItem("prk-qgantt",S.qGantt?"1":"0")}catch(x){}render();break;
+    case"qGantt":S.qGantt=!S.qGantt;try{localStorage.setItem("prk-qgantt2",S.qGantt?"1":"0")}catch(x){}render();break;
     case"gqFull":ganttFull(id);break;
     case"gqSel":S.gq=id;try{localStorage.setItem("prk-gq",id)}catch(x){}{const el=$("#qgSec");if(el){el.innerHTML=gx(questGantt());el._sig="";ganttScroll(el)}else render()}break;
     case"gFullClose":{const bk=S.gBack;S.gBack="";if(bk&&TQ.q(bk))tqSheet(bk);else{closeSheet();if(S.view==="quests"){const el=$("#qgSec");if(el){el.innerHTML=gx(questGantt());el._sig="";ganttScroll(el)}}}}break;
