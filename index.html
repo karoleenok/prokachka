@@ -664,7 +664,7 @@ html.tt,html.tt *{transition:background-color .4s ease,color .4s ease,border-col
 .gqm{display:flex;align-items:center;gap:10px;margin-top:12px;font-size:13px;flex-wrap:wrap}
 .gqm .gqbar{width:64px;height:6px;border-radius:3px;background:color-mix(in srgb,currentColor 12%,transparent);overflow:hidden}.gqm .gqbar i{display:block;height:100%;background:var(--accent);border-radius:inherit}
 .gqm>span:nth-child(2){opacity:.75}.gqm .avs .av{border-color:var(--g-bg,var(--card))}
-.gqo{margin-left:auto;background:none;border:0;padding:0;color:var(--accent-t);font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.gqo{margin-left:auto;display:inline-flex;align-items:center;gap:6px;background:var(--accent);border:0;border-radius:999px;padding:8px 14px;color:#fff;font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap}.gqo svg{width:15px;height:15px}.gqo:hover{filter:brightness(1.08)}@media (max-width:480px){.gqo .gqo-x{display:none}.gqm{gap:8px}.gqm .gqbar{width:44px}.gqo{padding:7px 12px}}
 .gdl{position:absolute;top:0;bottom:0;width:0;border-left:1.5px solid color-mix(in srgb,var(--g-late) 70%,transparent);z-index:1}
 .gdlt{position:absolute;top:3px;font-size:10.5px;font-weight:700;color:var(--g-late);padding-right:5px;transform:translateX(-100%);white-space:nowrap}
 .gfull.oncard{background:var(--card);color:var(--s-ink);--ink:var(--s-ink);--muted:var(--s-muted);--line:var(--s-line);--chip:var(--s-chip);--accent-t:var(--s-accent-t)}
@@ -2080,7 +2080,7 @@ const GX_ICON=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke
 function gqPick(all){const k=S.gq;return all.some(x=>x.key===k)?k:(all[0]?all[0].key:"")}
 function gqTabs(all,act){const k=gqPick(all);return`<div class="gqt ${all.length===1?"solo":""}" role="tablist">${all.map(x=>`<button role="tab" data-act="${act}" data-id="${esc(x.key)}" aria-selected="${k===x.key}">${x.team?"👥 ":""}${esc(x.name)}</button>`).join("")}</div>`}
 function gqMeta(x){if(!x)return"";const mem=x.team?(x.q.members||[]):[];
-  return`<div class="gqm"><span class="gqbar"><i style="width:${x.pr||0}%"></i></span><span><b>${x.pr||0}%</b>${x.dl?` · до ${shortD(x.dl)}`:""}${x.team?"":` · ${esc(x.per)}`}</span>${mem.length?`<span class="avs">${mem.slice(0,5).map(m=>avatar(m,22)).join("")}</span>`:""}<button class="gqo" ${x.team?`data-act="tqOpen" data-id="${esc(x.q.id)}"`:`data-act="qInfo" data-id="${esc(x.c.id)}"`}>открыть квест</button></div>`}
+  return`<div class="gqm"><span class="gqbar"><i style="width:${x.pr||0}%"></i></span><span><b>${x.pr||0}%</b>${x.dl?` · до ${shortD(x.dl)}`:""}${x.team?"":` · ${esc(x.per)}`}</span>${mem.length?`<span class="avs">${mem.slice(0,5).map(m=>avatar(m,22)).join("")}</span>`:""}<button class="gqo" ${x.team?`data-act="tqOpen" data-id="${esc(x.q.id)}"`:`data-act="qInfo" data-id="${esc(x.c.id)}"`}>открыть<span class="gqo-x"> квест</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>`}
 function gqBody(all,act){const k=gqPick(all);const x=all.find(y=>y.key===k);
   return gqTabs(all,act)+gqMeta(x)+(x?ganttHTML([{rows:x.rows}],{gid:"q-"+k,dl:x.dl}):"")}
 /* квесты → таймлайн */
