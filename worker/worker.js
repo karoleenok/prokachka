@@ -48,7 +48,7 @@ async function checkInitData(env, initData) {
 async function checkUser(env, initData) {
   const id = await checkInitData(env, initData);
   if (!id) return null;
-  try { const u = JSON.parse(new URLSearchParams(initData).get("user")); return { id, name: cut([u.first_name, u.last_name].filter(Boolean).join(" ") || u.username || "игрок", 40), photo: /^https:\/\//.test(u.photo_url || "") ? u.photo_url : "" }; } catch (e) { return { id, name: "игрок", photo: "" }; }
+  try { const u = JSON.parse(new URLSearchParams(initData).get("user")); return { id, name: cut([u.first_name, u.last_name].filter(Boolean).join(" ") || u.username || "игрок", 40), photo: /^https:\/\//.test(u.photo_url || "") ? u.photo_url : "", username: cut(u.username, 40) }; } catch (e) { return { id, name: "игрок", photo: "", username: "" }; }
 }
 const localNow = tz => {
   const d = new Date(Date.now() + (Number(tz) || 0) * 60000);
@@ -84,7 +84,7 @@ function reminderText(r) {
   return lines.length ? lines.join("\n\n") : head;
 }
 
-const defRec = () => ({ on: false, hour: 20, count: 1, times: [], tz: 0, last: "", todo: [], quest: "", sent: { d: "", h: [] }, offered: false, cfg: false, rep: true, wkOn: true, first: "", dd: [], prof: [], day: null, wk: null });
+const defRec = () => ({ on: false, hour: 20, count: 1, times: [], tz: 0, last: "", todo: [], quest: "", sent: { d: "", h: [] }, offered: false, cfg: false, rep: true, wkOn: true, first: "", dd: [], prof: [], day: null, wk: null, jn: 0 });
 const shiftDate = (d, n) => new Date(Date.parse(d + "T00:00:00Z") + n * 864e5).toISOString().slice(0, 10);
 const plural = (n, a, b, c) => { const m = n % 100, k = n % 10; return m > 10 && m < 20 ? c : k === 1 ? a : k > 1 && k < 5 ? b : c; };
 const shareBtn = text => ({ text: "поделиться", url: "https://t.me/share/url?url=" + encodeURIComponent("https://t.me/prokachkaaa_bot") + "&text=" + encodeURIComponent(text) });
@@ -174,6 +174,27 @@ async function offerIfNeeded(env, uid, tz) {
   r.offered = !!res.ok; r.err = res.ok ? "" : String(res.description || "fail");
   await env.USERS.put(key, JSON.stringify(r));
   return r;
+}
+
+// сколько всего людей: считаем только ключи, значения не читаем, поэтому дёшево
+async function userCount(env) {
+  let n = 0, cursor;
+  do { const l = await env.USERS.list({ prefix: "u:", cursor }); n += l.keys.length; cursor = l.list_complete ? undefined : l.cursor; } while (cursor);
+  return n;
+}
+// новый человек открыл приложение в первый раз: короткое уведомление владельцу
+async function notifyJoin(env, u, r) {
+  if (!u || u.id === OWNER) return;
+  const who = (u.name || "игрок") + (u.username ? " @" + u.username : "");
+  const rem = r.cfg ? (r.on ? "включены" : "отключены") : "ещё не выбраны";
+  let tail = "";
+  try { const n = await userCount(env); tail = "\nвсего людей в прокачке: " + n; } catch (e) {}
+  await tg(env, "sendMessage", {
+    chat_id: OWNER,
+    text: "✨ новый человек в прокачке\n\n" + who + "\nid " + u.id + "\nнапоминания: " + rem + tail,
+    reply_markup: { inline_keyboard: [[{ text: "написать", url: u.username ? "https://t.me/" + u.username : "tg://user?id=" + u.id }]] },
+    disable_notification: false,
+  });
 }
 
 // рассылка: черновик лежит в KV под ключом bc:cur, отправка идёт пачками (лимит бесплатного cloudflare: ~45 внешних запросов за запуск)
@@ -768,11 +789,15 @@ export default {
     if ((url.pathname === "/sync" || url.pathname === "/closed") && req.method === "POST") {
       if (!env.USERS) return new Response("no kv", { status: 500, headers: CORS });
       const b = await req.json().catch(() => null);
-      const uid = b && b.initData ? await checkInitData(env, String(b.initData)) : null;
+      const who = b && b.initData ? await checkUser(env, String(b.initData)) : null;
+      const uid = who && who.id;
       if (!uid) return new Response("bad", { status: 401, headers: CORS });
       const key = "u:" + uid;
       const old = await env.USERS.get(key, "json");
       const r = Object.assign(defRec(), old || {});
+      // первый вход: записи ещё нет или человек нажимал /start, но приложение не открывал
+      const firstOpen = url.pathname === "/sync" && !r.jn && !r.first;
+      if (firstOpen) r.jn = 1;
       r.tz = Math.max(-840, Math.min(840, parseInt(b.tz, 10) || 0));
       if (url.pathname === "/sync") {
         const lt = localNow(r.tz).date;
@@ -796,6 +821,7 @@ export default {
         return new Response("ok", { headers: CORS });
       }
       if (JSON.stringify(old) !== JSON.stringify(r)) await env.USERS.put(key, JSON.stringify(r));
+      if (firstOpen) ctx.waitUntil(notifyJoin(env, who, r).catch(() => {}));
       return new Response(JSON.stringify({ cfg: r.cfg ? { on: r.on, hour: r.hour, count: r.count } : null }), { headers: Object.assign({ "content-type": "application/json" }, CORS) });
     }
 
