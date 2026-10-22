@@ -1,0 +1,684 @@
+// бот прокачки: приветствие на /start, напоминания и синхронизация данных приложения между устройствами.
+// токен в секрете BOT_TOKEN, настройки напоминаний в KV USERS, данные приложения в базе D1 (привязка DB).
+const APP = "https://prokachka.pages.dev";
+const OWNER = 424765559; // telegram id владельца: ему приложение показывает статистику
+const HELLO = [
+  "о, наконец-то ты тут! рад тебя видеть! скорее жми кнопку, давай превратим жизнь в игру",
+  "юху, ты пришел! жми кнопку, начинаем апгрейдиться",
+  "привет! тут всё, что ты делаешь, превращается в опыт. жми кнопку и посмотрим, какой у тебя уровень",
+  "и снова здравствуй, игрок! жми кнопку, пора ступить на тропу героя",
+];
+const REMIND = [
+  "ну хотя бы пять минуточек. загляни в прокачку: начни с небольшого дела",
+  "сегодня в прокачке так пусто без тебя :(",
+  "день ещё не закончился, поднажми",
+  "пссс.. на доске объявлений все ещё висит квест для тебя",
+  "лучше неидеальное действие, чем идеальное бездействие. газ?",
+];
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const CORS = { "access-control-allow-origin": "*", "access-control-allow-headers": "content-type", "access-control-allow-methods": "POST, OPTIONS" };
+
+const tg = (env, method, body) =>
+  fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/${method}`, {
+    method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body),
+  }).then(r => r.json()).catch(() => ({ ok: false }));
+
+const hex = buf => [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("");
+const hmac = async (key, msg) => {
+  const k = await crypto.subtle.importKey("raw", typeof key === "string" ? new TextEncoder().encode(key) : key, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  return crypto.subtle.sign("HMAC", k, new TextEncoder().encode(msg));
+};
+async function hookPath(env) {
+  const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("prokachka:" + env.BOT_TOKEN));
+  return "/hook/" + hex(d).slice(0, 24);
+}
+// проверка подписи telegram: так убеждаемся, что запрос пришёл из настоящего приложения и от этого человека
+async function checkInitData(env, initData) {
+  const p = new URLSearchParams(initData);
+  const hash = p.get("hash"); p.delete("hash");
+  if (!hash) return null;
+  const dcs = [...p.entries()].map(([k, v]) => k + "=" + v).sort().join("\n");
+  const secret = await hmac("WebAppData", env.BOT_TOKEN);
+  if (hex(await hmac(secret, dcs)) !== hash) return null;
+  const age = Date.now() / 1000 - Number(p.get("auth_date") || 0);
+  if (!(age < 60 * 60 * 24 * 30)) return null;
+  try { return JSON.parse(p.get("user")).id; } catch (e) { return null; }
+}
+const localNow = tz => {
+  const d = new Date(Date.now() + (Number(tz) || 0) * 60000);
+  return { date: d.toISOString().slice(0, 10), hour: d.getUTCHours() };
+};
+
+// во сколько напоминать: первое время и ещё 1-2 через равные промежутки в течение дня
+const timesFor = (start, count) => {
+  const step = count === 2 ? 5 : count === 3 ? 4 : 0;
+  const out = [];
+  for (let i = 0; i < count; i++) { const h = start + i * step; if (h <= 23) out.push(h); }
+  return out;
+};
+const hh = h => String(h).padStart(2, "0") + ":00";
+const cut = (x, n) => String(x || "").replace(/\s+/g, " ").trim().slice(0, n);
+const appBtn = text => ({ inline_keyboard: [[{ text, web_app: { url: APP } }]] });
+const offerText = "после того, как ты начнёшь вносить дела в свой список, я смогу время от времени напоминать тебе о них. давай выберем время и регулярность этих напоминаний. сколько раз в день?";
+const offerKb = { inline_keyboard: [[
+  { text: "1 раз", callback_data: "n:1" }, { text: "2 раза", callback_data: "n:2" }, { text: "3 раза", callback_data: "n:3" },
+], [{ text: "не надо", callback_data: "n:0" }]] };
+const hoursKb = { inline_keyboard: [
+  [8, 10, 12].map(h => ({ text: hh(h), callback_data: "t:" + h })),
+  [15, 18, 20].map(h => ({ text: hh(h), callback_data: "t:" + h })),
+  [{ text: "22:00", callback_data: "t:22" }],
+] };
+
+function reminderText(r) {
+  const todo = (r.todo || []).filter(Boolean);
+  const head = pick(REMIND);
+  const lines = [];
+  if (r.quest) lines.push("главное на сегодня: " + r.quest);
+  if (todo.length) lines.push((r.quest ? "ещё в планах:\n" : "в планах на сегодня:\n") + todo.slice(0, 10).map(t => "• " + t).join("\n"));
+  return lines.length ? lines.join("\n\n") : head;
+}
+
+const defRec = () => ({ on: false, hour: 20, count: 1, times: [], tz: 0, last: "", todo: [], quest: "", sent: { d: "", h: [] }, offered: false, cfg: false, rep: true, wkOn: true, first: "", dd: [], prof: [], day: null, wk: null });
+const shiftDate = (d, n) => new Date(Date.parse(d + "T00:00:00Z") + n * 864e5).toISOString().slice(0, 10);
+const plural = (n, a, b, c) => { const m = n % 100, k = n % 10; return m > 10 && m < 20 ? c : k === 1 ? a : k > 1 && k < 5 ? b : c; };
+const shareBtn = text => ({ text: "поделиться", url: "https://t.me/share/url?url=" + encodeURIComponent("https://t.me/prokachkaaa_bot") + "&text=" + encodeURIComponent(text) });
+
+// итоги дня: что сделано сегодня. если пусто, мягко зовём вернуться
+function dayText(r, date) {
+  const d = r.day && r.day.d === date ? r.day : null;
+  const items = d ? (d.items || []) : [];
+  if (!d || (!items.length && !d.rt)) return null;
+  const L = ["итоги дня", ""];
+  items.forEach(i => L.push("• " + i.t + " +" + i.x));
+  if (d.more > 0) L.push("• ещё " + d.more + " " + plural(d.more, "дело", "дела", "дел"));
+  if (d.rt > 0) L.push("рутина ×" + d.rt);
+  L.push("", "всего +" + d.xp + " опыта");
+  return L.join("\n");
+}
+const MISS = "давно тебя не видел, уже соскучился 💔";
+function weekText(r, date) {
+  const w = r.wk;
+  if (!w || !w.n || !r.seen || r.seen < shiftDate(date, -1)) return "итоги недели\n\nна этой неделе было тихо. загляни в прокачку и начни с маленького дела";
+  const L = ["итоги недели", "", "+" + w.xp + " опыта · " + w.n + " " + plural(w.n, "дело", "дела", "дел") + " · активных дней: " + w.days + " из 7"];
+  if (w.top) L.push("сильнее всего росла: " + w.top);
+  L.push("уровень " + w.lvl + (w.st > 1 ? " · серия " + w.st + " " + plural(w.st, "день", "дня", "дней") : ""));
+  return L.join("\n");
+}
+const repKb = (kind, text) => ({ inline_keyboard: [
+  [{ text: "открыть прокачку", web_app: { url: APP } }].concat(kind === "wk" ? [shareBtn(text)] : []),
+  [{ text: kind === "wk" ? "не присылать итоги недели" : "не присылать итоги дня", callback_data: "x:" + kind }],
+] });
+const statsPath = async env => {
+  const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("stats:" + env.BOT_TOKEN));
+  return "/stats/" + hex(d).slice(0, 20);
+};
+async function statsPage(env, asJson) {
+  const today = new Date().toISOString().slice(0, 10);
+  const days = Array.from({ length: 14 }, (_, i) => shiftDate(today, i - 13));
+  const act = Object.fromEntries(days.map(d => [d, 0])), neu = Object.fromEntries(days.map(d => [d, 0]));
+  const profs = {};
+  let total = 0, w7 = 0, back = 0, rem = 0, rep = 0, blocked = 0;
+  let cursor;
+  do {
+    const l = await env.USERS.list({ prefix: "u:", cursor });
+    for (const k of l.keys) {
+      const r = await env.USERS.get(k.name, "json"); if (!r) continue;
+      total++;
+      const dd = r.dd || [];
+      if (dd.some(d => d >= shiftDate(today, -6))) w7++;
+      if (dd.length >= 2) back++;
+      if (r.on) rem++;
+      if (r.on && r.rep !== false) rep++;
+      if (r.err) blocked++;
+      dd.forEach(d => { if (d in act) act[d]++; });
+      if (r.first && r.first in neu) neu[r.first]++;
+      (r.prof || []).forEach(p => profs[p] = (profs[p] || 0) + 1);
+    }
+    cursor = l.list_complete ? undefined : l.cursor;
+  } while (cursor);
+  const pct = (a, b) => b ? Math.round(a * 100 / b) + "%" : "0%";
+  if (asJson) return { total, w7, back, rem, rep, blocked, days: days.map(d => [d.slice(8), act[d]]), profs: Object.entries(profs).sort((a, b) => b[1] - a[1]).slice(0, 14) };
+  const max = Math.max(1, ...days.map(d => act[d]));
+  const bars = days.map(d => `<div class="b"><i style="height:${Math.round(act[d] / max * 100)}%"></i><s>${act[d]}</s><u>${d.slice(8)}</u></div>`).join("");
+  const PN = { design: "дизайнер", dev: "разработчик", ai: "нейросети и ии", mkt: "маркетолог", creator: "автор контента", biz: "предприниматель", law: "юрист", med: "врач", teach: "преподаватель", stud: "студент", beauty: "мастер бьюти", coach: "тренер", parent: "родитель", other: "другое" };
+  const pl = Object.entries(profs).sort((a, b) => b[1] - a[1]).map(([k, v]) => `<li><span>${PN[k] || k}</span><b>${v}</b></li>`).join("") || "<li><span>пока нет данных</span></li>";
+  const html = `<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>прокачка: статистика</title>
+<style>body{margin:0;padding:24px 16px;background:#14121a;color:#f2eef8;font:16px/1.5 system-ui,sans-serif}main{max-width:560px;margin:0 auto}h1{font-size:22px;margin:0 0 16px;font-weight:600}
+.g{display:grid;grid-template-columns:1fr 1fr;gap:10px}.c{background:#1e1b27;border-radius:14px;padding:14px}.c b{display:block;font-size:28px}.c span{color:#a79fb8;font-size:13px}
+h2{font-size:15px;color:#a79fb8;margin:24px 0 8px;font-weight:500}.bars{display:flex;gap:4px;align-items:flex-end;height:120px;background:#1e1b27;border-radius:14px;padding:12px 10px 0}
+.b{flex:1;height:100%;position:relative;display:flex;align-items:flex-end}.b i{display:block;width:100%;background:#b28dff;border-radius:4px 4px 0 0;min-height:2px}.b s{position:absolute;top:-2px;width:100%;text-align:center;font-size:10px;text-decoration:none;color:#a79fb8}
+.b u{position:absolute;bottom:-18px;width:100%;text-align:center;font-size:10px;text-decoration:none;color:#a79fb8}ul{list-style:none;margin:0;padding:0}li{display:flex;justify-content:space-between;background:#1e1b27;border-radius:10px;padding:8px 12px;margin-bottom:6px}</style>
+<main><h1>прокачка: статистика</h1><div class=g>
+<div class=c><b>${total}</b><span>зашли всего</span></div><div class=c><b>${w7}</b><span>активны за 7 дней</span></div>
+<div class=c><b>${pct(back, total)}</b><span>вернулись (${back})</span></div><div class=c><b>${rem}</b><span>включили напоминания</span></div>
+<div class=c><b>${rep}</b><span>получают итоги</span></div><div class=c><b>${blocked}</b><span>бот не достучался</span></div></div>
+<h2>активные по дням, 14 дней</h2><div class=bars>${bars}</div><div style="height:22px"></div>
+<h2>чем занимаются</h2><ul>${pl}</ul>
+<p style="color:#6e6781;font-size:12px;margin-top:24px">активность считается с момента обновления бота, раньше не записывалась.</p></main>`;
+  return new Response(html, { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
+}
+// приложение закрыли: если человек ещё не настраивал напоминания, предлагаем это в чате (один раз)
+async function offerIfNeeded(env, uid, tz) {
+  const key = "u:" + uid;
+  const old = await env.USERS.get(key, "json");
+  const r = Object.assign(defRec(), old || {});
+  if (r.offered || r.cfg) return r;
+  if (tz !== undefined) r.tz = tz;
+  const res = await tg(env, "sendMessage", { chat_id: uid, text: offerText, reply_markup: offerKb });
+  r.offered = !!res.ok; r.err = res.ok ? "" : String(res.description || "fail");
+  await env.USERS.put(key, JSON.stringify(r));
+  return r;
+}
+
+// рассылка: черновик лежит в KV под ключом bc:cur, отправка идёт пачками (лимит бесплатного cloudflare: ~45 внешних запросов за запуск)
+const NEWS_KB = { inline_keyboard: [[{ text: "открыть прокачку", web_app: { url: APP } }], [{ text: "не присылать новости", callback_data: "x:news" }]] };
+const BC_KB = { inline_keyboard: [[{ text: "отправить всем", callback_data: "b:go" }, { text: "отмена", callback_data: "b:no" }]] };
+function bcSend(env, chat, b, kb) {
+  const cap = b.text.slice(0, 1000);
+  if (b.type === "photo") return tg(env, "sendPhoto", { chat_id: chat, photo: b.file, caption: cap, reply_markup: kb });
+  if (b.type === "animation") return tg(env, "sendAnimation", { chat_id: chat, animation: b.file, caption: cap, reply_markup: kb });
+  if (b.type === "video") return tg(env, "sendVideo", { chat_id: chat, video: b.file, caption: cap, reply_markup: kb });
+  return tg(env, "sendMessage", { chat_id: chat, text: b.text.slice(0, 4000), reply_markup: kb });
+}
+// альбом: фото из группы копятся по одному в KV (bcp:<id группы>:<номер сообщения>), до 5 штук берём в рассылку
+async function albumFiles(env, gid) {
+  const l = await env.USERS.list({ prefix: "bcp:" + gid + ":" });
+  const out = [];
+  for (const k of l.keys.slice(0, 5)) { const f = await env.USERS.get(k.name); if (f) out.push(f); }
+  return { files: out, total: l.keys.length };
+}
+const albumMedia = b => b.files.map((f, i) => i === 0 ? { type: "photo", media: f, caption: b.text.slice(0, 1000) } : { type: "photo", media: f });
+async function bcAlbum(env, chat, b) {
+  const res = await tg(env, "sendMediaGroup", { chat_id: chat, media: albumMedia(b) });
+  if (res.ok) await tg(env, "sendMessage", { chat_id: chat, text: "что нового в прокачке ↑", reply_markup: NEWS_KB });
+  return res;
+}
+async function albumPreview(env, chat, b) {
+  await new Promise(r => setTimeout(r, 3000)); // ждём, пока телеграм доставит все фото альбома
+  const { files, total } = await albumFiles(env, b.gid);
+  if (!files.length) { await tg(env, "sendMessage", { chat_id: chat, text: "не получилось собрать фото, попробуй ещё раз." }); return; }
+  b.files = files;
+  if (files.length === 1) { b.type = "photo"; b.file = files[0]; }
+  await env.USERS.put("bc:cur", JSON.stringify(b));
+  await tg(env, "sendMessage", { chat_id: chat, text: "так увидят люди" + (total > 5 ? " (взяла первые 5 фото из " + total + ")" : "") });
+  if (b.type === "album") await tg(env, "sendMediaGroup", { chat_id: chat, media: albumMedia(b) });
+  else await bcSend(env, chat, b, { inline_keyboard: [] });
+  await tg(env, "sendMessage", { chat_id: chat, text: "отправляем всем?", reply_markup: BC_KB });
+}
+async function bcRun(env) {
+  const b = await env.USERS.get("bc:cur", "json");
+  if (!b || b.state !== "sending") return;
+  if (b.lock && Date.now() - b.lock < 55000) return; // другая пачка ещё идёт
+  b.lock = Date.now(); await env.USERS.put("bc:cur", JSON.stringify(b));
+  let budget = 40, left = false, cursor;
+  outer: do {
+    const l = await env.USERS.list({ prefix: "u:", cursor });
+    for (const k of l.keys) {
+      const r = await env.USERS.get(k.name, "json");
+      if (!r || r.bc === b.id) continue;
+      if (r.news === false || r.err) { r.bc = b.id; b.skip = (b.skip || 0) + 1; await env.USERS.put(k.name, JSON.stringify(r)); continue; }
+      if (budget <= 0) { left = true; break outer; }
+      budget -= b.type === "album" ? 2 : 1;
+      const res = b.type === "album" ? await bcAlbum(env, Number(k.name.slice(2)), b) : await bcSend(env, Number(k.name.slice(2)), b, NEWS_KB);
+      r.bc = b.id;
+      if (res.ok) b.ok = (b.ok || 0) + 1;
+      else { b.fail = (b.fail || 0) + 1; if (res.error_code === 403) { r.on = false; r.err = "403"; } }
+      await env.USERS.put(k.name, JSON.stringify(r));
+    }
+    cursor = l.list_complete ? undefined : l.cursor;
+  } while (cursor);
+  b.lock = 0;
+  if (!left) b.state = "done";
+  await env.USERS.put("bc:cur", JSON.stringify(b));
+  if (!left) await tg(env, "sendMessage", { chat_id: OWNER, text: "рассылка закончена\nдоставлено: " + (b.ok || 0) + "\nне получили (заблокировали бота или отказались от новостей): " + ((b.skip || 0) + (b.fail || 0)) });
+}
+
+// разбор ссылки на товар: название, цена, картинки из метаданных страницы (open graph, schema.org, json-ld)
+const UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15";
+function safeUrl(s) {
+  let u; try { u = new URL(String(s || "").trim()); } catch (e) { return null; }
+  if (u.protocol !== "https:" && u.protocol !== "http:") return null;
+  const h = u.hostname.toLowerCase();
+  if (!h.includes(".") || /^[\d.]+$/.test(h) || h.includes(":") || h.endsWith(".local") || h.endsWith(".internal") || h === "localhost") return null;
+  return u;
+}
+const ent = s => String(s == null ? "" : s).replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&nbsp;/g, " ")
+  .replace(/&#(\d+);/g, (m, n) => String.fromCharCode(+n)).replace(/&#x([0-9a-f]+);/gi, (m, n) => String.fromCharCode(parseInt(n, 16))).replace(/&amp;/g, "&");
+async function getLimited(u, headers, max, ms) {
+  const ac = new AbortController(); const t = setTimeout(() => ac.abort(), ms);
+  try {
+    const res = await fetch(u, { headers, redirect: "follow", signal: ac.signal });
+    const rd = res.body && res.body.getReader(); const chunks = []; let n = 0;
+    if (rd) while (true) { const x = await rd.read(); if (x.done) break; chunks.push(x.value); n += x.value.length; if (n >= max) { try { await rd.cancel(); } catch (e) {} break; } }
+    const buf = new Uint8Array(Math.min(n, max)); let o = 0;
+    for (const c of chunks) { const take = Math.min(c.length, buf.length - o); buf.set(c.subarray(0, take), o); o += take; if (o >= buf.length) break; }
+    return { res, buf };
+  } finally { clearTimeout(t); }
+}
+const attr = (t, n) => { const m = t.match(new RegExp("\\b" + n + "\\s*=\\s*(?:\"([^\"]*)\"|'([^']*)'|([^\\s>]+))", "i")); return m ? (m[1] !== undefined ? m[1] : m[2] !== undefined ? m[2] : m[3]) : null; };
+function decodeHtml(buf, ct) {
+  let cs = (/charset=([\w-]+)/i.exec(ct || "") || [])[1];
+  if (!cs) cs = (/charset=["']?([\w-]+)/i.exec(new TextDecoder("latin1").decode(buf.subarray(0, 3000))) || [])[1];
+  try { return new TextDecoder(cs || "utf-8").decode(buf); } catch (e) { return new TextDecoder("utf-8").decode(buf); }
+}
+const toNum = v => { if (v == null) return 0; const n = parseFloat(String(v).replace(/[\s\u00a0]/g, "").replace(",", ".").replace(/[^\d.]/g, "")); return isFinite(n) ? n : 0; };
+const CUR = { RUB: "₽", RUR: "₽", USD: "$", EUR: "€", KZT: "₸", BYN: "Br", UAH: "₴" };
+function findProducts(node, out, depth) {
+  if (!node || depth > 6) return;
+  if (Array.isArray(node)) { node.forEach(x => findProducts(x, out, depth + 1)); return; }
+  if (typeof node !== "object") return;
+  const ty = [].concat(node["@type"] || []).map(String);
+  if (ty.some(x => /product/i.test(x))) out.push(node);
+  if (node["@graph"]) findProducts(node["@graph"], out, depth + 1);
+  if (node.mainEntity) findProducts(node.mainEntity, out, depth + 1);
+  if (node.itemListElement) findProducts(node.itemListElement, out, depth + 1);
+}
+function parseProduct(html, base) {
+  const M = {};
+  for (const t of html.match(/<meta\b[^>]*>/gi) || []) {
+    const k = (attr(t, "property") || attr(t, "name") || attr(t, "itemprop") || "").toLowerCase(), v = attr(t, "content");
+    if (k && v != null && v !== "") (M[k] = M[k] || []).push(ent(v).trim());
+  }
+  const first = k => (M[k] || [])[0] || "";
+  const prods = [];
+  for (const m of html.matchAll(/<script[^>]+application\/ld\+json[^>]*>([\s\S]*?)<\/script>/gi)) {
+    try { findProducts(JSON.parse(m[1].trim()), prods, 0); } catch (e) {}
+  }
+  const P = prods[0] || {};
+  let offer = P.offers; if (Array.isArray(offer)) offer = offer[0]; offer = offer || {};
+  let imgs = [].concat(P.image || []).map(x => typeof x === "string" ? x : (x && (x.url || x.contentUrl)) || "");
+  imgs = imgs.concat(M["og:image"] || [], M["og:image:url"] || [], M["og:image:secure_url"] || [], M["twitter:image"] || [], M["twitter:image:src"] || []);
+  const seen = new Set(), images = [];
+  for (const i of imgs) {
+    let u; try { u = new URL(ent(i), base).href; } catch (e) { continue; }
+    if (!/^https?:/.test(u) || seen.has(u)) continue; seen.add(u); images.push(u);
+  }
+  const titleTag = ((html.match(/<title[^>]*>([\s\S]*?)<\/title>/i) || [])[1] || "");
+  const title = ent(P.name || first("og:title") || first("twitter:title") || titleTag).replace(/\s+/g, " ").trim().slice(0, 140);
+  const price = toNum(offer.price || offer.lowPrice || first("product:price:amount") || first("og:price:amount") || first("price"));
+  const cur = String(offer.priceCurrency || first("product:price:currency") || first("og:price:currency") || first("pricecurrency") || "").toUpperCase();
+  return { title, price: price > 0 ? Math.round(price) : 0, cur: CUR[cur] || cur, images: images.slice(0, 5), site: ent(first("og:site_name")) || new URL(base).hostname.replace(/^www\./, "") };
+}
+
+
+// ================= данные приложения: база D1 (привязка DB) =================
+// сервер хранит каждую запись отдельно и принимает только более свежую версию (по времени правки),
+// поэтому телефон и ноутбук не затирают друг друга. ver растёт с каждым изменением: устройство спрашивает «что нового после ver».
+const J = (o, st) => new Response(JSON.stringify(o), { status: st || 200, headers: Object.assign({ "content-type": "application/json" }, CORS) });
+let dbReady = false;
+async function dbInit(env) {
+  if (dbReady) return;
+  await env.DB.batch([
+    env.DB.prepare("CREATE TABLE IF NOT EXISTS st (uid INTEGER PRIMARY KEY, ver INTEGER NOT NULL DEFAULT 0, pver INTEGER NOT NULL DEFAULT 0, profile TEXT)"),
+    env.DB.prepare("CREATE TABLE IF NOT EXISTS ent (uid INTEGER NOT NULL, id TEXT NOT NULL, upd INTEGER NOT NULL, sv INTEGER NOT NULL, data TEXT NOT NULL, PRIMARY KEY (uid, id))"),
+    env.DB.prepare("CREATE INDEX IF NOT EXISTS ent_sv ON ent (uid, sv)"),
+    env.DB.prepare("CREATE TABLE IF NOT EXISTS hist (uid INTEGER NOT NULL, hid TEXT NOT NULL, ts INTEGER NOT NULL, sv INTEGER NOT NULL, data TEXT NOT NULL, PRIMARY KEY (uid, hid))"),
+    env.DB.prepare("CREATE INDEX IF NOT EXISTS hist_sv ON hist (uid, sv)"),
+    env.DB.prepare("CREATE TABLE IF NOT EXISTS img (uid INTEGER NOT NULL, rid TEXT NOT NULL, data TEXT NOT NULL, PRIMARY KEY (uid, rid))"),
+  ]);
+  dbReady = true;
+}
+const LISTS = ["rewards", "challenges", "goals", "achCustom", "purchases", "custom"];
+function mergeProf(L, r) {
+  if (!L) return r; if (!r) return L;
+  const ru = r.upd || 0, lu = L.upd || 0;
+  const newer = ru > lu ? r : L, older = ru > lu ? L : r;
+  const gone = new Set([].concat(L.gone || [], r.gone || []));
+  const out = JSON.parse(JSON.stringify(newer));
+  for (const k of LISTS) {
+    const A = Array.isArray(newer[k]) ? newer[k] : [], B = Array.isArray(older[k]) ? older[k] : [];
+    if (!A.concat(B).every(x => x && typeof x === "object" && x.id)) continue;
+    const ids = new Set(A.map(x => x.id));
+    out[k] = A.concat(B.filter(x => !ids.has(x.id))).filter(x => !gone.has(x.id));
+  }
+  out.gone = [...gone].slice(-400); out.upd = Math.max(ru, lu); delete out.fresh;
+  return out;
+}
+const sid = x => typeof x === "string" && x.length > 0 && x.length <= 40;
+async function stSync(env, uid, b) {
+  await dbInit(env);
+  const row = await env.DB.prepare("SELECT ver, pver, profile FROM st WHERE uid = ?1").bind(uid).first();
+  let ver = row ? row.ver : 0, pver = row ? row.pver : 0;
+  let prof = null; try { prof = row && row.profile ? JSON.parse(row.profile) : null; } catch (e) {}
+  const nv = Math.max(ver + 1, Date.now());
+  const st = [];
+  for (const e of (Array.isArray(b.entries) ? b.entries.slice(0, 3000) : [])) {
+    if (!e || !sid(e.id)) continue;
+    const data = JSON.stringify(e); if (data.length > 30000) continue;
+    st.push(env.DB.prepare("INSERT INTO ent (uid, id, upd, sv, data) VALUES (?1, ?2, ?3, ?4, ?5) ON CONFLICT (uid, id) DO UPDATE SET upd = excluded.upd, sv = excluded.sv, data = excluded.data WHERE excluded.upd > ent.upd")
+      .bind(uid, e.id, Number(e.upd || e.ts || 0), nv, data));
+  }
+  for (const h of (Array.isArray(b.hist) ? b.hist.slice(0, 400) : [])) {
+    if (!h || !sid(h.hid)) continue;
+    const data = JSON.stringify(h); if (data.length > 30000) continue;
+    st.push(env.DB.prepare("INSERT OR IGNORE INTO hist (uid, hid, ts, sv, data) VALUES (?1, ?2, ?3, ?4, ?5)").bind(uid, h.hid, Number(h.ts) || 0, nv, data));
+  }
+  for (const im of (Array.isArray(b.imgs) ? b.imgs.slice(0, 3) : [])) {
+    if (!im || !sid(im.rid) || typeof im.data !== "string" || !im.data.startsWith("data:image/") || im.data.length > 1800000) continue;
+    st.push(env.DB.prepare("INSERT OR IGNORE INTO img (uid, rid, data) VALUES (?1, ?2, ?3)").bind(uid, im.rid, im.data));
+  }
+  let changed = 0;
+  for (let i = 0; i < st.length; i += 50) {
+    const res = await env.DB.batch(st.slice(i, i + 50));
+    res.forEach(x => { changed += (x.meta && x.meta.changes) || 0; });
+  }
+  if (b.profile && typeof b.profile === "object") {
+    const m = mergeProf(prof, b.profile);
+    if (JSON.stringify(m) !== JSON.stringify(prof)) { prof = m; pver = nv; changed++; }
+  }
+  if (changed) {
+    ver = nv;
+    await env.DB.prepare("INSERT INTO st (uid, ver, pver, profile) VALUES (?1, ?2, ?3, ?4) ON CONFLICT (uid) DO UPDATE SET ver = ?2, pver = ?3, profile = ?4")
+      .bind(uid, ver, pver, prof ? JSON.stringify(prof) : null).run();
+    // архив не растёт бесконечно: держим последние 500 изменений
+    await env.DB.prepare("DELETE FROM hist WHERE uid = ?1 AND hid NOT IN (SELECT hid FROM hist WHERE uid = ?1 ORDER BY ts DESC LIMIT 500)").bind(uid).run();
+  }
+  const since = Number(b.since);
+  if (since < 0) return { ok: true }; // отправка при закрытии приложения: ответ не нужен
+  const out = { ver };
+  out.entries = (await env.DB.prepare("SELECT data FROM ent WHERE uid = ?1 AND sv > ?2").bind(uid, since || 0).all()).results.map(x => JSON.parse(x.data));
+  if (prof && pver > (since || 0)) out.profile = prof;
+  out.hist = (await env.DB.prepare("SELECT data FROM hist WHERE uid = ?1 AND sv > ?2 ORDER BY ts").bind(uid, since || 0).all()).results.map(x => JSON.parse(x.data));
+  out.imgs = (await env.DB.prepare("SELECT rid FROM img WHERE uid = ?1").bind(uid).all()).results.map(x => x.rid);
+  const want = (Array.isArray(b.want) ? b.want : []).filter(sid).slice(0, 3);
+  if (want.length) {
+    out.img = {};
+    for (const rid of want) { const r = await env.DB.prepare("SELECT data FROM img WHERE uid = ?1 AND rid = ?2").bind(uid, rid).first(); out.img[rid] = r ? r.data : ""; }
+  }
+  return out;
+}
+// сверка через бота: список дел на сегодня прямо с сервера (то, что увидит любое устройство)
+async function verifyText(env, uid, date) {
+  await dbInit(env);
+  const rows = (await env.DB.prepare("SELECT data FROM ent WHERE uid = ?1").bind(uid).all()).results.map(x => { try { return JSON.parse(x.data); } catch (e) { return null; } }).filter(e => e && !e.del && e.title).sort((a, b) => (a.ts || 0) - (b.ts || 0));
+  const plan = rows.filter(e => e.planned && e.date === date);
+  const over = rows.filter(e => e.planned && e.date < date);
+  const done = rows.filter(e => !e.planned && e.date === date && e.type !== "routine");
+  const ahead = rows.filter(e => e.planned && e.date > date).length;
+  const L = ["сверка задач на " + date.slice(8, 10) + "." + date.slice(5, 7), ""];
+  L.push(plan.length ? "в планах на сегодня (" + plan.length + "):\n" + plan.slice(0, 30).map(e => "• " + cut(e.title, 80)).join("\n") : "в планах на сегодня пусто");
+  if (over.length) L.push("", "осталось с прошлых дней (" + over.length + "):\n" + over.slice(0, 15).map(e => "• " + cut(e.title, 80) + " (" + e.date.slice(8, 10) + "." + e.date.slice(5, 7) + ")").join("\n"));
+  if (done.length) L.push("", "уже сделано (" + done.length + "):\n" + done.slice(0, 15).map(e => "• " + cut(e.title, 80)).join("\n"));
+  if (ahead) L.push("", "впереди: " + ahead + " " + plural(ahead, "дело", "дела", "дел"));
+  L.push("", "всё верно? нажми «синхронизировать устройства», и на телефоне и компьютере будет ровно этот список.");
+  return L.join("\n").slice(0, 4000);
+}
+const verifyKb = { inline_keyboard: [[{ text: "✅ синхронизировать устройства", callback_data: "s:1" }], [{ text: "открыть прокачку", web_app: { url: APP } }]] };
+
+export default {
+  async fetch(req, env, ctx) {
+    const url = new URL(req.url);
+    if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
+    if (!env.BOT_TOKEN) return new Response("нет секрета BOT_TOKEN", { status: 500 });
+    const path = await hookPath(env);
+
+    if (url.pathname === "/setup") {
+      const out = {};
+      out.webhook = await tg(env, "setWebhook", { url: url.origin + path, allowed_updates: ["message", "callback_query"] });
+      out.menu = await tg(env, "setChatMenuButton", { menu_button: { type: "web_app", text: "прокачка", web_app: { url: APP } } });
+      out.commands = await tg(env, "setMyCommands", { commands: [{ command: "start", description: "открыть прокачку" }] });
+      out.short = await tg(env, "setMyShortDescription", { short_description: "превращаю жизнь в игру: навыки, опыт и квесты" });
+      out.kv = env.USERS ? "ok" : "нет привязки USERS";
+      out.stats = url.origin + await statsPath(env);
+      return new Response(JSON.stringify(out, null, 1), { headers: { "content-type": "application/json; charset=utf-8" } });
+    }
+
+    if (url.pathname === await statsPath(env) && env.USERS) return statsPage(env);
+
+    // то же самое для владельца прямо в приложении: доступ по telegram id, который проверяется подписью
+    if (url.pathname === "/owner-stats" && req.method === "POST" && env.USERS) {
+      const b = await req.json().catch(() => null);
+      const uid = b && b.initData ? await checkInitData(env, String(b.initData)) : null;
+      if (uid !== OWNER) return new Response("no", { status: 403, headers: CORS });
+      const data = await statsPage(env, true);
+      data.url = url.origin + await statsPath(env);
+      return new Response(JSON.stringify(data), { headers: Object.assign({ "content-type": "application/json" }, CORS) });
+    }
+
+    // автозаполнение хотелки по ссылке: только для людей из приложения (подпись telegram)
+    if ((url.pathname === "/unfurl" || url.pathname === "/img") && req.method === "POST") {
+      const b = await req.json().catch(() => null);
+      const uid = b && b.initData ? await checkInitData(env, String(b.initData)) : null;
+      if (!uid) return new Response("bad", { status: 401, headers: CORS });
+      const u = safeUrl(b.url);
+      if (!u) return new Response(JSON.stringify({ ok: false, reason: "link" }), { headers: Object.assign({ "content-type": "application/json" }, CORS) });
+      try {
+        if (url.pathname === "/img") {
+          const ref = safeUrl(b.ref);
+          const { res, buf } = await getLimited(u.href, { "user-agent": UA, accept: "image/avif,image/webp,image/*,*/*;q=0.8", referer: (ref || u).origin + "/" }, 6e6, 9000);
+          const ct = res.headers.get("content-type") || "";
+          if (!res.ok || !/^image\//i.test(ct) || /svg/i.test(ct) || !buf.length) return new Response("no", { status: 415, headers: CORS });
+          return new Response(buf, { headers: Object.assign({ "content-type": ct, "cache-control": "no-store" }, CORS) });
+        }
+        const { res, buf } = await getLimited(u.href, { "user-agent": UA, accept: "text/html,application/xhtml+xml,*/*;q=0.8", "accept-language": "ru-RU,ru;q=0.9,en;q=0.7" }, 800000, 9000);
+        const fin = safeUrl(res.url) || u;
+        const out = { ok: false, status: res.status, final: fin.href };
+        if (res.ok) {
+          const info = parseProduct(decodeHtml(buf, res.headers.get("content-type")), fin.href);
+          Object.assign(out, info);
+          out.ok = !!(info.title || info.price || info.images.length);
+          if (/captcha|antibot|access denied|are you a robot|подтвердите, что вы не робот|доступ ограничен/i.test(info.title)) { out.ok = false; out.blocked = true; }
+        } else out.blocked = true;
+        return new Response(JSON.stringify(out), { headers: Object.assign({ "content-type": "application/json" }, CORS) });
+      } catch (e) {
+        return new Response(JSON.stringify({ ok: false, reason: "fetch" }), { headers: Object.assign({ "content-type": "application/json" }, CORS) });
+      }
+    }
+
+    // приложение сообщает «я открыто»: если человек ещё не настраивал напоминания, бот сразу предлагает это в чате
+    if (url.pathname === "/alive" && req.method === "POST") {
+      if (!env.USERS) return new Response("no kv", { status: 500, headers: CORS });
+      const b = await req.json().catch(() => null);
+      const uid = b && b.initData ? await checkInitData(env, String(b.initData)) : null;
+      if (!uid) return new Response("bad", { status: 401, headers: CORS });
+      const r = Object.assign(defRec(), await env.USERS.get("u:" + uid, "json") || {});
+      const need = false; // предложение теперь приходит на /start, сигнал оставлен на всякий случай
+      return new Response(JSON.stringify({ need }), { headers: Object.assign({ "content-type": "application/json" }, CORS) });
+    }
+
+    // приложение сообщает настройки напоминаний
+    if ((url.pathname === "/sync" || url.pathname === "/closed") && req.method === "POST") {
+      if (!env.USERS) return new Response("no kv", { status: 500, headers: CORS });
+      const b = await req.json().catch(() => null);
+      const uid = b && b.initData ? await checkInitData(env, String(b.initData)) : null;
+      if (!uid) return new Response("bad", { status: 401, headers: CORS });
+      const key = "u:" + uid;
+      const old = await env.USERS.get(key, "json");
+      const r = Object.assign(defRec(), old || {});
+      r.tz = Math.max(-840, Math.min(840, parseInt(b.tz, 10) || 0));
+      if (url.pathname === "/sync") {
+        const lt = localNow(r.tz).date;
+        r.seen = lt; if (!r.first) r.first = lt;
+        r.dd = (r.dd || []).filter(d => d !== lt).concat(lt).slice(-30);
+        if (Array.isArray(b.prof)) r.prof = b.prof.slice(0, 3).map(x => cut(x, 30)).filter(Boolean);
+        if (b.day && typeof b.day === "object") r.day = { d: cut(b.day.d, 10), rt: Math.max(0, parseInt(b.day.rt, 10) || 0), xp: Math.max(0, parseInt(b.day.xp, 10) || 0), more: Math.max(0, parseInt(b.day.more, 10) || 0), items: (Array.isArray(b.day.items) ? b.day.items : []).slice(0, 5).map(i => ({ t: cut(i.t, 50), x: parseInt(i.x, 10) || 0 })) };
+        if (b.wk && typeof b.wk === "object") r.wk = { xp: parseInt(b.wk.xp, 10) || 0, n: parseInt(b.wk.n, 10) || 0, days: parseInt(b.wk.days, 10) || 0, top: cut(b.wk.top, 40), lvl: parseInt(b.wk.lvl, 10) || 1, st: parseInt(b.wk.st, 10) || 0 };
+        if (/^\d{4}-\d{2}-\d{2}$/.test(b.last || "")) r.last = b.last;
+        if (Array.isArray(b.todo)) r.todo = b.todo.slice(0, 10).map(t => cut(t, 80)).filter(Boolean);
+        if (typeof b.quest === "string") r.quest = cut(b.quest, 100);
+        if (b.cfg) { // человек поменял настройки в приложении
+          r.on = !!b.cfg.on;
+          r.hour = Math.min(23, Math.max(0, parseInt(b.cfg.hour, 10) || 20));
+          r.count = Math.min(3, Math.max(1, parseInt(b.cfg.count, 10) || 1));
+          r.times = timesFor(r.hour, r.count);
+          r.rep = b.cfg.rep !== false; r.wkOn = b.cfg.wk !== false;
+          r.cfg = true; r.offered = true;
+        }
+      } else {
+        return new Response("ok", { headers: CORS });
+      }
+      if (JSON.stringify(old) !== JSON.stringify(r)) await env.USERS.put(key, JSON.stringify(r));
+      return new Response(JSON.stringify({ cfg: r.cfg ? { on: r.on, hour: r.hour, count: r.count } : null }), { headers: Object.assign({ "content-type": "application/json" }, CORS) });
+    }
+
+    // ответы на кнопки в чате
+    if ((url.pathname === "/st" || url.pathname === "/verify") && req.method === "POST") {
+      if (!env.DB) return J({ error: "no db" }, 500);
+      const b = await req.json().catch(() => null);
+      const uid = b && b.initData ? await checkInitData(env, String(b.initData)) : null;
+      if (!uid) return J({ error: "bad" }, 401);
+      if (url.pathname === "/st") return J(await stSync(env, uid, b));
+      const date = /^\d{4}-\d{2}-\d{2}$/.test(b.date || "") ? b.date : localNow(b.tz).date;
+      const res = await tg(env, "sendMessage", { chat_id: uid, text: await verifyText(env, uid, date), reply_markup: verifyKb });
+      return J({ ok: !!res.ok });
+    }
+
+    if (url.pathname === path && req.method === "POST") {
+      const u = await req.json().catch(() => null);
+      const cq = u && u.callback_query;
+      if (cq && cq.data && env.USERS) {
+        const uid = cq.from.id, key = "u:" + uid;
+        const r = Object.assign(defRec(), { offered: true }, await env.USERS.get(key, "json") || {});
+        const chat = cq.message.chat.id, mid = cq.message.message_id;
+        const [kind, val] = cq.data.split(":");
+        if (kind === "s") {
+          // сервер уже хранит один общий список: подтверждаем и напоминаем, что устройства подтянут его сами
+          const ver = env.DB ? await env.DB.prepare("SELECT ver FROM st WHERE uid = ?1").bind(uid).first() : null;
+          const t = (cq.message.text || "").replace(/\n\nвсё верно\?[\s\S]*$/, "");
+          await tg(env, "editMessageText", { chat_id: chat, message_id: mid, text: (t + "\n\n✅ синхронизировано" + (ver ? "" : " (данных на сервере пока нет, открой приложение)") + ". открой прокачку на любом устройстве: там будет этот же список, приложение подтянет его само.").slice(0, 4000), reply_markup: appBtn("открыть прокачку") });
+        } else if (kind === "x") {
+          if (val === "news") r.news = false; else if (val === "wk") r.wkOn = false; else r.rep = false;
+          await env.USERS.put(key, JSON.stringify(r));
+          await tg(env, "editMessageReplyMarkup", { chat_id: chat, message_id: mid, reply_markup: appBtn("открыть прокачку") });
+          await tg(env, "sendMessage", { chat_id: chat, text: val === "news" ? "новости больше не буду присылать. если передумаешь, напиши мне /news" : (val === "wk" ? "итоги недели" : "итоги дня") + " больше не буду присылать. вернуть можно в настройках приложения." });
+        } else if (kind === "b") {
+          const b = uid === OWNER ? await env.USERS.get("bc:cur", "json") : null;
+          if (b && b.state === "draft") {
+            await tg(env, "editMessageReplyMarkup", { chat_id: chat, message_id: mid, reply_markup: { inline_keyboard: [] } });
+            if (val === "go") {
+              b.state = "sending"; await env.USERS.put("bc:cur", JSON.stringify(b));
+              await tg(env, "sendMessage", { chat_id: chat, text: "отправляю. если людей много, остаток дойдёт с ближайшими запусками, в конце пришлю отчёт." });
+              ctx.waitUntil(bcRun(env));
+            } else {
+              b.state = "cancelled"; await env.USERS.put("bc:cur", JSON.stringify(b));
+              await tg(env, "sendMessage", { chat_id: chat, text: "отменила, никому не ушло." });
+            }
+          }
+        } else if (kind === "n") {
+          const n = Number(val);
+          if (!n) {
+            r.on = false; r.cfg = true;
+            await env.USERS.put(key, JSON.stringify(r));
+            await tg(env, "editMessageText", { chat_id: chat, message_id: mid, text: "хорошо, не буду напоминать. включить можно в настройках приложения." });
+          } else {
+            r.count = n; await env.USERS.put(key, JSON.stringify(r));
+            await tg(env, "editMessageText", { chat_id: chat, message_id: mid, text: n === 1 ? "во сколько напоминать?" : "во сколько первое напоминание? остальные разложу по дню сама.", reply_markup: hoursKb });
+          }
+        } else if (kind === "t") {
+          r.hour = Number(val); r.times = timesFor(r.hour, r.count); r.on = true; r.cfg = true;
+          await env.USERS.put(key, JSON.stringify(r));
+          await tg(env, "editMessageText", { chat_id: chat, message_id: mid, text: "готово. напомню в " + r.times.map(hh).join(", ") + ", если за день будет пусто или останутся дела в планах. поменять можно в настройках приложения.", reply_markup: appBtn("открыть прокачку") });
+        }
+        await tg(env, "answerCallbackQuery", { callback_query_id: cq.id });
+        return new Response("ok");
+      }
+      const m = u && u.message;
+      if (m && m.chat && m.chat.type === "private") {
+        const chat = m.chat.id;
+        const rec = env.USERS ? Object.assign(defRec(), await env.USERS.get("u:" + chat, "json") || {}) : null;
+        const raw = m.text || m.caption || "";
+        if (/^\/news(@\w+)?\s*$/.test(raw) && rec) {
+          rec.news = true; await env.USERS.put("u:" + chat, JSON.stringify(rec));
+          await tg(env, "sendMessage", { chat_id: chat, text: "хорошо, новости снова буду присылать." });
+          return new Response("ok");
+        }
+        if (m.from && m.from.id === OWNER && m.photo && m.media_group_id && env.USERS) {
+          await env.USERS.put("bcp:" + m.media_group_id + ":" + String(m.message_id).padStart(12, "0"), m.photo[m.photo.length - 1].file_id, { expirationTtl: 86400 });
+          if (!/^\/send/.test(raw)) return new Response("ok");
+        }
+        if (/^\/send(@\w+)?(\s|$)/.test(raw) && m.from && m.from.id === OWNER && env.USERS) {
+          const text = raw.replace(/^\/send(@\w+)?\s*/, "").trim();
+          let type = "text", file = "";
+          if (m.photo && m.photo.length) { type = m.media_group_id ? "album" : "photo"; file = m.photo[m.photo.length - 1].file_id; }
+          else if (m.animation) { type = "animation"; file = m.animation.file_id; }
+          else if (m.video) { type = "video"; file = m.video.file_id; }
+          const cur = await env.USERS.get("bc:cur", "json");
+          if (cur && cur.state === "sending") { await tg(env, "sendMessage", { chat_id: chat, text: "прошлая рассылка ещё идёт, подожди отчёта." }); return new Response("ok"); }
+          if (!text && type === "text") { await tg(env, "sendMessage", { chat_id: chat, text: "напиши так: /send текст новости\nили пришли картинку, гифку или видео и в подписи начни с /send" }); return new Response("ok"); }
+          if (type !== "text" && text.length > 1000) { await tg(env, "sendMessage", { chat_id: chat, text: "подпись к картинке не длиннее 1000 знаков, сейчас " + text.length + ". сократи или отправь без картинки." }); return new Response("ok"); }
+          const b = { id: Date.now().toString(36), text: text || " ", type, file, state: "draft", ok: 0, fail: 0, skip: 0 };
+          if (type === "album") { b.gid = m.media_group_id; await env.USERS.put("bc:cur", JSON.stringify(b)); ctx.waitUntil(albumPreview(env, chat, b)); return new Response("ok"); }
+          await env.USERS.put("bc:cur", JSON.stringify(b));
+          await tg(env, "sendMessage", { chat_id: chat, text: "так увидят люди. отправляем всем?" });
+          await bcSend(env, chat, b, BC_KB);
+          return new Response("ok");
+        }
+        if (/^\/stats/.test(m.text || "") && m.from && m.from.id === OWNER && env.USERS) {
+          const d = await statsPage(env, true);
+          const L = ["статистика прокачки", "",
+            "людей зашло всего: " + d.total,
+            "были в приложении за 7 дней: " + d.w7,
+            "вернулись на другой день: " + d.back + " из " + d.total,
+            "включили напоминания: " + d.rem,
+            "получают итоги дня: " + d.rep,
+            "бот не смог им написать: " + d.blocked, "",
+            "сколько людей заходило по дням:"];
+          d.days.slice(-7).forEach(x => L.push(x[0] + " число: " + x[1]));
+          const PN = { design: "дизайнеры", dev: "разработчики", ai: "нейросети и ии", mkt: "маркетологи", creator: "авторы контента", biz: "предприниматели", law: "юристы", med: "врачи", teach: "преподаватели", stud: "студенты", beauty: "мастера бьюти", coach: "тренеры", parent: "родители", other: "другое" };
+          if (d.profs.length) { L.push("", "чем занимаются:"); d.profs.forEach(p => L.push((PN[p[0]] || p[0]) + ": " + p[1])); }
+          L.push("", "цифры по дням и профессиям копятся с момента обновления бота");
+          await tg(env, "sendMessage", { chat_id: chat, text: L.join("\n") });
+          return new Response("ok");
+        }
+        const isStart = /^\/start/.test(m.text || "");
+        if (isStart && rec && !rec.cfg) {
+          // 1) то же, что в описании бота: картинка и текст
+          const d = await tg(env, "getMyDescription", {});
+          const text = (d.result && d.result.description) || "привет! это мини-апка, которая превратит твою жизнь в игру с ачивками.";
+          const ph = await tg(env, "sendPhoto", { chat_id: chat, photo: APP + "/welcome.jpg", caption: text.slice(0, 1000), reply_markup: appBtn("открыть прокачку") });
+          if (!ph.ok) await tg(env, "sendMessage", { chat_id: chat, text, reply_markup: appBtn("открыть прокачку") });
+          // 2) настройка напоминаний
+          const res = await tg(env, "sendMessage", { chat_id: chat, text: offerText, reply_markup: offerKb });
+          rec.offered = !!res.ok; rec.err = res.ok ? "" : String(res.description || "fail");
+          await env.USERS.put("u:" + chat, JSON.stringify(rec));
+        } else {
+          await tg(env, "sendMessage", { chat_id: chat, text: pick(HELLO), reply_markup: appBtn("открыть прокачку") });
+        }
+      }
+      return new Response("ok");
+    }
+    return new Response("прокачка", { status: 200 });
+  },
+
+  async scheduled(event, env) {
+    if (!env.BOT_TOKEN || !env.USERS) return;
+    await bcRun(env);
+    let cursor;
+    do {
+      const l = await env.USERS.list({ prefix: "u:", cursor });
+      for (const k of l.keys) {
+        const r = await env.USERS.get(k.name, "json");
+        if (!r || !r.on) continue;
+        const chat = Number(k.name.slice(2));
+        const t = localNow(r.tz);
+        if (!r.sent || r.sent.d !== t.date) r.sent = Object.assign({}, r.sent, { d: t.date, h: [] });
+        let dirty = false;
+        // напоминания
+        const slot = (r.times || []).find(h => t.hour >= h && t.hour <= h + 1 && !r.sent.h.includes(h));
+        if (slot !== undefined) {
+          const hasTodo = (r.todo || []).length > 0 || !!r.quest;
+          if (!(r.last === t.date && !hasTodo)) {
+            const res = await tg(env, "sendMessage", { chat_id: chat, text: reminderText(r), reply_markup: appBtn("открыть прокачку") });
+            if (res.ok) r.sent.h.push(slot); else if (res.error_code === 403) r.on = false;
+            dirty = true;
+          }
+        }
+        // итоги недели: воскресенье, 19:00
+        const dow = new Date(Date.parse(t.date + "T00:00:00Z")).getUTCDay();
+        if (r.on && r.wkOn !== false && dow === 0 && t.hour >= 19 && t.hour <= 20 && r.sent.wk !== t.date) {
+          const txt = weekText(r, t.date);
+          const res = await tg(env, "sendMessage", { chat_id: chat, text: txt, reply_markup: repKb("wk", txt.replace("итоги недели\n\n", "моя неделя в прокачке: ")) });
+          r.sent.wk = t.date; if (res.error_code === 403) r.on = false; dirty = true;
+        }
+        // итоги дня: 21:00
+        if (r.on && r.rep !== false && t.hour >= 21 && t.hour <= 22 && r.sent.rep !== t.date) {
+          const txt = dayText(r, t.date);
+          const res = await tg(env, "sendMessage", { chat_id: chat, text: txt || MISS, reply_markup: txt ? repKb("rep") : appBtn("открыть прокачку") });
+          r.sent.rep = t.date; if (res.error_code === 403) r.on = false; dirty = true;
+        }
+        if (dirty) await env.USERS.put(k.name, JSON.stringify(r));
+      }
+      cursor = l.list_complete ? undefined : l.cursor;
+    } while (cursor);
+  },
+};
