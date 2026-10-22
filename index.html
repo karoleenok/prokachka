@@ -750,6 +750,12 @@ html.tt,html.tt *{transition:background-color .4s ease,color .4s ease,border-col
 .ic-b{aspect-ratio:1;border-radius:14px;border:1.5px solid var(--tile-line);background:var(--tile);color:#171C24;display:grid;place-items:center;cursor:pointer}
 .ic-b[aria-pressed="true"]{background:var(--accent);color:#fff;border-color:var(--accent-t)}
 .skr .skm{align-self:flex-start;margin-top:5px}
+.sph-n{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;line-height:1.2}
+.sph-h .sph-bar{flex:none;width:76px;height:8px;border-radius:999px;background:var(--chip);overflow:hidden}
+.sph-h .sph-bar i{display:block;height:100%;background:var(--accent);border-radius:inherit}
+.sph-l{flex:none;min-width:22px;text-align:right;font-size:17px;font-weight:700;color:var(--ink)}
+.sph-h{gap:10px}
+.sph-h>svg:last-child{margin-right:8px}
 </style>
 
 </head>
@@ -2075,7 +2081,7 @@ function skManager(d){
     if(!manual&&ol.length>5){const gs=[...new Set(ol.map(k=>k.g))];if(gs.length>1)body=gs.map(gid=>`<div class="sk-sub">${esc((GROUPS.find(z=>z.id===gid)||{name:"своё"}).name)}</div><div class="skl-list">${ol.filter(k=>k.g===gid).map(row).join("")}</div>`).join("");}
     if(!body)body=`<div class="skl-list" data-sph="${spd.id}">${ol.map(row).join("")}</div>`;
     if(pz.length)body+=`<div class="sk-sub">на паузе</div><div class="skl-list">${pz.map(k=>`<div class="skr paused"><div class="skb"><div class="skt"><b>${esc(k.name)}</b><span class="skl num">${d.skills[k.id].level}</span></div><div class="sks">опыт сохранён, в форме записи не показывается</div></div><button class="btn sm ghost" data-act="skUnpause" data-id="${k.id}">вернуть</button></div>`).join("")}</div>`;
-    h+=`<section class="card sphc"><button class="sph-h" data-act="sphTog" data-id="${spd.id}" aria-expanded="${!isC}">${sphIc(spd.id,18)}<b>${esc(spd.n)}</b><span class="small cmut num">ур. ${x.level} · ${list.length} ${plural(list.length,"навык","навыка","навыков")}</span><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="margin-left:auto;flex:none;transform:rotate(${isC?0:180}deg)"><path d="M6 9l6 6 6-6"/></svg></button>${isC?"":body}</section>`});
+    h+=`<section class="card sphc"><button class="sph-h" data-act="sphTog" data-id="${spd.id}" aria-expanded="${!isC}">${sphIc(spd.id,20)}<span class="sph-n"><b>${esc(spd.n)}</b><span class="small cmut">${list.length} ${plural(list.length,"навык","навыка","навыков")}</span></span><span class="skbar sph-bar" aria-hidden="true"><i style="width:${Math.max(4,Math.round((x.frac||0)*100))}%"></i></span><span class="sph-l num" aria-label="уровень сферы ${x.level}">${x.level}</span><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="margin-left:auto;flex:none;transform:rotate(${isC?0:180}deg)"><path d="M6 9l6 6 6-6"/></svg></button>${isC?"":body}</section>`});
   if(empty.length)h+=`<div class="sph-empty small"><span class="muted">пока пусто:</span> ${empty.map(x=>`<button class="link" data-act="sphere" data-id="${x.id}">${esc(x.n)}</button>`).join(", ")}</div>`;
   return h;
 }
@@ -2516,7 +2522,7 @@ function hintSheet(k){const[h,t]=HELP[k];sheet(`<span class="pill">подска�
    как добавить новость: допиши объект в NEWS (приложение) или в news.json рядом с index.html (без выпуска приложения).
    kind: "update" | "news". acts: до двух кнопок {l:"посмотреть"|"протестировать", go:"..."}.
    куда ведёт go: tab:home|path|skills|quests|rewards · path:feed · hint:<ключ из HELP> · add:plan · add:done */
-const APP_V="v66";
+const APP_V="v67";
 const NEWS=[
   {id:"u61-quests",date:"2026-10-23",kind:"update",title:"квест можно создать сразу: свой или командный",text:"если квестов ещё нет, в разделе «квесты» сразу две кнопки: свой квест или командный. а ниже пример того, как будет выглядеть таймлайн квеста с этапами, ответственными и дедлайнами.",acts:[{l:"посмотреть",go:"tab:quests"}]},
   {id:"u61-mood",date:"2026-10-23",kind:"update",title:"«как ты сегодня» теперь в «пути»",text:"отметить энергию, настроение и насыщенность дня можно в «пути», в ленте за сегодня. прошлые отметки на месте.",acts:[{l:"посмотреть",go:"path:feed"}]},
