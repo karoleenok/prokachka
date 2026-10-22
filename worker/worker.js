@@ -179,6 +179,40 @@ async function offerIfNeeded(env, uid, tz) {
 // рассылка: черновик лежит в KV под ключом bc:cur, отправка идёт пачками (лимит бесплатного cloudflare: ~45 внешних запросов за запуск)
 const NEWS_KB = { inline_keyboard: [[{ text: "открыть прокачку", web_app: { url: APP } }], [{ text: "не присылать новости", callback_data: "x:news" }]] };
 const BC_KB = { inline_keyboard: [[{ text: "отправить всем", callback_data: "b:go" }, { text: "отмена", callback_data: "b:no" }]] };
+// поддержка: человек пишет боту, сообщения и скрины уходят владельцу, ответ реплаем возвращается человеку
+const SUP_TTL = 30 * 60 * 1000;
+const SUP_TEXT = "это поддержка прокачки 🛟\n\nнапиши, что случилось или что хочется улучшить, и приложи скриншоты, если есть. всё, что пришлёшь сюда в ближайшие 30 минут, я передам лично создательнице приложения. она читает каждое сообщение: исправляет ошибки и учитывает идеи в следующих обновлениях.\n\nчто уйдёт: только то, что ты сюда напишешь или пришлёшь, и твоё имя в телеграме, чтобы можно было ответить. данные из приложения не отправляются.\n\nответ придёт сюда, в этот чат. когда закончишь, нажми «готово».";
+const SUP_KB = { inline_keyboard: [[{ text: "готово", callback_data: "sup:off" }]] };
+const menuKb = r => ({ inline_keyboard: [[{ text: "открыть прокачку", web_app: { url: APP } }], [{ text: "написать в поддержку", callback_data: "sup:on" }], [r && r.news === false ? { text: "снова присылать новости", callback_data: "nw:on" } : { text: "не присылать новости", callback_data: "x:news" }]] });
+async function setCommands(env) {
+  if (await env.USERS.get("cmds:v2")) return;
+  await tg(env, "setMyCommands", { commands: [{ command: "menu", description: "меню" }, { command: "support", description: "написать в поддержку" }, { command: "start", description: "открыть прокачку" }] });
+  await tg(env, "setMyCommands", { scope: { type: "chat", chat_id: OWNER }, commands: [{ command: "menu", description: "меню" }, { command: "support", description: "написать в поддержку" }, { command: "send", description: "рассылка новостей" }, { command: "stats", description: "статистика" }, { command: "start", description: "открыть прокачку" }] });
+  await env.USERS.put("cmds:v2", "1");
+}
+async function supStart(env, chat, rec) {
+  rec.sup = Date.now(); rec.supId = rec.sup; await env.USERS.put("u:" + chat, JSON.stringify(rec));
+  await tg(env, "sendMessage", { chat_id: chat, text: SUP_TEXT, reply_markup: SUP_KB });
+}
+async function supStop(env, chat, rec, quiet) {
+  const had = rec.sup; rec.sup = 0; await env.USERS.put("u:" + chat, JSON.stringify(rec));
+  if (!quiet) await tg(env, "sendMessage", { chat_id: chat, text: had && rec.supHdr === rec.supId ? "спасибо! всё передала. если ответят, сообщение придёт сюда. написать ещё — /support" : "хорошо. написать в поддержку можно в любой момент — /support", reply_markup: { inline_keyboard: [[{ text: "открыть прокачку", web_app: { url: APP } }]] } });
+}
+async function supForward(env, m, rec) {
+  const chat = m.chat.id; const now = Date.now();
+  if (rec.supHdr !== rec.supId) {
+    const who = [m.from.first_name, m.from.last_name].filter(Boolean).join(" ") + (m.from.username ? " @" + m.from.username : "") + " · id " + m.from.id;
+    const h = await tg(env, "sendMessage", { chat_id: OWNER, text: "📩 обращение в поддержку\nот: " + who + "\n\nчтобы ответить, сделай reply на любое сообщение ниже: я перешлю ответ человеку." });
+    if (h.ok) await env.USERS.put("sr:" + h.result.message_id, String(chat), { expirationTtl: 2592000 });
+    rec.supHdr = rec.supId;
+  }
+  const c = await tg(env, "copyMessage", { chat_id: OWNER, from_chat_id: chat, message_id: m.message_id });
+  if (c.ok) await env.USERS.put("sr:" + c.result.message_id, String(chat), { expirationTtl: 2592000 });
+  rec.sup = now;
+  const ack = !rec.supAck || now - rec.supAck > 15000; if (ack) rec.supAck = now;
+  await env.USERS.put("u:" + chat, JSON.stringify(rec));
+  if (ack) await tg(env, "sendMessage", { chat_id: chat, text: c.ok ? "получила и передала ✅ можно дослать ещё скрины или текст. когда всё, нажми «готово»." : "не получилось передать, попробуй ещё раз чуть позже.", reply_markup: SUP_KB });
+}
 // длинный текст режем на сообщения до 4096 знаков по абзацам, форматирование (жирный и т.п.) переносим
 function bcParts(text, ents) {
   const out = []; let pos = 0; const L = 4000;
@@ -622,7 +656,7 @@ export default {
       const out = {};
       out.webhook = await tg(env, "setWebhook", { url: url.origin + path, allowed_updates: ["message", "callback_query"] });
       out.menu = await tg(env, "setChatMenuButton", { menu_button: { type: "web_app", text: "прокачка", web_app: { url: APP } } });
-      out.commands = await tg(env, "setMyCommands", { commands: [{ command: "start", description: "открыть прокачку" }] });
+      await env.USERS.delete("cmds:v2"); await setCommands(env); out.commands = "ok";
       out.short = await tg(env, "setMyShortDescription", { short_description: "превращаю жизнь в игру: навыки, опыт и квесты" });
       out.kv = env.USERS ? "ok" : "нет привязки USERS";
       out.stats = url.origin + await statsPath(env);
@@ -754,6 +788,13 @@ export default {
           const ver = env.DB ? await env.DB.prepare("SELECT ver FROM st WHERE uid = ?1").bind(uid).first() : null;
           const t = (cq.message.text || "").replace(/\n\nвсё верно\?[\s\S]*$/, "");
           await tg(env, "editMessageText", { chat_id: chat, message_id: mid, text: (t + "\n\n✅ синхронизировано" + (ver ? "" : " (данных на сервере пока нет, открой приложение)") + ". открой прокачку на любом устройстве: там будет этот же список, приложение подтянет его само.").slice(0, 4000), reply_markup: appBtn("открыть прокачку") });
+        } else if (kind === "sup") {
+          await tg(env, "editMessageReplyMarkup", { chat_id: chat, message_id: mid, reply_markup: { inline_keyboard: [] } });
+          if (val === "on") await supStart(env, chat, r); else await supStop(env, chat, r);
+        } else if (kind === "nw") {
+          r.news = true; await env.USERS.put(key, JSON.stringify(r));
+          await tg(env, "editMessageReplyMarkup", { chat_id: chat, message_id: mid, reply_markup: menuKb(r) });
+          await tg(env, "sendMessage", { chat_id: chat, text: "хорошо, новости снова буду присылать." });
         } else if (kind === "x") {
           if (val === "news") r.news = false; else if (val === "wk") r.wkOn = false; else r.rep = false;
           await env.USERS.put(key, JSON.stringify(r));
@@ -800,6 +841,25 @@ export default {
           await tg(env, "sendMessage", { chat_id: chat, text: "хорошо, новости снова буду присылать." });
           return new Response("ok");
         }
+        if (rec) ctx.waitUntil(setCommands(env));
+        // ответ владельца на обращение: reply на пересланное сообщение уходит человеку
+        if (m.from && m.from.id === OWNER && m.reply_to_message && env.USERS && !/^\/send/.test(raw)) {
+          const to = await env.USERS.get("sr:" + m.reply_to_message.message_id);
+          if (to) {
+            await tg(env, "sendMessage", { chat_id: Number(to), text: "💬 ответ от поддержки прокачки:" });
+            const c = await tg(env, "copyMessage", { chat_id: Number(to), from_chat_id: chat, message_id: m.message_id });
+            await tg(env, "sendMessage", { chat_id: chat, text: c.ok ? "ответ отправлен ✅" : "не получилось отправить: " + (c.description || "ошибка") });
+            return new Response("ok");
+          }
+        }
+        if (/^\/(menu|help)(@\w+)?\s*$/.test(raw) && rec) {
+          if (rec.sup) await supStop(env, chat, rec, true);
+          await tg(env, "sendMessage", { chat_id: chat, text: "меню прокачки", reply_markup: menuKb(rec) });
+          return new Response("ok");
+        }
+        if (/^\/support(@\w+)?\s*$/.test(raw) && rec) { await supStart(env, chat, rec); return new Response("ok"); }
+        if (/^\/done(@\w+)?\s*$/.test(raw) && rec) { await supStop(env, chat, rec); return new Response("ok"); }
+        if (rec && rec.sup && Date.now() - rec.sup < SUP_TTL && !/^\//.test(raw)) { await supForward(env, m, rec); return new Response("ok"); }
         if (m.from && m.from.id === OWNER && m.photo && m.media_group_id && env.USERS) {
           await env.USERS.put("bcp:" + m.media_group_id + ":" + String(m.message_id).padStart(12, "0"), m.photo[m.photo.length - 1].file_id, { expirationTtl: 86400 });
           if (!/^\/send/.test(raw)) return new Response("ok");

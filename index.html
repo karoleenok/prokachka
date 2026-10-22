@@ -624,6 +624,16 @@ html.tt,html.tt *{transition:background-color .4s ease,color .4s ease,border-col
 .gfull .chip{white-space:nowrap;flex:none}
 .gfull .gantt{flex:1;min-height:0;display:flex;flex-direction:column}.gfull .gsc{flex:0 1 auto;min-height:0;overflow:auto}
 .gfull .grow{min-height:54px}.gfull .grow.ghead{min-height:48px}.gfull .gantt:not(.wide){--glw:128px}.gfull .glb{font-size:13px}.gfull .glb.qh{font-size:14.5px}@media (min-width:600px){.gfull .gantt:not(.wide){--glw:200px}}
+.rd-lab{cursor:pointer}.rd-lab:hover text:first-of-type{text-decoration:underline}.sphic{flex:none}
+.sph-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px}
+.sph{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:8px 10px;border-radius:12px;border:1px solid var(--line);background:none;color:inherit;cursor:pointer;text-align:left;min-width:0}
+.sph-n{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}.sph-l{font-size:12px;color:var(--muted)}.sph-up{color:var(--accent-t);font-weight:700}.sph-e{font-size:11px;color:var(--muted);opacity:.8}
+.sph-list{display:flex;flex-direction:column}
+.sph-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}.sph-row:last-child{border-bottom:0}
+.sph-rn{font-weight:600;font-size:15px}
+.sph-mv select{appearance:none;-webkit-appearance:none;background:transparent;border:1px solid var(--line);border-radius:999px;padding:5px 12px;font:inherit;font-size:12.5px;color:var(--ink);cursor:pointer}.sph-mv option{color:#171C24;background:#fff}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.rd-leg i{display:inline-block;width:14px;height:0;border-top:1.5px dashed var(--muted);vertical-align:middle;margin-right:5px}
 .gqt{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;margin:12px -2px 0;border-bottom:1px solid color-mix(in srgb,currentColor 12%,transparent)}.gqt::-webkit-scrollbar{display:none}
 .gqt button{flex:none;background:none;border:0;color:inherit;font:inherit;font-size:14px;font-weight:600;padding:10px 12px 11px;opacity:.5;white-space:nowrap;max-width:260px;overflow:hidden;text-overflow:ellipsis;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
 .gqt.solo button{white-space:normal;max-width:none;text-overflow:clip;text-align:left;line-height:1.3;flex:1}
@@ -888,7 +898,7 @@ const HELP={
   cal:["календарь","каждая клетка — день месяца. чем ярче, тем больше опыта ты получил{а|} в этот день, бледные дни ещё впереди, точка — сегодня.\n\nнажми на день, и ниже появятся дела за него. стрелками листаются месяцы."],
   weeks:["дел по неделям сезона","каждый столбик — одна неделя сезона, цифра сверху — сколько дел ты записал{а|}. светлый столбик — эта неделя."],
   eff:["куда ушли силы","шаги к цели — то, что двигает результат: создал{а|}, выпустил{а|}, продал{а|}, научил{а|}.\nпрактика — тренировка и пробы нового.\nзнания — уроки, книги, видео, статьи.\n\nсчитается в опыте за эту неделю, в скобках — прошлая неделя."],
-  portrait:["портрет героя","«паутинка» из твоих главных навыков, как характеристики персонажа в игре. сначала навыки из фокуса сезона, потом самые прокачанные. чем дальше точка от центра, тем выше уровень."],
+  portrait:["портрет героя","шесть сфер жизни, как характеристики персонажа в игре: дело, деньги, люди, тело, душа и ум. каждый твой навык живёт в одной из сфер, и опыт из записей по навыку качает её сферу.\n\nуровень сферы — средний по трём самым сильным навыкам в ней, поэтому одна большая сфера не задавливает остальные. чем дальше точка от центра, тем выше уровень. пунктир — какой была форма месяц назад.\n\nнажми на сферу внизу: увидишь, что в неё входит, какие навыки её качают, и сможешь перенести навык в другую сферу или добавить новый."],
   level:["уровень сезона","сезон длится 90 дней. за каждое действие ты получаешь опыт, и полоса понемногу заполняется. когда она заполнится, откроется новый уровень. на некоторых уровнях дают новое звание."],
   stats:["монеты, серия, заморозки","монеты. за каждые 10 xp дают одну монету, их можно потратить на хотелки в «наградах».\n\nсерия. столько дней подряд ты что-то записываешь.\n\nзаморозки. за каждую неделю без пропусков дают одну, максимум три. если пропустишь день, сгорит заморозка, а серия останется."],
   add:["записать или запланировать","если ты уже что-то сделал{а|}, жми «записать действие», опыт начислится сразу.\n\nесли только собираешься, жми «запланировать». опыт придёт, когда отметишь, что сделал{а|}."],
@@ -1001,6 +1011,30 @@ function normalize(p){
 }
 const allSkills=()=>CATALOG.concat((S.profile&&S.profile.custom||[]).map(c=>({id:c.id,g:c.g||"craft",name:c.name,d:c.d||"свой навык",custom:true})));
 const skillById=id=>allSkills().find(s=>s.id===id);
+/* сферы героя: 6 постоянных осей портрета, каждый навык живёт в одной сфере */
+const SPH_IC={work:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7M3 12.5h18"/>',money:'<circle cx="12" cy="12" r="8.5"/><path d="M14.6 9.4c-.5-.9-1.5-1.4-2.6-1.4-1.4 0-2.5.8-2.5 2s1.1 1.6 2.5 2 2.5.8 2.5 2-1.1 2-2.5 2c-1.1 0-2.1-.5-2.6-1.4M12 6.5V8M12 16v1.5"/>',people:'<circle cx="9" cy="8.5" r="3"/><path d="M3.5 19.5c0-3 2.5-5.5 5.5-5.5s5.5 2.5 5.5 5.5"/><circle cx="17" cy="9.5" r="2.3"/><path d="M16.5 14.2c2.4.1 4 1.9 4 4.6"/>',body:'<path d="M3 12.5h4l2.2-4.5 4 9 2.3-4.5H21"/>',soul:'<path d="M12 3.5l1.9 5.6 5.6 1.9-5.6 1.9L12 18.5l-1.9-5.6-5.6-1.9 5.6-1.9z"/>',mind:'<path d="M5 4.5h11.5a2 2 0 0 1 2 2V20H7a2 2 0 0 1-2-2zM5 18a2 2 0 0 1 2-2h11.5"/>'};
+const sphIc=(id,sz)=>`<svg class="sphic" viewBox="0 0 24 24" width="${sz||16}" height="${sz||16}" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${SPH_IC[id]||""}</svg>`;
+const SPHERES=[
+  {id:"work",n:"дело",ic:"work",d:"профессия и ремесло: то, чем ты зарабатываешь и в чём растёшь как специалист",top:"job"},
+  {id:"money",n:"деньги",ic:"money",d:"продажи, клиенты, продвижение, личные финансы и инвестиции",top:"money"},
+  {id:"people",n:"люди",ic:"people",d:"близкие, друзья, команда, дом и забота о других",top:"relations"},
+  {id:"body",n:"тело",ic:"body",d:"спорт, сон, еда, отдых и энергия",top:"sport"},
+  {id:"soul",n:"душа",ic:"soul",d:"творчество, хобби, музыка, фото, путешествия и новый опыт",top:"hobby"},
+  {id:"mind",n:"ум",ic:"mind",d:"учёба, чтение, языки, мышление, дисциплина и смелость",top:"read"}
+];
+const GRP_SPH={ai:"work",it:"work",design:"work",work:"work",biz:"work",mkt:"money",sales:"money",mind:"mind",body:"body",life:"people",craft:"soul",media:"work"};
+const SK_SPH={money:"money",invest:"money",product:"money",photo:"soul",music:"soul",explore:"soul",courage:"mind",style:"soul",illus:"soul"};
+const sphereOf=sk=>{const m=(S.profile&&S.profile.sphereMap)||{};return m[sk.id]||SK_SPH[sk.id]||GRP_SPH[sk.g]||"soul"};
+const sphereById=id=>SPHERES.find(x=>x.id===id);
+function spheresOf(d){
+  const P=S.profile;const act=new Set(P.active||[]);const base1=skillCum(1);
+  return SPHERES.map(sp=>{const sks=allSkills().filter(k=>sphereOf(k)===sp.id&&(act.has(k.id)||(d.skills[k.id]&&d.skills[k.id].xp>0)));
+    const total=sks.reduce((t,k)=>t+((d.skills[k.id]||{}).xp||0),0);
+    // уровень сферы — средний по трём самым сильным навыкам: так одна большая сфера не задавливает остальные
+    const lv=sks.map(k=>{const x=d.skills[k.id];return x?x.level+(x.frac||0):1}).sort((a,b)=>b-a).slice(0,3);
+    const val=lv.length?lv.reduce((t,v)=>t+v,0)/lv.length:0;
+    return{sp,sks,total,val,level:Math.floor(val),frac:val-Math.floor(val)}});
+}
 const activeSkills=()=>{const all=allSkills();return S.profile.active.map(id=>all.find(s=>s.id===id)).filter(Boolean)};
 const live=()=>S.entries.filter(e=>!e.del);
 const markGone=id=>{const P=S.profile;P.gone=(Array.isArray(P.gone)?P.gone:[]).concat(id).slice(-400)};
@@ -1722,7 +1756,10 @@ function radarSVG(items,max,opt){
   const poly=key=>items.map((it,i)=>pt(i,it[key]).map(x=>x.toFixed(1)).join(",")).join(" ");
   const axes=items.map((_,i)=>{const [x,y]=pt(i,max);return`<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="var(--line)" stroke-width="1"/>`}).join("");
   const labels=items.map((it,i)=>{const a=-Math.PI/2+i*2*Math.PI/n;const lx=cx+(R+20)*Math.cos(a),ly=cy+(R+20)*Math.sin(a);const anc=Math.abs(Math.cos(a))<.2?"middle":Math.cos(a)>0?"start":"end";
-    const nm=it.name.length>14?it.name.slice(0,13)+"…":it.name;return`<text x="${lx.toFixed(1)}" y="${(ly+(Math.sin(a)>.5?8:Math.sin(a)<-.5?-4:2)).toFixed(1)}" text-anchor="${anc}" font-size="11.5" fill="var(--ink)" font-weight="${it.focus?700:500}">${esc(nm)}${it.focus?" ★":""}</text><text x="${lx.toFixed(1)}" y="${(ly+(Math.sin(a)>.5?22:Math.sin(a)<-.5?10:16)).toFixed(1)}" text-anchor="${anc}" font-size="11" fill="var(--muted)">ур. ${it.now}</text>`}).join("");
+    const nm=it.name.length>14?it.name.slice(0,13)+"…":it.name;const y1=ly+(Math.sin(a)>.5?8:Math.sin(a)<-.5?-4:2),y2=ly+(Math.sin(a)>.5?22:Math.sin(a)<-.5?10:16);
+    if(it.sid){const ix=anc==="middle"?lx-7:anc==="start"?lx:lx-14;const iy=y1-27;const sub=(it.lvl?"ур. "+it.lvl:"пусто");
+      return`<g class="rd-lab" data-act="sphere" data-id="${it.sid}" role="button" tabindex="0" aria-label="сфера ${esc(it.name)}, ${sub}"><rect x="${(anc==="middle"?lx-40:anc==="start"?lx-6:lx-74).toFixed(1)}" y="${(iy-4).toFixed(1)}" width="80" height="${(y2-iy+10).toFixed(1)}" fill="transparent"/><svg x="${ix.toFixed(1)}" y="${iy.toFixed(1)}" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${SPH_IC[it.sid]}</svg><text x="${lx.toFixed(1)}" y="${y1.toFixed(1)}" text-anchor="${anc}" font-size="11.5" fill="var(--ink)" font-weight="${it.focus?700:600}">${esc(nm)}${it.focus?" ★":""}</text><text x="${lx.toFixed(1)}" y="${y2.toFixed(1)}" text-anchor="${anc}" font-size="11" fill="var(--muted)">${sub}${it.up>0?`<tspan fill="var(--accent-t)" font-weight="700"> ↑${it.up}</tspan>`:""}</text></g>`}
+    return`<text x="${lx.toFixed(1)}" y="${y1.toFixed(1)}" text-anchor="${anc}" font-size="11.5" fill="var(--ink)" font-weight="${it.focus?700:500}">${esc(nm)}${it.focus?" ★":""}</text><text x="${lx.toFixed(1)}" y="${y2.toFixed(1)}" text-anchor="${anc}" font-size="11" fill="var(--muted)">ур. ${it.now}</text>`}).join("");
   const dots=items.map((it,i)=>{const [x,y]=pt(i,it.now);return`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.5" fill="var(--accent)"/>`}).join("");
   return`<svg class="radar" viewBox="0 0 ${W} ${H}" role="img" aria-label="портрет героя: ${esc(items.map(i=>i.name+" "+i.now).join(", "))}">
   ${[.25,.5,.75,1].map(k=>`<polygon points="${ring(k)}" fill="none" stroke="var(--line)" stroke-width="1"/>`).join("")}${axes}
@@ -1730,13 +1767,31 @@ function radarSVG(items,max,opt){
   <g class="rd-now" style="transform-origin:${cx}px ${cy}px"><polygon points="${poly("now")}" fill="color-mix(in srgb,var(--accent) 32%,transparent)" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round"/>${dots}</g>${labels}</svg>`;
 }
 function portraitCard(d){
-  const ps=portraitSkills(d);if(!ps.length)return"";
-  const items=ps.map(s=>({name:s.name,now:d.skills[s.id].level,focus:inFocus(s.id)}));
-  const max=Math.max(5,...items.map(i=>i.now));
-  const strong=items.slice().sort((a,b)=>b.now-a.now)[0],weak=items.slice().sort((a,b)=>a.now-b.now)[0];
-  return`<div class="card portrait" style="margin-top:12px"><div class="row" style="gap:6px"><b>портрет героя</b><button class="q" data-act="hint" data-k="portrait" aria-label="что это">?</button></div>
-  ${radarSVG(items,max)}
-  <p class="small muted" style="margin:0;text-align:center">${strong.now>weak.now?`сильнее всего: <b style="color:var(--ink)">${esc(strong.name)}</b> · подтянуть: <b style="color:var(--ink)">${esc(weak.name)}</b>`:"навыки пока ровные: начни качать главный, и форма проявится"}</p></div>`;
+  if(!activeSkills().length)return"";
+  const now=spheresOf(d);const then=spheresOf(derive(addDays(today(),-30)));
+  const items=now.map((x,i)=>({name:x.sp.n,now:x.val,then:then[i].val,lvl:x.level,sid:x.sp.id,up:x.level-then[i].level,focus:x.sks.some(k=>inFocus(k.id))}));
+  const max=Math.max(5,Math.ceil(Math.max(...items.map(i=>Math.max(i.now,i.then)))));
+  const up=now.map((x,i)=>({n:x.sp.n,dx:x.total-then[i].total,dl:x.level-then[i].level})).filter(x=>x.dx>0).sort((a,b)=>b.dx-a.dx);
+  const strong=items.slice().sort((a,b)=>b.now-a.now)[0],weak=now.slice().sort((a,b)=>a.val-b.val||a.total-b.total)[0];
+  const anyGrow=items.some(i=>Math.abs(i.now-i.then)>.05);
+  return`<div class="card portrait" style="margin-top:12px"><div class="row" style="justify-content:space-between;flex-wrap:nowrap"><div class="row" style="gap:6px"><b>портрет героя</b><button class="q" data-act="hint" data-k="portrait" aria-label="что это">?</button></div>${anyGrow?`<span class="small muted rd-leg"><i></i>месяц назад</span>`:""}</div>
+  ${radarSVG(items,max,{then:anyGrow})}
+  <p class="small muted" style="margin:10px 0 0;text-align:center">${up.length?`за месяц больше всего выросло: <b style="color:var(--ink)">${esc(up[0].n)}</b>${weak&&weak.sp.n!==up[0].n?` · подтянуть: <b style="color:var(--ink)">${esc(weak.sp.n)}</b>`:""}`:strong.now>1?`сильнее всего: <b style="color:var(--ink)">${esc(strong.name)}</b> · подтянуть: <b style="color:var(--ink)">${esc(weak.sp.n)}</b>`:"нажми на сферу, чтобы увидеть, что в неё входит"}</p></div>`;
+}
+function sphereSheet(id){
+  const d=derive();const P=S.profile;const all=spheresOf(d);const x=all.find(y=>y.sp.id===id);if(!x)return;
+  const old=derive(addDays(today(),-30));
+  const sug=allSkills().filter(k=>sphereOf(k)===id&&!(P.active||[]).includes(k.id)).slice(0,8);
+  sheet(`<div class="sheet-h"><h2 class="row" style="gap:10px;flex-wrap:nowrap">${sphIc(x.sp.id,28)}${esc(x.sp.n)}</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
+  <p style="margin:0">${esc(x.sp.d)}.</p>
+  <div class="row small" style="margin-top:10px;gap:10px"><b class="num">${x.sks.length?"уровень "+x.level:"пока пусто"}</b><div class="xpbar sm" style="flex:1" aria-hidden="true"><i style="width:${Math.max(2,Math.round(x.frac*100))}%"></i></div></div>
+  <div class="small muted" style="margin:16px 0 6px">${x.sks.length?"твои навыки в этой сфере":"здесь пока нет твоих навыков"}</div>
+  ${x.sks.length?`<div class="sph-list">${x.sks.slice().sort((p,q)=>(d.skills[q.id].level+(d.skills[q.id].frac||0))-(d.skills[p.id].level+(d.skills[p.id].frac||0))).map(k=>{const g=((d.skills[k.id]||{}).xp||0)-((old.skills[k.id]||{}).xp||0);return`<div class="sph-row"><div style="min-width:0"><div class="sph-rn">${esc(k.name)}</div><div class="small muted num">ур. ${d.skills[k.id].level} · ${esc(sktOf(d.skills[k.id].level))}${g>0?` · <b class="sph-up">+${g} xp</b> за месяц`:""}</div></div><label class="sph-mv" title="перенести в другую сферу"><span class="sr-only">сфера навыка</span><select data-sph="${k.id}">${SPHERES.map(o=>`<option value="${o.id}" ${o.id===id?"selected":""}>${o.n}</option>`).join("")}</select></label></div>`}).join("")}</div><p class="small muted" style="margin:8px 0 0">навык не туда попал? справа можно перенести его в другую сферу.</p>`:`<p class="small" style="margin:0">добавь навык, и сфера начнёт расти с каждой записью.</p>`}
+  ${sug.length?`<div class="small muted" style="margin:16px 0 6px">можно добавить</div><div class="chips">${sug.map(k=>`<button class="chip" data-addsk="${k.id}">+ ${esc(k.name)}</button>`).join("")}</div>`:""}
+  <button class="btn accent wide" style="margin-top:16px" data-act="close">понятно</button>`,el=>{
+    el.addEventListener("change",ev=>{const sel=ev.target.closest("[data-sph]");if(!sel)return;P.sphereMap=Object.assign({},P.sphereMap||{},{[sel.dataset.sph]:sel.value});Store.saveProfile();afterChange();toast("навык переехал в сферу «"+sphereById(sel.value).n+"»");sphereSheet(id)});
+    el.addEventListener("click",ev=>{const b=ev.target.closest("[data-addsk]");if(!b)return;const k=b.dataset.addsk;if(!P.active.includes(k)){P.active.push(k);if(P.startLevels[k]==null)P.startLevels[k]=1}Store.saveProfile();afterChange();toast("добавлено: "+skillById(k).name);sphereSheet(id)});
+  });
 }
 function focusCard(){
   const P=S.profile;const act=activeSkills();if(!act.length)return"";const f=P.focus||[];
@@ -2659,18 +2714,26 @@ function profSet(sel,done){
   sel.forEach(id=>{const pr=PROFS.find(x=>x.id===id);if(!pr)return;const items=pr.s.filter(k=>skillById(k)&&!used.has(k));items.forEach(k=>used.add(k));groups.push({t:pr.n,items})});
   const com=PROF_COMMON.filter(k=>skillById(k)&&!used.has(k));if(com.length)groups.push({t:"для всех",items:com});
   const had=P.active.slice();
+  const life={t:"вне работы",items:[],life:true};groups.push(life);const lifeSel=new Set();
+  const LIFE=SPHERES.filter(x=>x.id!=="work");
   sheet(`<span class="pill">шаг 2 из 3</span><h2 style="margin-top:12px">твой набор навыков</h2>
   <p class="small muted" style="margin:0">нажми на ✕, если что-то лишнее. добавить можно из каталога. лучше от 5 до 12, чтобы силы не распылялись.</p>
   <div id="psBody"></div>
+  <div class="small" style="margin:18px 0 6px;font-weight:600">что ещё качаешь в жизни?</div>
+  <div class="small muted" style="margin:0 0 8px">выбери сферы вне работы, добавлю в каждую по навыку. так прокачка будет про всю жизнь, а не только про дело.</div>
+  <div class="chips" id="psLife"></div>
   <button class="chip dash" id="psCat" style="margin-top:14px">+ добавить из каталога</button>
   <div class="small" style="margin-top:14px;font-weight:600" id="psCnt"></div>
   <button class="btn accent wide" style="margin-top:12px" id="psNext">дальше: стартовые уровни</button>`,el=>{
     const paint=()=>{
-      el.querySelector("#psBody").innerHTML=groups.map((g,gi)=>`<div class="small muted" style="margin:14px 0 6px">${gi===groups.length-1&&g.t==="для всех"?"для всех":"из «"+esc(g.t)+"»"}</div><div class="chips">${g.items.length?g.items.map(k=>`<button type="button" class="chip" aria-pressed="true" data-rm="${k}">${esc(skillById(k).name)}<span style="opacity:.7;margin-left:8px">✕</span></button>`).join(""):`<span class="small muted">для этого варианта набор не готов, выбери навыки в каталоге</span>`}</div>`).join("");
+      life.items=[...lifeSel].map(id=>sphereById(id).top).filter(k=>skillById(k)&&!had.includes(k)&&!groups.some(g=>!g.life&&g.items.includes(k)));
+      el.querySelector("#psLife").innerHTML=LIFE.map(x=>`<button type="button" class="chip" data-life="${x.id}" aria-pressed="${lifeSel.has(x.id)}"><span class="row" style="gap:6px;flex-wrap:nowrap">${sphIc(x.id,15)}${esc(x.n)}</span></button>`).join("");
+      el.querySelector("#psBody").innerHTML=groups.filter(g=>!g.life||g.items.length).map((g,gi,arr)=>`<div class="small muted" style="margin:14px 0 6px">${g.life?"вне работы":g.t==="для всех"?"для всех":"из «"+esc(g.t)+"»"}</div><div class="chips">${g.items.length?g.items.map(k=>`<button type="button" class="chip" aria-pressed="true" data-rm="${k}">${esc(skillById(k).name)}<span style="opacity:.7;margin-left:8px">✕</span></button>`).join(""):`<span class="small muted">для этого варианта набор не готов, выбери навыки в каталоге</span>`}</div>`).join("");
       const n=new Set(had.concat(...groups.map(g=>g.items))).size;
       el.querySelector("#psCnt").textContent="выбрано навыков: "+n+(n>12?". многовато, лучше до 12":"");
     };paint();
-    el.addEventListener("click",ev=>{const b=ev.target.closest("[data-rm]");if(!b)return;groups.forEach(g=>{g.items=g.items.filter(k=>k!==b.dataset.rm)});paint()});
+    el.addEventListener("click",ev=>{const lf=ev.target.closest("[data-life]");if(lf){const id=lf.dataset.life;lifeSel.has(id)?lifeSel.delete(id):lifeSel.add(id);paint();return}
+      const b=ev.target.closest("[data-rm]");if(!b)return;const rm=b.dataset.rm;if(life.items.includes(rm)){const sp=SPHERES.find(x=>x.top===rm);if(sp)lifeSel.delete(sp.id)}groups.forEach(g=>{g.items=g.items.filter(k=>k!==rm)});paint()});
     const commit=()=>{groups.forEach(g=>g.items.forEach(k=>{if(!P.active.includes(k)){P.active.push(k);if(P.startLevels[k]==null&&k!=="job")P.startLevels[k]=1}}));P.seenSkills=null;Store.saveProfile();afterChange()};
     el.querySelector("#psCat").onclick=()=>{commit();closeSheet();skillCatalog(false,()=>{closeSheet();openStartLevels(()=>done&&done("ok"))})};
     el.querySelector("#psNext").onclick=()=>{if(!new Set(had.concat(...groups.map(g=>g.items))).size){toast("выбери хотя бы один навык в каталоге");return}commit();closeSheet();openStartLevels(()=>done&&done("ok"))};
@@ -3049,6 +3112,7 @@ document.addEventListener("click",ev=>{
     case"backup":backup();break;
     case"grpTog":{S.grpOpen=S.grpOpen||{};S.grpOpen[id]=!S.grpOpen[id];try{localStorage.setItem("prk-grp",JSON.stringify(S.grpOpen))}catch(x){}render();break}
     case"skillCat":skillCatalog();break;
+    case"sphere":sphereSheet(id);break;
     case"catThenAdd":closeSheet();if(S.profile.active.length)openEntry(null,{});break;
     case"startLevels":openStartLevels();break;
     case"slDone":{closeSheet();const f=window._slDone;window._slDone=null;if(f)f();break}
