@@ -578,6 +578,29 @@ html.tt,html.tt *{transition:background-color .4s ease,color .4s ease,border-col
 .donebox summary::-webkit-details-marker{display:none}.donebox summary span::after{content:" ›";opacity:.5}.donebox[open] summary span::after{content:" ⌄"}
 .card.mood .need3{margin-top:10px}
 .card{border-color:transparent}
+.gantt{margin-top:12px}
+.gsc{overflow-x:auto;border-radius:12px;background:var(--tile,transparent);scrollbar-width:thin}
+.grow{display:flex;min-height:38px;align-items:stretch;width:max-content;min-width:100%}.grow.ghead{min-height:44px;position:sticky;top:0}
+.gl{flex:none;width:132px;position:sticky;left:0;z-index:3;background:var(--card);display:flex;align-items:center;padding:0 8px 0 2px;border-right:1px solid var(--line)}
+.glb{font-size:12.5px;text-align:left;line-height:1.2;color:#171C24;background:none;border:0;padding:0;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;cursor:pointer}
+.glb.ok{text-decoration:line-through;opacity:.55}.glb.st{font-weight:700;font-size:12px;letter-spacing:.01em}.glb.qh{font-weight:700;font-size:13px}
+.grow.gr-stage{background:color-mix(in srgb,var(--accent) 6%,transparent)}.grow.gr-quest{border-top:1px solid var(--line)}
+.gt{position:relative;flex:none}
+.gms-row,.gds-row{position:relative;height:20px}.gm,.gd{position:absolute;top:2px;font-size:11px;color:var(--muted)}.gm{font-weight:700;color:inherit;padding-left:4px}
+.gd{width:30px;text-align:center}.gd.we{opacity:.55}.gd.td{color:#fff;background:var(--accent);border-radius:999px}
+.gwe{position:absolute;top:0;bottom:0;width:30px;background:color-mix(in srgb,var(--ink) 4%,transparent)}
+.gtoday{position:absolute;top:0;bottom:0;width:2px;margin-left:-1px;background:var(--accent);opacity:.8;z-index:1}
+.gbar{position:absolute;top:8px;height:22px;border-radius:7px;display:flex;align-items:center;gap:5px;padding:0 4px;overflow:hidden;cursor:pointer;z-index:2;white-space:nowrap}
+.gbar.tk{background:color-mix(in srgb,var(--accent) 22%,var(--card));border:1.5px solid var(--accent)}
+.gbar.tk.ok{background:var(--accent);border-color:var(--accent);color:#fff}.gbar.tk.late{background:color-mix(in srgb,#C9567A 18%,var(--card));border-color:#C9567A}
+.gbar.tk.nodl{border-style:dashed}
+.gbar .gtx{font-size:11px;font-weight:600;color:inherit;opacity:.85}
+.gbar.st{top:15px;height:8px;border-radius:4px;background:color-mix(in srgb,var(--accent) 25%,transparent)}.gbar.st .gfill,.gbar.qb .gfill{position:absolute;left:0;top:0;bottom:0;background:var(--accent);border-radius:inherit}
+.gbar.qb{top:9px;height:20px;border-radius:10px;background:color-mix(in srgb,var(--accent) 22%,transparent)}.gbar.qb .gtx{position:relative;margin-left:6px;color:inherit}
+.gms{position:absolute;top:13px;width:12px;height:12px;margin-left:-6px;background:var(--card);border:2.5px solid var(--accent);transform:rotate(45deg);border-radius:2px;z-index:3}.gms.ok{background:var(--accent)}
+.glegend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px}.glegend .lg{display:inline-block;width:14px;height:9px;border-radius:3px;vertical-align:middle;margin-right:5px;background:color-mix(in srgb,var(--accent) 22%,transparent);border:1.5px solid var(--accent)}
+.glegend .lg.ok{background:var(--accent)}.glegend .lg.late{border-color:#C9567A;background:color-mix(in srgb,#C9567A 18%,transparent)}.glegend .lg.ms{width:9px;height:9px;transform:rotate(45deg);border-radius:2px;background:transparent}.glegend .lg.td{width:2px;height:12px;border:0;background:var(--accent);border-radius:0}
+@media (min-width:1000px){.gl{width:200px}}
 </style>
 
 </head>
@@ -820,6 +843,7 @@ const ACH_RULES=[
 ];
 
 const HELP={
+  gantt:["путь квестов","таймлайн всех активных квестов: личных и командных. полоса квеста идёт от старта до дедлайна, заливка показывает, сколько готово.\n\nпод командным квестом его этапы и задачи: полоса задачи — от начала до дедлайна, на полосе аватарка ответственного. ромбик — дедлайн этапа, вертикальная линия — сегодня.\n\nнажми на задачу, чтобы открыть её. начало задачи ставится в самой задаче."],
   focus:["фокус сезона","выбери до трёх главных навыков на сезон. действия в них дают ×1,5 опыта, а на карточках и в форме записи они со звёздочкой ★.\n\nускорение действует для новых записей, прошлые не пересчитываются. поменять фокус можно в любой момент."],
   cal:["календарь","каждая клетка — день месяца. чем ярче, тем больше опыта ты получил{а|} в этот день, бледные дни ещё впереди, точка — сегодня.\n\nнажми на день, и ниже появятся дела за него. стрелками листаются месяцы."],
   weeks:["дел по неделям сезона","каждый столбик — одна неделя сезона, цифра сверху — сколько дел ты записал{а|}. светлый столбик — эта неделя."],
@@ -907,7 +931,7 @@ function stateIcon(k,n){
 }
 
 /* ================= профиль ================= */
-const S={hist:[],qTab:(()=>{try{return localStorage.getItem("prk-qtab")||"mine"}catch(x){return"mine"}})(),grpOpen:(()=>{try{return JSON.parse(localStorage.getItem("prk-grp"))||{}}catch(x){return{}}})(),profile:null,entries:[],view:"home",pathMode:"feed",pathFilter:null,thenDate:null,lastW:null};
+const S={tqView:(()=>{try{return localStorage.getItem("prk-tqview")||"list"}catch(x){return"list"}})(),hist:[],qTab:(()=>{try{return localStorage.getItem("prk-qtab")||"mine"}catch(x){return"mine"}})(),grpOpen:(()=>{try{return JSON.parse(localStorage.getItem("prk-grp"))||{}}catch(x){return{}}})(),profile:null,entries:[],view:"home",pathMode:"feed",pathFilter:null,thenDate:null,lastW:null};
 function defaultProfile(){
   const t=today();
   return {v:2,fresh:true,upd:0,seasonStart:t,seasonDays:90,active:[],custom:[],startLevels:{},fears:"",
@@ -1309,7 +1333,7 @@ function setupHq(){
   car.onscroll=()=>{const i=Math.round(car.scrollLeft/Math.max(1,car.clientWidth));bs.forEach((b,k)=>b.classList.toggle("on",k===i))};
 }
 function animateIn(root){
-  if(!root)return;setupHq();let rm=false;try{rm=matchMedia("(prefers-reduced-motion: reduce)").matches}catch(x){}
+  if(!root)return;setupHq();ganttScroll(root);let rm=false;try{rm=matchMedia("(prefers-reduced-motion: reduce)").matches}catch(x){}
   root.querySelectorAll("[data-h]").forEach(el=>{if(rm){el.style.height=el.dataset.h;return}el.style.height="3px";requestAnimationFrame(()=>requestAnimationFrame(()=>{el.style.height=el.dataset.h}))});
   root.querySelectorAll("[data-gw]").forEach(el=>{if(rm){el.style.width=el.dataset.gw;return}requestAnimationFrame(()=>requestAnimationFrame(()=>{el.style.width=el.dataset.gw}))});
   root.querySelectorAll("[data-count]").forEach(el=>{const to=+el.dataset.count||0;if(rm||to<=0){el.textContent=to;return}const t0=performance.now(),dur=900;const step=t=>{const k=Math.min(1,(t-t0)/dur);el.textContent=Math.round(to*(1-Math.pow(1-k,3)));if(k<1)requestAnimationFrame(step)};requestAnimationFrame(step)});
@@ -1530,8 +1554,9 @@ function questToTeam(id){
 }
 
 function vPath(d){
-  const modes=[["feed","лента"],["chart","график"],["compare","до и после"]];
-  const body=(S.pathMode==="feed"?pathFeed(d):S.pathMode==="chart"?pathChart(d):pathCompare(d))+(S.pathMode==="feed"&&live().filter(e=>!e.planned).length<5?nextGoal(d):"");
+  const modes=[["feed","лента"],["chart","график"],["compare","до/после"],["quests","квесты"]];
+  if(S.pathMode==="quests")TQ.load();
+  const body=(S.pathMode==="feed"?pathFeed(d):S.pathMode==="chart"?pathChart(d):S.pathMode==="quests"?pathQuests(d):pathCompare(d))+(S.pathMode==="feed"&&live().filter(e=>!e.planned).length<5?nextGoal(d):"");
   return`${secTitle("мой путь",S.pathMode,`<button class="link" data-act="recap">итог недели</button>`)}
   <div class="seg" role="group" id="pathSeg" style="margin-top:12px">${modes.map(([id,l])=>`<button data-act="pmode" data-id="${id}" aria-pressed="${S.pathMode===id}">${l}</button>`).join("")}</div>${body}`;
 }
@@ -1750,6 +1775,59 @@ function calLinks(title,date,note){
   return`<span class="row small" style="gap:12px"><button class="link" data-act="openUrl" data-url="${esc(g)}">в google календарь</button><button class="link" data-act="openUrl" data-url="${esc(ics)}">в календарь айфона / мака</button></span>`;
 }
 function tqProgress(q){const all=(q.tasks||[]).length,dn=(q.tasks||[]).filter(t=>t.done).length;return{all,dn,pr:all?Math.round(dn/all*100):0}}
+
+/* ================= таймлайн (гант) ================= */
+/* полоса задачи идёт от начала до дедлайна; этапы группируют задачи и заканчиваются вехой-ромбиком; вертикальная линия — сегодня */
+const GW=30; // ширина дня в пикселях
+const dOf=ts=>ts?new Date(ts).toISOString().slice(0,10):"";
+function ganttRows(q){
+  const tasks=(q.tasks||[]).slice();const st=q.stages||[];const t=today();
+  const tr=x=>{const s0=x.start||dOf(x.created)||t;const e0=x.deadline||s0;return{kind:"task",id:x.id,q:q.id,title:x.title,start:s0<e0?s0:e0,end:e0>s0?e0:s0,done:x.done,who:tqMem(q,x.who),late:!x.done&&x.deadline&&x.deadline<t,noDl:!x.deadline}};
+  const rows=[];
+  const free=tasks.filter(x=>!x.stage||!st.some(s=>s.id===x.stage));
+  free.sort((a,b)=>tr(a).start<tr(b).start?-1:1).forEach(x=>rows.push(tr(x)));
+  let prev=dOf(q.created)||t;
+  st.forEach(sg=>{const ts=tasks.filter(x=>x.stage===sg.id).map(tr).sort((a,b)=>a.start<b.start?-1:1);
+    const s0=ts.length?ts.reduce((m,x)=>x.start<m?x.start:m,ts[0].start):prev;const e0=sg.deadline||(ts.length?ts.reduce((m,x)=>x.end>m?x.end:m,ts[0].end):s0);
+    rows.push({kind:"stage",id:sg.id,q:q.id,title:sg.title,start:s0<e0?s0:e0,end:e0,done:sg.done,ms:sg.deadline,dn:ts.filter(x=>x.done).length,all:ts.length});
+    ts.forEach(x=>rows.push(x));prev=e0});
+  return rows;
+}
+function ganttHTML(groups,opt){
+  opt=opt||{};const t=today();
+  const all=groups.flatMap(g=>g.rows.concat(g.head?[g.head]:[]));if(!all.length)return`<p class="small muted" style="margin:8px 0 0">на таймлайне пока пусто: добавь задачам начало и дедлайн.</p>`;
+  let a=all.reduce((m,r)=>r.start<m?r.start:m,t),z=all.reduce((m,r)=>r.end>m?r.end:m,t);
+  a=addDays(a,-2);z=addDays(z,3);if(diffDays(a,z)<20)z=addDays(a,20);
+  const n=diffDays(a,z)+1;const W=n*GW;const x=d=>diffDays(a,d)*GW;
+  // шапка: месяцы и числа, выходные подсвечены
+  let months="",days="";let curM="";
+  for(let i=0;i<n;i++){const d=addDays(a,i);const dt=parseD(d);const wd=dt.getDay();const m=d.slice(0,7);
+    if(m!==curM){curM=m;months+=`<span class="gm" style="left:${i*GW}px">${MONN[dt.getMonth()]}</span>`}
+    days+=`<span class="gd ${wd===0||wd===6?"we":""} ${d===t?"td":""}" style="left:${i*GW}px">${dt.getDate()}</span>`}
+  const weekendBg=(()=>{let s="";for(let i=0;i<n;i++){const wd=parseD(addDays(a,i)).getDay();if(wd===0||wd===6)s+=`<i class="gwe" style="left:${i*GW}px"></i>`}return s})();
+  const todayLine=diffDays(a,t)>=0&&diffDays(a,t)<n?`<i class="gtoday" style="left:${x(t)+GW/2}px"></i>`:"";
+  const bar=r=>{const l=x(r.start),w=Math.max(GW,(diffDays(r.start,r.end)+1)*GW);const dur=diffDays(r.start,r.end)+1;
+    if(r.kind==="stage")return`<div class="gbar st ${r.done?"ok":""}" style="left:${l}px;width:${w}px" data-act="tqOpen" data-id="${esc(r.q)}"><span class="gfill" style="width:${r.all?Math.round(r.dn/r.all*100):0}%"></span></div>${r.ms?`<i class="gms ${r.done?"ok":""}" style="left:${x(r.ms)+GW/2}px" title="веха: ${esc(fmtD(r.ms))}"></i>`:""}`;
+    if(r.kind==="quest")return`<div class="gbar qb ${r.done?"ok":""}" style="left:${l}px;width:${w}px"><span class="gfill" style="width:${r.pr||0}%"></span><span class="gtx">${dur} ${plural(dur,"день","дня","дней")}</span></div>`;
+    return`<div class="gbar tk ${r.done?"ok":""} ${r.late?"late":""} ${r.noDl?"nodl":""}" style="left:${l}px;width:${w}px" data-act="tqTask" data-q="${esc(r.q)}" data-id="${esc(r.id)}" title="${esc(r.title)} · ${esc(fmtD(r.start))} – ${esc(fmtD(r.end))}">${r.who?avatar(r.who,20):""}<span class="gtx">${r.done?"✓ ":""}${w>=GW*3?dur+" "+plural(dur,"день","дня","дней"):""}</span></div>`};
+  const label=r=>r.kind==="task"?`<button class="glb tk ${r.done?"ok":""}" data-act="tqTask" data-q="${esc(r.q)}" data-id="${esc(r.id)}">${esc(r.title)}</button>`:r.kind==="stage"?`<div class="glb st">${r.done?"✅ ":""}${esc(r.title)}${r.all?` <span class="muted">${r.dn}/${r.all}</span>`:""}</div>`:`<button class="glb qh" ${r.q?`data-act="tqOpen" data-id="${esc(r.q)}"`:r.pq?`data-act="qInfo" data-id="${esc(r.pq)}"`:""}>${esc(r.title)}</button>`;
+  const rowsH=groups.map(g=>(g.head?[g.head]:[]).concat(g.rows).map(r=>`<div class="grow gr-${r.kind}"><div class="gl">${label(r)}</div><div class="gt" style="width:${W}px">${weekendBg}${todayLine}${bar(r)}</div></div>`).join("")).join("");
+  return`<div class="gantt"><div class="gsc" data-gx="${Math.max(0,x(t)-GW*4)}"><div class="grow ghead"><div class="gl"></div><div class="gt" style="width:${W}px"><div class="gms-row">${months}</div><div class="gds-row">${days}</div></div></div>${rowsH}</div>
+  <div class="glegend small muted"><span><i class="lg tk"></i>задача</span><span><i class="lg ok"></i>готово</span><span><i class="lg late"></i>просрочено</span><span><i class="lg ms"></i>дедлайн этапа</span><span><i class="lg td"></i>сегодня</span></div></div>`;
+}
+function ganttScroll(root){(root||document).querySelectorAll(".gsc[data-gx]").forEach(el=>{if(!el._sx){el.scrollLeft=+el.dataset.gx;el._sx=1}})}
+/* «путь» → квесты: все квесты на одном таймлайне */
+function pathQuests(d){
+  const P=S.profile;const t=today();const groups=[];
+  TQ.list.forEach(q=>{const p=tqProgress(q);const rows=ganttRows(q);const s0=rows.length?rows.reduce((m,r)=>r.start<m?r.start:m,dOf(q.created)||t):(dOf(q.created)||t);const e0=q.deadline||(rows.length?rows.reduce((m,r)=>r.end>m?r.end:m,s0):s0);
+    groups.push({head:{kind:"quest",q:q.id,title:"👥 "+q.title,start:s0<e0?s0:e0,end:e0>s0?e0:s0,pr:p.pr,done:p.all&&p.dn===p.all},rows})});
+  P.challenges.filter(c=>c.status==="active").forEach(c=>{const len={day:1,week:7,month:30}[c.period]||7;const s0=c.created&&c.created<=c.due?c.created:addDays(c.due,-(len-1));const steps=c.steps||[];
+    groups.push({head:{kind:"quest",pq:c.id,title:(QNAME[c.period]||"квест")+": "+c.title,start:s0,end:c.due,pr:steps.length?Math.round(steps.filter(x=>x.done).length/steps.length*100):0},rows:[]})});
+  const head=`<div class="card" style="margin-top:12px"><div class="row" style="justify-content:space-between;flex-wrap:nowrap"><div class="row" style="gap:6px;flex-wrap:nowrap"><b>путь квестов</b><button class="q" data-act="hint" data-k="gantt" aria-label="что это">?</button></div><span class="small muted">${groups.length} ${plural(groups.length,"квест","квеста","квестов")}</span></div>`;
+  if(!groups.length)return head+`<p class="small muted" style="margin:8px 0 0">активных квестов нет. возьми свой или командный во вкладке «квесты».</p></div>`;
+  return head+ganttHTML(groups)+`</div>`;
+}
+
 function tqSection(noHead){
   const head=noHead?"":secTitle("командные квесты","team",Store.online()?`<button class="link" data-act="tqNew">создать</button>`:"");
   if(!Store.online())return head+`<div class="card small muted" style="margin-top:12px">командные квесты работают, когда прокачка открыта через бота в телеграме.</div>`;
@@ -1788,6 +1866,7 @@ function tqHome(){
 }
 function tqRepaint(){
   if(S.view==="home"){const h=$("#tqHero");if(h){const q=S.profile.challenges.some(c=>c.status==="active");const html=gx(tqHero(!q));if(h._h!==html){h.innerHTML=html;h._h=html;setupHq()}}}
+  if(S.view==="path"&&S.pathMode==="quests"){const pv=$("#view");const html=gx(vPath(derive()));if(pv._pq!==html){pv._pq=html;render()}}
   if(S.view==="quests"){const el=$("#tqSec");if(el){const html=tqSection(true);if(el._h!==html){el.innerHTML=html;el._h=html}}const sg=document.querySelector('[data-act="qTab"][data-id="team"]');if(sg&&sg.closest(".seg"))sg.textContent="командные"+(TQ.list.length?" · "+TQ.list.length:"")}
   // открытое окно перерисовываем, только если данные правда поменялись и человек ничего не печатает
   if(TQ.open){const sh=$("#layer .sheet");if(sh&&sh.dataset.tq===TQ.open.q&&!sh.dataset.dirty){const sig=JSON.stringify(TQ.q(TQ.open.q)||null);if(sh.dataset.sig!==sig){const y=sh.scrollTop;if(TQ.open.t)tqTaskSheet(TQ.open.q,TQ.open.t,true);else tqSheet(TQ.open.q,true);const n=$("#layer .sheet");if(n)n.scrollTop=y}}}
@@ -1802,7 +1881,7 @@ function tqSheet(qid,keep){
   const q=TQ.q(qid);if(!q){closeSheet();toast("квест не найден");return}
   TQ.open={q:qid};
   const p=tqProgress(q);const st=q.stages||[];
-  const tasks=(q.tasks||[]).slice().sort((a,b)=>(a.done-b.done)||((a.deadline||"9999")<(b.deadline||"9999")?-1:(a.deadline||"9999")>(b.deadline||"9999")?1:(a.created||0)-(b.created||0)));
+  const tasks=(q.tasks||[]).slice().sort((a,b)=>((a.deadline||"9999")<(b.deadline||"9999")?-1:(a.deadline||"9999")>(b.deadline||"9999")?1:(a.created||0)-(b.created||0)));
   const group=sid=>tasks.filter(t=>(t.stage||"")===sid&&(sid===""||st.some(x=>x.id===sid))||(sid===""&&t.stage&&!st.some(x=>x.id===t.stage)));
   const stBlock=x=>{const ts=group(x.id);return`<div class="tq-stage"><span>${x.done?"✅ ":""}${esc(x.title)} ${dlChip(x.deadline,x.done)}</span><span class="row" style="gap:12px;flex-wrap:nowrap">${x.deadline?`<button class="link" data-act="calPick" data-q="${esc(q.id)}" data-t="${esc("этап «"+x.title+"» · "+q.title)}" data-d="${esc(x.deadline)}">в календарь</button>`:""}<button class="link" data-act="tqStage" data-q="${esc(q.id)}" data-id="${esc(x.id)}">${x.done?"открыть":"закрыть"}</button></span></div>${ts.map(t=>tqTaskRow(q,t)).join("")||`<div class="small muted" style="padding:6px 0">в этапе пока нет задач</div>`}`};
   const free=group("");
@@ -1813,13 +1892,14 @@ function tqSheet(qid,keep){
   <div class="card" style="margin-top:10px"><div class="row" style="justify-content:space-between"><b>команда · ${(q.members||[]).length}</b><button class="btn sm accent" data-act="tqInvite" data-q="${esc(q.id)}">позвать</button></div>
   ${(q.members||[]).map(m=>`<div class="mem">${avatar(m,32)}<span>${esc(m.name)}${m.uid===TQ.me()?' <span class="muted small">это ты</span>':""}</span></div>`).join("")}</div>
   <div class="card" style="margin-top:10px"><div class="row" style="justify-content:space-between"><b>задачи</b><button class="btn sm accent" data-act="tqTask" data-q="${esc(q.id)}" data-id="">${IC.plus} задача</button></div>
-  ${free.map(t=>tqTaskRow(q,t)).join("")}${st.map(stBlock).join("")}
+  <div class="seg" role="group" aria-label="вид" style="margin-top:10px"><button data-act="tqView" data-id="list" data-q="${esc(q.id)}" aria-pressed="${S.tqView!=="gantt"}">список</button><button data-act="tqView" data-id="gantt" data-q="${esc(q.id)}" aria-pressed="${S.tqView==="gantt"}">таймлайн</button></div>
+  ${S.tqView==="gantt"?ganttHTML([{rows:ganttRows(q)}]):free.map(t=>tqTaskRow(q,t)).join("")+st.map(stBlock).join("")}
   ${!tasks.length?`<p class="small muted" style="margin:8px 0 0">добавь первую задачу: что сделать, кто отвечает и до какого числа.</p>`:""}</div>
   <div class="card" style="margin-top:10px"><b>этапы</b>
   <form class="row" data-form="tqStage" data-q="${esc(q.id)}" style="margin-top:10px;flex-wrap:nowrap;gap:6px"><input class="in-text" name="t" placeholder="этап, например «сценарий»" style="padding:9px 10px" aria-label="название этапа"><input class="in-text" type="date" name="d" style="padding:9px 8px;width:auto" aria-label="дедлайн этапа"><button class="btn sm" type="submit">+</button></form></div>
   <button class="btn accent wide" style="margin-top:14px" data-act="close">готово</button>
   <p class="small muted" style="margin:8px 0 0;text-align:center">задачи, этапы и отметки сохраняются сразу, команда получает их в боте</p>
-  <div class="row" style="justify-content:center;gap:18px;margin-top:12px"><button class="link" data-act="tqEdit" data-q="${esc(q.id)}">изменить квест</button><button class="link" data-act="tqLeave" data-q="${esc(q.id)}" style="color:var(--muted)">выйти из квеста</button></div>`,el=>{el.dataset.tq=q.id;el.dataset.sig=JSON.stringify(q);el.addEventListener("input",()=>{el.dataset.dirty="1"})});
+  <div class="row" style="justify-content:center;gap:18px;margin-top:12px"><button class="link" data-act="tqEdit" data-q="${esc(q.id)}">изменить квест</button><button class="link" data-act="tqLeave" data-q="${esc(q.id)}" style="color:var(--muted)">выйти из квеста</button></div>`,el=>{el.dataset.tq=q.id;el.dataset.sig=JSON.stringify(q);el.addEventListener("input",()=>{el.dataset.dirty="1"});ganttScroll(el)});
 }
 function tqEditSheet(qid){
   const q=qid?TQ.q(qid):null;TQ.open=null;
@@ -1845,7 +1925,8 @@ function tqTaskSheet(qid,tid,keep){
   <div class="field" style="margin-top:0"><label for="ttT">что сделать</label><input class="in-text" id="ttT" maxlength="160" placeholder="например, снять три сторис" value="${t?esc(t.title):""}"></div>
   <div class="field"><label for="ttE">суть</label><textarea class="in-text" id="ttE" rows="3" maxlength="2000" placeholder="детали, ссылки, что считается готовым">${t?esc(t.essence||""):""}</textarea></div>
   <div class="field"><label>ответственный</label><div class="pick" id="ttW">${(q.members||[]).map(m=>`<button type="button" data-u="${m.uid}" aria-pressed="${m.uid===F.who}">${avatar(m,24)}${esc(m.name)}${m.uid===TQ.me()?" (я)":""}</button>`).join("")}<button type="button" data-u="0" aria-pressed="${!F.who}" style="padding-left:12px">никто</button></div></div>
-  <div class="field"><label for="ttD">дедлайн</label><input class="in-text" type="date" id="ttD" value="${t?esc(t.deadline||""):""}">${t&&t.deadline?calLinks(t.title+" · "+q.title,t.deadline,t.essence):""}</div>
+  <div class="row" style="gap:10px;flex-wrap:nowrap;align-items:flex-end"><div class="field" style="flex:1;min-width:0"><label for="ttB">начало</label><input class="in-text" type="date" id="ttB" value="${t?esc(t.start||""):today()}"></div><div class="field" style="flex:1;min-width:0"><label for="ttD">дедлайн</label><input class="in-text" type="date" id="ttD" value="${t?esc(t.deadline||""):""}"></div></div>
+  ${t&&t.deadline?`<div style="margin-top:6px">${calLinks(t.title+" · "+q.title,t.deadline,t.essence)}</div>`:""}<div class="small muted" style="margin-top:4px">начало и дедлайн рисуют полосу задачи на таймлайне</div>
   ${(q.stages||[]).length?`<div class="field"><label for="ttS">этап</label><select class="in-text" id="ttS"><option value="">без этапа</option>${q.stages.map(x=>`<option value="${esc(x.id)}" ${x.id===F.stage?"selected":""}>${esc(x.title)}${x.deadline?" · до "+esc(fmtD(x.deadline)):""}</option>`).join("")}</select></div>`:""}
   <div class="stack"><button class="btn accent wide" id="ttSave">${t?"сохранить изменения":"добавить задачу"}</button>${t?`<button class="btn ghost wide" data-act="tqDone" data-q="${esc(q.id)}" data-id="${esc(t.id)}">${t.done?"вернуть в работу":"✓ отметить выполненной"}</button>`:""}</div>
   <p class="small muted" style="margin:8px 0 0;text-align:center">${t?"после сохранения команда получит уведомление":"команда получит уведомление о новой задаче"}</p>
@@ -1858,7 +1939,8 @@ function tqTaskSheet(qid,tid,keep){
     el.querySelector("#ttSave").onclick=async()=>{
       const title=el.querySelector("#ttT").value.trim();if(!title){toast("напиши, что сделать");el.querySelector("#ttT").focus();return}
       const sel=el.querySelector("#ttS");
-      const nt=Object.assign({},t||{id:uid(),done:false},{title,essence:el.querySelector("#ttE").value.trim(),who:F.who||0,deadline:el.querySelector("#ttD").value||"",stage:sel?sel.value:F.stage,upd:Date.now()});
+      let st0=el.querySelector("#ttB").value||"",dl0=el.querySelector("#ttD").value||"";if(st0&&dl0&&st0>dl0){const x=st0;st0=dl0;dl0=x}
+      const nt=Object.assign({},t||{id:uid(),done:false},{title,essence:el.querySelector("#ttE").value.trim(),who:F.who||0,start:st0,deadline:dl0,stage:sel?sel.value:F.stage,upd:Date.now()});
       const btn=el.querySelector("#ttSave");btn.disabled=true;
       try{await TQ.call("task",{qid:q.id,task:nt});toast(t?"сохранила, команда получит уведомление":"задача добавлена, команда получит уведомление");tqRepaint();tqSheet(q.id)}catch(x){btn.disabled=false;toast("не получилось сохранить, проверь интернет")}};
   });
@@ -2891,6 +2973,7 @@ document.addEventListener("click",ev=>{
     case"sync":syncSheet();break;
     case"allowCloud":allowCloud();break;
     case"tqNew":tqEditSheet(null);break;
+    case"tqView":S.tqView=id;try{localStorage.setItem("prk-tqview",id)}catch(x){}{const sh=$("#layer .sheet");const y=sh?sh.scrollTop:0;tqSheet(b.dataset.q);const n=$("#layer .sheet");if(n)n.scrollTop=y}break;
     case"tqPlan":{const q=TQ.q(b.dataset.q);const t=q&&(q.tasks||[]).find(x=>x.id===b.dataset.id);if(!t)break;const sk=P.active[0];if(!sk){toast("сначала выбери навыки");break}
       if(!t.who){t.who=TQ.me();TQ.call("task",{qid:q.id,task:Object.assign({},t,{who:TQ.me(),upd:Date.now()})}).catch(()=>{})}
       Store.putEntry({id:uid(),date:today(),title:t.title,type:"create",primary:sk,secondary:[],planned:true,note:"задача командного квеста «"+q.title+"»",tref:{q:q.id,t:t.id}});
