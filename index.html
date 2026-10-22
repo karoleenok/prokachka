@@ -525,6 +525,8 @@ html.tt,html.tt *{transition:background-color .4s ease,color .4s ease,border-col
 .wstar{position:absolute;top:8px;right:8px;width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,.45);color:#fff;display:grid;place-items:center;font-size:16px;z-index:2}
 .wstar[aria-pressed="true"]{background:#F5A524;color:#171C24}
 .wish{position:relative}
+.hq-next{margin-top:10px;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.12)}.hq-next .btn{background:#fff;color:#171C24}
+  @media (min-width:1000px){.hero .hq .hq-next{grid-column:1}}
 </style>
 
 </head>
@@ -1064,6 +1066,7 @@ const Store={
   saveProfile(){S.profile.upd=Date.now();S.profile.fresh=false;this.dirtyP=true;this.cache();this.later()},
   putEntry(e){
     e.upd=Date.now();if(!e.ts)e.ts=e.upd;
+    if(e.qref&&!e.planned&&!e.del){const c=(S.profile.challenges||[]).find(x=>x.id===e.qref.c);const st=c&&(c.steps||[]).find(x=>x.id===e.qref.s);if(st&&!st.done){st.done=true;setTimeout(()=>{Store.saveProfile();toast("этап «"+st.t+"» закрыт в квесте"+(c.steps.every(x=>x.done)?". все этапы пройдены, нажми «пройден»":""));afterChange()},300)}}
     const i=S.entries.findIndex(x=>x.id===e.id);
     if(i>=0){const old=S.entries[i];
       const act=old.del&&!e.del?"restore":old.planned&&!e.planned?"done":old.date!==e.date?"move":"edit";
@@ -1341,6 +1344,9 @@ function heroQuest(q){
   return`<div class="hq"><div class="hq-top"><span>${esc(QNAME[q.period]||Pd.label)}</span><span>${esc(timeLeft(q))}</span></div>
   <div class="hq-t" data-act="qInfo" data-id="${q.id}" role="button" style="cursor:pointer">${esc(q.title)}</div>
   <div class="hq-m"><b>+${q.xp} xp</b><span>·</span><span>${IC.coin} ${q.coins}</span>${steps.length?`<span>·</span><span>этапы ${dn}/${steps.length}</span>`:""}</div>
+  ${(()=>{const nx=steps.find(x=>!x.done);if(!nx)return steps.length?"":`<div class="hq-m" style="margin-top:8px"><button class="link" style="text-align:left" data-act="qInfo" data-id="${q.id}" style="color:inherit">разбей квест на этапы, и я буду подсказывать следующий шаг →</button></div>`;
+    const pl=live().find(e=>e.planned&&e.qref&&e.qref.c===q.id&&e.qref.s===nx.id);
+    return`<div class="hq-next"><span class="small" style="opacity:.85">следующий шаг</span><div style="font-weight:600;margin-top:2px;overflow-wrap:anywhere">${esc(nx.t)}</div>${pl?`<div class="small" style="margin-top:6px;opacity:.85">✓ в планах на ${esc(dayWord(pl.date))}</div>`:`<button class="btn sm" style="margin-top:8px" data-act="qStepPlan" data-id="${q.id}" data-s="${nx.id}">${IC.plus} на сегодня</button>`}</div>`})()}
   <div class="hq-b"><button class="btn sm" data-act="qDone" data-id="${q.id}">${IC.check} пройден</button><button class="btn sm ghost" data-act="qInfo" data-id="${q.id}">подробнее</button></div></div>`;
 }
 /* копилка: сколько монет, что можно забрать уже сейчас и что ближе всего */
@@ -1353,7 +1359,7 @@ function piggyCard(d){
   const P=S.profile;if(!P.active.length)return"";
   const W=(P.rewards||[]).filter(r=>!r.example&&r.price>0);
   const have=Math.max(0,d.coins);
-  if(!W.length)return`<section class="card piggy" style="margin-top:12px"><div class="row" style="justify-content:space-between"><b>награды</b><span class="num">${IC.coin} ${have}</span></div><p class="small muted" style="margin:6px 0 10px">монеты копятся за каждое действие. добавь хотелку: то, чем наградишь себя, когда накопишь.</p><button class="btn ghost wide" data-act="piggyAdd">${IC.plus} добавить хотелку</button></section>`;
+  if(!W.length)return`<section class="card piggy" style="margin-top:12px"><div class="row" style="justify-content:space-between"><b>на что копим?</b><span class="num">${IC.coin} ${have}</span></div><p class="small muted" style="margin:6px 0 10px">монеты копятся за каждое действие. добавь хотелку: то, чем наградишь себя, когда накопишь.</p><button class="btn ghost wide" data-act="piggyAdd">${IC.plus} добавить хотелку</button></section>`;
   const pace=coinPace();
   const eta=r=>{const left=r.price-have;if(left<=0)return"можно забрать";if(pace<=0)return"осталось "+left;const dd=Math.ceil(left/pace);return"осталось "+left+" · примерно "+(dd<=1?"день":dd+" "+plural(dd,"день","дня","дней"))};
   const star=W.filter(r=>r.goal);
@@ -1363,10 +1369,10 @@ function piggyCard(d){
   const row=r=>{const pr=Math.min(100,Math.round(have/r.price*100));const cv=(r.imgs||[])[0];
     return`<div class="wl" data-act="wishView" data-id="${r.id}" role="button" style="cursor:pointer"><div class="wi" ${cv?`style="${coverCSS(cv,1)}"`:""}>${cv?"":IC.gift}</div><div class="wb"><div class="wt">${r.goal?"⭐ ":""}${esc(r.title)}</div><div class="prog" style="margin-top:6px"><i style="width:${pr}%"></i></div><div class="small muted" style="margin-top:4px">${IC.coin} ${r.price} · ${eta(r)}</div></div></div>`};
   return`<section class="card piggy" style="margin-top:12px">
-  <div class="row" style="justify-content:space-between"><b>награды</b><span class="num" style="font-weight:700">${IC.coin} ${have}</span></div>
+  <div class="row" style="justify-content:space-between"><div class="row" style="gap:6px;flex-wrap:nowrap"><b>на что копим?</b><button class="q" data-act="coinHelp" aria-label="как заработать монеты">?</button></div><span class="num" style="font-weight:700">${IC.coin} ${have}</span></div>
   ${can.length?`<div class="small" style="margin:8px 0 2px">уже можно забрать: <b>${can.slice(0,3).map(r=>esc(r.title)).join(", ")}</b>${can.length>3?" и ещё "+(can.length-3):""}</div>`:""}
   <div style="margin-top:6px">${show.map(row).join("")}</div>
-  <div class="row" style="justify-content:space-between;margin-top:8px"><span class="small muted">${pace>0?"в среднем "+(Math.round(pace*10)/10)+" "+plural(Math.round(pace),"монета","монеты","монет")+" в день":"монеты придут с первыми записями"}</span><button class="link" data-act="tab" data-id="rewards">все награды →</button></div>
+  <div class="row" style="justify-content:space-between;margin-top:8px"><span class="small muted">${pace>0?"сейчас ты зарабатываешь около "+(Math.round(pace*10)/10).toLocaleString("ru-RU")+" "+plural(Math.round(pace),"монеты","монет","монет")+" в день: столько в среднем вышло за последнюю неделю":"монеты придут с первыми записями"}</span><button class="link" data-act="tab" data-id="rewards">все награды →</button></div>
   ${!star.length?`<div class="small muted" style="margin-top:6px">отметь звёздочкой в вишлисте, на что копишь, и она будет здесь первой.</div>`:""}</section>`;
 }
 
@@ -2603,6 +2609,15 @@ document.addEventListener("click",ev=>{
     case"achAll":S.achAll=!S.achAll;render();break;
     case"qMenu":{const c=P.challenges.find(x=>x.id===id);if(!c)break;sheet(`<div class="sheet-h"><span class="pill">${esc(c.title.slice(0,40))}</span><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div><div class="stack"><button class="btn wide" data-act="qInfo" data-id="${c.id}">в чём суть</button><button class="btn wide" data-act="qReview" data-id="${c.id}">разбор</button>${Store.online()?`<button class="btn wide" data-act="qToTeam" data-id="${c.id}">сделать командным</button>`:""}</div>`);break}
     case"qToTeam":questToTeam(id);break;
+    case"coinHelp":sheet(`<div class="sheet-h"><h2>как копятся монеты</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
+      <div class="card"><b>1 монета за каждые 10 xp</b><p class="small muted" style="margin:6px 0 0">любое действие даёт опыт, а вместе с ним монеты. например, «создал{а|}» = 40 xp = 4 монеты, «выпустил{а|} или показал{а|}» = 60 xp = 6 монет.</p></div>
+      <div class="card" style="margin-top:10px"><b>квесты дают больше всего</b><p class="small muted" style="margin:6px 0 0">квест дня +5 монет, квест недели +15, квест месяца +50 сверху к опыту.</p></div>
+      <div class="card" style="margin-top:10px"><b>на что тратить</b><p class="small muted" style="margin:6px 0 0">добавь в «награды» то, чем хочешь себя порадовать, и цену в монетах. когда хватит, жми «взять»: монеты спишутся, а награда твоя. звёздочкой отметь то, на что копишь сейчас, и она будет первой на главной.</p></div>
+      <div class="card" style="margin-top:10px"><b>«около N монет в день»</b><p class="small muted" style="margin:6px 0 0">это твой темп за последние 7 дней. по нему я считаю, через сколько дней хватит на награду.</p></div>`);break;
+    case"qStepPlan":{const c=P.challenges.find(x=>x.id===id);const st=c&&(c.steps||[]).find(x=>x.id===b.dataset.s);if(!st)break;
+      const sk=P.active.includes(c.skill)?c.skill:P.active[0];if(!sk){toast("сначала выбери навыки");break}
+      Store.putEntry({id:uid(),date:today(),title:st.t,type:"create",primary:sk,secondary:[],planned:true,note:"этап квеста «"+c.title+"»",qref:{c:c.id,s:st.id}});
+      toast("добавила на сегодня. отметишь, и этап закроется в квесте");afterChange();break}
     case"qStep":{const c=P.challenges.find(x=>x.id===id);const st=c&&(c.steps||[]).find(x=>x.id===b.dataset.s);if(!st||c.status!=="active")break;st.done=!st.done;Store.saveProfile();
       const inSheet=!!b.closest(".sheet");if(c.steps.every(x=>x.done)){toast(c.period==="month"?"все этапы квеста месяца пройдены! нажми «пройден», чтобы забрать награду":"все этапы пройдены, забирай награду");}else if(st.done)toast("этап пройден");
       if(inSheet){render();questSheet(id)}else render();break}
