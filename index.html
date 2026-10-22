@@ -804,7 +804,7 @@ function stateIcon(k,n){
 }
 
 /* ================= профиль ================= */
-const S={grpOpen:(()=>{try{return JSON.parse(localStorage.getItem("prk-grp"))||{}}catch(x){return{}}})(),profile:null,entries:[],view:"home",pathMode:"feed",pathFilter:null,thenDate:null,lastW:null};
+const S={hist:[],grpOpen:(()=>{try{return JSON.parse(localStorage.getItem("prk-grp"))||{}}catch(x){return{}}})(),profile:null,entries:[],view:"home",pathMode:"feed",pathFilter:null,thenDate:null,lastW:null};
 function defaultProfile(){
   const t=today();
   return {v:2,fresh:true,upd:0,seasonStart:t,seasonDays:90,active:[],custom:[],startLevels:{},fears:"",
@@ -868,81 +868,120 @@ function unpackImgs(o){
   if(o&&typeof o==="object"){if(o.rid&&!o.url&&IMG[o.rid])o.url=IMG[o.rid];for(const k in o)if(k!=="url")unpackImgs(o[k])}
   return o;
 }
-const LS_P="prk-profile",LS_E="prk-entries";
+const LS_P="prk-profile",LS_E="prk-entries",LS_H="prk-hist",LS_Q="prk-pending";
+const lsGet=(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(x){return d}};
+const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));return true}catch(x){return false}};
+/* где лежат данные: основное хранилище на сервере бота (база cloudflare d1), на устройстве копия.
+   сервер сам объединяет изменения с разных устройств по времени правки каждой записи, поэтому телефон и ноутбук не затирают друг друга. */
 const Store={
-  lsOk:true,status:"local",err:"",lastSync:0,dirty:new Set(),flushing:false,counts:{},retryT:0,qT:0,ready:false,
+  lsOk:true,status:"local",err:"",lastSync:0,ready:false,sv:0,inflight:false,again:false,qT:0,pollT:0,
+  dirtyE:new Set(),dirtyP:false,srvImgs:new Set(),wantImgs:new Set(),
   loadLocal(){
     let p=null,e=[];
     try{p=JSON.parse(localStorage.getItem(LS_P)||"null");e=JSON.parse(localStorage.getItem(LS_E)||"[]");localStorage.setItem("prk-test","1")}catch(x){this.lsOk=false}
+    S.hist=lsGet(LS_H,[]);if(!Array.isArray(S.hist))S.hist=[];
+    const q=lsGet(LS_Q,null);if(q){(q.e||[]).forEach(id=>this.dirtyE.add(id));this.dirtyP=!!q.p;this.sv=+q.sv||0;(q.si||[]).forEach(r=>this.srvImgs.add(r));this.histSent=+q.hs||0}
+    try{Object.keys(localStorage).forEach(k=>{if(k.startsWith("prk-i-"))IMG[k.slice(6)]=localStorage.getItem(k)})}catch(x){}
     return{p,e:Array.isArray(e)?e:[]};
   },
-  cache(){try{localStorage.setItem(LS_P,JSON.stringify(S.profile));localStorage.setItem(LS_E,JSON.stringify(S.entries));this.lsOk=true}catch(x){this.lsOk=false}},
+  /* на устройстве храним данные без фото (фото отдельно), чтобы память браузера не переполнялась и записи не терялись */
+  cache(){
+    try{
+      localStorage.setItem(LS_P,JSON.stringify(packImgs(S.profile)));localStorage.setItem(LS_E,JSON.stringify(packImgs(S.entries)));this.lsOk=true;
+    }catch(x){this.lsOk=false}
+    lsSet(LS_H,S.hist.slice(-300));
+    this.savePending();
+    for(const rid in IMG){const k="prk-i-"+rid;try{if(!localStorage.getItem(k))localStorage.setItem(k,IMG[rid])}catch(x){}}
+  },
+  savePending(){lsSet(LS_Q,{e:[...this.dirtyE],p:this.dirtyP,sv:this.sv,si:[...this.srvImgs],hs:this.histSent||0})},
   setStatus(st,err){this.status=st;this.err=err||"";paintSync()},
+  online(){return!!(TG&&TG.initData)},
   async connect(){
-    if(!CS){this.setStatus("local",TG?"телеграм у тебя устаревший, обнови приложение, чтобы данные хранились в облаке.":"это обычный браузер, данные хранятся только на этом устройстве. открой приложение через бота в телеграме.");return}
+    if(!this.online()){this.setStatus("local","это обычный браузер, данные хранятся только на этом устройстве. открой приложение через бота в телеграме.");return}
     this.setStatus("syncing");
-    try{
-      await this.pullAll(true);
-      this.ready=true;refresh();
-      await this.flush();
-      this.loadImgs();
-      this.startPoll();
-    }catch(x){this.setStatus("error","не получилось связаться с облаком телеграма. всё сохранено на этом устройстве, попробую ещё раз.");clearTimeout(this.retryT);this.retryT=setTimeout(()=>this.connect(),8000)}
+    // первый запуск новой версии: забираем то, что лежало в облаке телеграма, и отправляем на сервер
+    if(CS&&!lsGet("prk-csmig",false)){try{await Promise.race([this.pullCS(),sleep(12000)])}catch(x){}}
+    if(!this.sv){S.entries.forEach(e=>this.dirtyE.add(e.id));this.dirtyP=true;this.histSent=0}
+    this.ready=true;refresh();
+    await this.sync(true);
+    clearInterval(this.pollT);this.pollT=setInterval(()=>{if(document.visibilityState==="visible")this.sync(false)},25000);
   },
-  /* читаем всё облако (кроме фото) и объединяем с тем, что есть на устройстве */
-  async pullAll(first){
-    const keys=await this.keysAll();
-    const nKeys=keys.filter(k=>k.endsWith("_n"));const meta=await cs.get(nKeys.concat(["ver"]));
-    this.seenVer=meta.ver||"";
-    nKeys.forEach(k=>{this.counts[k.slice(0,-2)]=+meta[k]||0});
-    const want=[];Object.entries(this.counts).forEach(([pre,n])=>{if(pre[0]==="i")return;for(let i=0;i<n;i++)want.push(pre+"_"+i)});
+  /* старое облако телеграма: только читаем, один раз */
+  async pullCS(){
+    const keys=await cs.keys();const counts={};
+    const nKeys=keys.filter(k=>k.endsWith("_n"));const meta=nKeys.length?await cs.get(nKeys):{};
+    nKeys.forEach(k=>{counts[k.slice(0,-2)]=+meta[k]||0});
+    const want=[];Object.entries(counts).forEach(([pre,n])=>{if(pre[0]==="i")return;for(let i=0;i<n;i++)want.push(pre+"_"+i)});
     const vals=want.length?await cs.get(want):{};
-    const blob=pre=>{const n=this.counts[pre]||0;let s="";for(let i=0;i<n;i++)s+=vals[pre+"_"+i]||"";return s};
-    let rp=null;if(this.counts.p){try{rp=JSON.parse(blob("p"))}catch(x){}}
-    let re=[];Object.keys(this.counts).filter(p=>/^e\d{6}$/.test(p)).forEach(p=>{try{re=re.concat(JSON.parse(blob(p)))}catch(x){}});
-    unpackImgs(S.profile);S.entries.forEach(unpackImgs);
-    let ch=false;
-    if(rp)ch=this.mergeProfile(unpackImgs(rp))||ch;else this.mark("p");
-    ch=this.mergeEntries(re.map(unpackImgs))||ch;
-    if(!first&&Object.keys(this.counts).some(p=>p[0]==="i"&&!imgSaved.has(p.slice(1))))this.loadImgs();
-    return ch;
+    const blob=pre=>{const n=counts[pre]||0;let s="";for(let i=0;i<n;i++)s+=vals[pre+"_"+i]||"";return s};
+    let rp=null;if(counts.p){try{rp=JSON.parse(blob("p"))}catch(x){}}
+    let re=[];Object.keys(counts).filter(p=>/^e\d{6}$/.test(p)).forEach(p=>{try{re=re.concat(JSON.parse(blob(p)))}catch(x){}});
+    if(rp)this.mergeProfile(rp,true);
+    this.mergeEntries(re,true);
+    unpackImgs(S.profile);S.entries.forEach(unpackImgs);this.cache();
+    lsSet("prk-csmig",true);
+    // фото из старого облака подгружаем в фоне, потом они уедут на сервер
+    (async()=>{try{for(const pre of Object.keys(counts).filter(p=>p[0]==="i")){const rid=pre.slice(1);if(IMG[rid])continue;
+      const n=counts[pre];const ks=[];for(let i=0;i<n;i++)ks.push(pre+"_"+i);const v=await cs.get(ks);let str="";for(let i=0;i<n;i++)str+=v[pre+"_"+i]||"";
+      if(str.startsWith("data:")){IMG[rid]=str;unpackImgs(S.profile);S.entries.forEach(unpackImgs);this.cache();refresh();this.later()}}}catch(x){}})();
   },
-  /* синхронизация, пока приложение открыто: дешёвая проверка метки версии, полное чтение только если кто-то что-то записал */
+  later(ms){clearTimeout(this.qT);this.qT=setTimeout(()=>this.sync(false),ms||400)},
+  mark(){this.later()},
+  /* один обмен с сервером: отправляем свои изменения, получаем чужие */
   async sync(force){
-    if(!CS||!this.ready||this.pulling)return;this.pulling=true;
+    if(!this.online()||!this.ready)return;
+    if(this.inflight){this.again=true;return}
+    this.inflight=true;
+    const ids=[...this.dirtyE],sendP=this.dirtyP,hs=this.histSent||0;
+    const ents=ids.map(id=>S.entries.find(e=>e.id===id)).filter(Boolean).map(e=>packImgs(e));
+    const prof=sendP?packImgs(S.profile):undefined;
+    const hist=S.hist.slice(hs).map(h=>packImgs(h));
+    // фото: отправляем по паре за раз, недостающие просим у сервера
+    const up=[];for(const rid in IMG){if(!this.srvImgs.has(rid)&&up.length<2)up.push({rid,data:IMG[rid]})}
+    const refd=new Set();const scan=o=>{if(Array.isArray(o))o.forEach(scan);else if(o&&typeof o==="object"){if(o.rid&&!IMG[o.rid])refd.add(o.rid);for(const k in o)if(k!=="url")scan(o[k])}};scan(S.profile);scan(S.entries);
+    const want=[...refd].slice(0,3);
+    if(force||ids.length||sendP)this.setStatus("syncing");
     try{
-      let ver="";try{ver=await cs.get1("ver")}catch(x){}
-      if(force||ver!==this.seenVer){if(force)this.setStatus("syncing");const ch=await this.pullAll(false);if(ch)refresh();}
-      await this.flush();
-      if(force&&!this.dirty.size&&this.status!=="error")this.setStatus("cloud");
-      this.lastCheck=Date.now();
-    }catch(x){if(force)this.setStatus("error","облако телеграма не ответило. всё сохранено на этом устройстве, попробую ещё раз.")}
-    this.pulling=false;
+      const ac=new AbortController();const tm=setTimeout(()=>ac.abort(),25000);
+      const r=await fetch(BOT_API+"/st",{method:"POST",headers:{"content-type":"text/plain"},signal:ac.signal,
+        body:JSON.stringify({initData:TG.initData,since:this.sv,entries:ents,profile:prof,hist,imgs:up,want})});
+      clearTimeout(tm);
+      if(!r.ok)throw new Error("http "+r.status);
+      const j=await r.json();
+      // отправленное подтверждено: снимаем пометки (если за время запроса запись снова поменяли, пометка остаётся)
+      ids.forEach(id=>{const e=S.entries.find(x=>x.id===id);const sent=ents.find(x=>x.id===id);if(!e||!sent||e.upd===sent.upd)this.dirtyE.delete(id)});
+      if(sendP&&prof&&S.profile.upd===prof.upd)this.dirtyP=false;
+      this.histSent=Math.max(this.histSent||0,hs+hist.length);
+      up.forEach(x=>this.srvImgs.add(x.rid));(j.imgs||[]).forEach(rid=>this.srvImgs.add(rid));
+      let ch=false;
+      if(j.img)for(const rid in j.img){if(j.img[rid]){IMG[rid]=j.img[rid];ch=true}}
+      if(Array.isArray(j.entries)&&j.entries.length)ch=this.mergeEntries(j.entries)||ch;
+      if(j.profile)ch=this.mergeProfile(j.profile)||ch;
+      if(Array.isArray(j.hist)&&j.hist.length){const have=new Set(S.hist.map(h=>h.hid));const add=j.hist.filter(h=>h&&h.hid&&!have.has(h.hid));if(add.length){S.hist=S.hist.concat(add).sort((a,b)=>a.ts-b.ts).slice(-300);this.histSent=S.hist.length;ch=true}}
+      if(typeof j.ver==="number")this.sv=j.ver;
+      unpackImgs(S.profile);S.entries.forEach(unpackImgs);
+      this.cache();if(ch)refresh();
+      this.lastSync=Date.now();
+      this.setStatus("cloud",this.lsOk?"":"память браузера на этом устройстве переполнена, но всё сохранено на сервере.");
+      const more=this.dirtyE.size||this.dirtyP||S.hist.length>this.histSent||Object.keys(IMG).some(rid=>!this.srvImgs.has(rid))||want.length&&j.img&&Object.keys(j.img).length;
+      this.inflight=false;
+      if(this.again||more){this.again=false;this.later(more?300:50)}
+    }catch(x){
+      this.inflight=false;this.savePending();
+      this.setStatus("error","сервер прокачки сейчас не ответил. всё сохранено на этом устройстве, отправлю, как только появится связь.");
+      clearTimeout(this.qT);this.qT=setTimeout(()=>this.sync(false),10000);
+    }
   },
-  startPoll(){clearInterval(this.pollT);this.pollT=setInterval(()=>{if(document.visibilityState==="visible")this.sync(false)},30000)},
-  async readBlob(pre){
-    const n=+(await cs.get1(pre+"_n"))||0;if(n)this.counts[pre]=n;if(!n)return null;
-    const ks=[];for(let i=0;i<n;i++)ks.push(pre+"_"+i);const v=await cs.get(ks);
-    let str="";for(let i=0;i<n;i++)str+=v[pre+"_"+i]||"";
-    try{return JSON.parse(str)}catch(x){return undefined}
+  flushNow(){
+    // приложение закрывают: отправляем несохранённое без ожидания ответа
+    if(!this.online()||!this.ready||!navigator.sendBeacon)return;
+    const ents=[...this.dirtyE].map(id=>S.entries.find(e=>e.id===id)).filter(Boolean).map(e=>packImgs(e));
+    if(!ents.length&&!this.dirtyP&&S.hist.length<=(this.histSent||0))return;
+    try{navigator.sendBeacon(BOT_API+"/st",new Blob([JSON.stringify({initData:TG.initData,since:-1,entries:ents,profile:this.dirtyP?packImgs(S.profile):undefined,hist:S.hist.slice(this.histSent||0).map(h=>packImgs(h))})],{type:"text/plain"}))}catch(x){}
+    this.savePending();
   },
-  async keysAll(){return cs.keys()},
-  /* фото подгружаем уже после того, как дела и профиль на месте, чтобы метка «сохраняю» не висела */
-  async loadImgs(){
-    try{
-      const pres=Object.keys(this.counts).filter(p=>p[0]==="i"&&!imgSaved.has(p.slice(1)));
-      for(const pre of pres){
-        const n=this.counts[pre]||0;const keys=[];for(let i=0;i<n;i++)keys.push(pre+"_"+i);
-        const v=await cs.get(keys);let str="";for(let i=0;i<n;i++)str+=v[pre+"_"+i]||"";
-        IMG[pre.slice(1)]=str;imgSaved.add(pre.slice(1));
-      }
-      if(pres.length){unpackImgs(S.profile);S.entries.forEach(unpackImgs);refresh()}
-    }catch(x){clearTimeout(this.imgT);this.imgT=setTimeout(()=>this.loadImgs(),10000)}
-  },
-  mark(k){this.dirty.add(k);if(!this.ready&&CS)return;clearTimeout(this.qT);this.qT=setTimeout(()=>this.flush(),250)},
-  flushNow(){clearTimeout(this.qT);if(this.dirty.size)this.flush()},
   /* профиль: свежее побеждает в настройках, а списки (хотелки, квесты, цели, ачивки, покупки) объединяются по id, удалённое помнится в gone */
-  mergeProfile(r){
+  mergeProfile(r,fromOld){
     const L=S.profile;
     if(L.fresh){S.profile=normalize(r);S.profile.fresh=false;this.cache();return true}
     const ru=r.upd||0,lu=L.upd||0;
@@ -956,58 +995,37 @@ const Store={
       out[k]=clone(A.concat(B.filter(x=>!ids.has(x.id)))).filter(x=>!gone.has(x.id));
     });
     out.gone=[...gone].slice(-400);out.upd=Math.max(ru,lu);
-    const same=o=>JSON.stringify(Object.assign({},o,{fresh:false}));
+    const same=o=>JSON.stringify(packImgs(Object.assign({},o,{fresh:false})));
     const changed=same(out)!==same(L);
-    if(changed){S.profile=out;this.cache()}
-    if(same(out)!==same(r))this.mark("p");
+    if(changed){S.profile=out;unpackImgs(S.profile);this.cache()}
+    if(same(out)!==same(r)){this.dirtyP=true;if(changed&&!fromOld)S.profile.upd=Math.max(out.upd,Date.now()-1)}
     return changed;
   },
-  mergeEntries(arr,only){
-    let changed=false;const map=new Map(S.entries.map(e=>[e.id,e]));const seen=new Set();
-    arr.forEach(r=>{if(!r||!r.id)return;seen.add(r.id);const l=map.get(r.id);const ru=r.upd||r.ts||0,lu=l?(l.upd||l.ts||0):-1;
-      if(!l||ru>lu){if(l&&bucketOf(l.date)!==bucketOf(r.date))this.mark(bucketOf(l.date));map.set(r.id,r);changed=true}else if(lu>ru){this.mark(bucketOf(l.date));this.mark(bucketOf(r.date))}});
-    map.forEach((e,id)=>{if(!seen.has(id)&&(!only||bucketOf(e.date)===only))this.mark(bucketOf(e.date))});
+  /* записи: по каждой берём более свежую версию; если наша свежее, отправим её на сервер */
+  mergeEntries(arr,fromOld){
+    let changed=false;const map=new Map(S.entries.map(e=>[e.id,e]));
+    arr.forEach(r=>{if(!r||!r.id)return;const l=map.get(r.id);const ru=r.upd||r.ts||0,lu=l?(l.upd||l.ts||0):-1;
+      if(!l||ru>lu){map.set(r.id,r);changed=true;if(fromOld)this.dirtyE.add(r.id)}else if(lu>ru)this.dirtyE.add(r.id)});
     if(changed){S.entries=[...map.values()];this.cache()}
     return changed;
   },
-  async writeBlob(pre,str){
-    const n=Math.max(1,Math.ceil(str.length/CH));const old=this.counts[pre]||0;
-    for(let g=0;g<n;g+=6)await Promise.all(Array.from({length:Math.min(6,n-g)},(_,j)=>cs.set(pre+"_"+(g+j),str.slice((g+j)*CH,(g+j+1)*CH))));
-    await cs.set(pre+"_n",String(n));
-    const extra=[];for(let i=n;i<old;i++)extra.push(pre+"_"+i);if(extra.length)await cs.del(extra);
-    this.counts[pre]=n;
+  /* архив: перед каждым изменением запоминаем, как было */
+  remember(act,old,to){
+    if(!old||!old.title)return;
+    const h={hid:uid(),ts:Date.now(),act,id:old.id,prev:clone(old)};if(to)h.to=to;S.hist.push(h);
+    if(S.hist.length>300){const cut=S.hist.length-300;S.hist=S.hist.slice(cut);this.histSent=Math.max(0,(this.histSent||0)-cut)}
   },
-  async flush(){
-    if(!CS||!this.ready||this.flushing)return;this.flushing=true;
-    if(this.dirty.size)this.setStatus("syncing");
-    let wrote=false;
-    try{
-      while(this.dirty.size){
-        const k=this.dirty.values().next().value;this.dirty.delete(k);
-        // сначала читаем, что сейчас лежит в облаке (могло записать другое устройство), и объединяем
-        const remote=await this.readBlob(k);
-        if(remote&&typeof remote==="object"){
-          let ch;if(k==="p")ch=this.mergeProfile(unpackImgs(remote));else if(Array.isArray(remote))ch=this.mergeEntries(remote.map(unpackImgs),k);
-          this.dirty.delete(k);if(ch)refresh();
-        }
-        let str;
-        if(k==="p")str=JSON.stringify(packImgs(S.profile));
-        else str=JSON.stringify(packImgs(S.entries.filter(e=>bucketOf(e.date)===k)));
-        // новые фото
-        for(const rid of Object.keys(IMG))if(!imgSaved.has(rid)&&IMG[rid]){await this.writeBlob("i"+rid,IMG[rid]);imgSaved.add(rid)}
-        await this.writeBlob(k,str);wrote=true;
-      }
-      if(wrote){this.seenVer=Date.now().toString(36)+Math.random().toString(36).slice(2,6);await cs.set("ver",this.seenVer)}
-      this.lastSync=Date.now();
-      const used=Object.values(this.counts).reduce((a,n)=>a+n+1,0);
-      this.setStatus("cloud",used>900?"облако телеграма почти заполнено ("+used+" из 1024 ячеек). удали старые фото или сделай резервную копию.":"");
-    }catch(x){this.setStatus("error","облако телеграма не ответило. всё сохранено на телефоне, отправлю позже.");clearTimeout(this.retryT);this.retryT=setTimeout(()=>{this.flushing=false;this.flush()},8000);this.flushing=false;return}
-    this.flushing=false;
-    if(this.dirty.size)this.flush();
+  saveProfile(){S.profile.upd=Date.now();S.profile.fresh=false;this.dirtyP=true;this.cache();this.later()},
+  putEntry(e){
+    e.upd=Date.now();if(!e.ts)e.ts=e.upd;
+    const i=S.entries.findIndex(x=>x.id===e.id);
+    if(i>=0){const old=S.entries[i];
+      const act=old.del&&!e.del?"restore":old.planned&&!e.planned?"done":old.date!==e.date?"move":"edit";
+      if(act!=="restore")this.remember(act,old,act==="move"?e.date:"");S.entries[i]=e}
+    else S.entries.push(e);
+    this.dirtyE.add(e.id);this.cache();this.later();
   },
-  saveProfile(){S.profile.upd=Date.now();S.profile.fresh=false;this.cache();this.mark("p")},
-  putEntry(e){e.upd=Date.now();if(!e.ts)e.ts=e.upd;const i=S.entries.findIndex(x=>x.id===e.id);if(i>=0){const old=S.entries[i];if(bucketOf(old.date)!==bucketOf(e.date))this.mark(bucketOf(old.date));S.entries[i]=e}else S.entries.push(e);this.cache();this.mark(bucketOf(e.date))},
-  delEntry(id){const e=S.entries.find(x=>x.id===id);if(!e)return;e.del=true;e.upd=Date.now();this.cache();this.mark(bucketOf(e.date))}
+  delEntry(id){const e=S.entries.find(x=>x.id===id);if(!e)return;this.remember("del",e);const n=clone(e);n.del=true;n.upd=Date.now();S.entries[S.entries.indexOf(e)]=n;this.dirtyE.add(id);this.cache();this.later()},
 };
 /* напоминания в телеграме: приложение сообщает боту, когда напомнить и когда была последняя запись */
 const BOT_API="https://prokachka-bot.karolinabelikova90.workers.dev";
@@ -1018,7 +1036,7 @@ function pushSync(now,cfg,beacon){
     const t=today();
     const last=S.entries.filter(e=>!e.del&&!e.planned).reduce((m,e)=>e.date>m?e.date:m,"");
     const pl=S.entries.filter(e=>!e.del&&e.planned&&e.title&&e.date>=t).sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
-    const todo=pl.slice(0,3).map(e=>(e.date===t?"":(e.date===addDays(t,1)?"завтра: ":fmtD(e.date)+": "))+e.title);
+    const todo=pl.slice(0,10).map(e=>(e.date===t?"":(e.date===addDays(t,1)?"завтра: ":fmtD(e.date)+": "))+e.title);
     const ord={day:0,week:1,month:2};
     const q=(S.profile.challenges||[]).filter(c=>c.status==="active").sort((a,b)=>(ord[a.period]??3)-(ord[b.period]??3))[0];
     const body={initData:TG.initData,tz:-new Date().getTimezoneOffset(),last,todo,quest:q?(q.title+(q.period==="day"?"":q.period==="week"?" (на неделе)":" (в этом месяце)")):"",prof:(S.profile.profs||[]).slice(0,3)};
@@ -1064,21 +1082,28 @@ function paintSync(){
 }
 function syncSheet(){
   const st=Store.status;
-  const txt={cloud:"всё сохранено в облаке телеграма. данные привязаны к твоему аккаунту и видны только тебе, на любом телефоне и компьютере, где ты откроешь этого бота.",
-    syncing:"сохраняю изменения в облако телеграма…",local:"пока данные лежат только на этом устройстве.",error:"на телефоне всё сохранено, а в облако телеграма пока не дошло."}[st];
+  const txt={cloud:"всё сохранено на сервере прокачки. данные привязаны к твоему телеграм-аккаунту: на телефоне и компьютере, где ты откроешь этого бота, будет одно и то же.",
+    syncing:"сохраняю изменения на сервер…",local:"пока данные лежат только на этом устройстве.",error:"на этом устройстве всё сохранено, а до сервера пока не дошло."}[st];
+  const pend=Store.dirtyE.size+(Store.dirtyP?1:0);
   sheet(`<div class="sheet-h"><h2>где мои данные</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
   <div class="card"><p style="margin:0">${esc(txt)}</p>${Store.err?`<p class="small muted" style="margin:8px 0 0">${esc(Store.err)}</p>`:""}
-  ${Store.lastSync?`<p class="small muted" style="margin:8px 0 0">последнее сохранение: ${new Date(Store.lastSync).toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"})}</p>`:""}
-  <p class="small muted" style="margin:8px 0 0">пока приложение открыто, оно само проверяет облако каждые полминуты и подтягивает то, что ты добавила на другом устройстве.</p></div>
-  <div class="stack">${CS?`<button class="btn accent wide" data-act="syncNow">синхронизировать сейчас</button>`:""}
-  <button class="btn ghost wide" data-act="trash">удалённые записи</button>
+  ${Store.lastSync?`<p class="small muted" style="margin:8px 0 0">последняя синхронизация: ${new Date(Store.lastSync).toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"})}${pend?" · ждут отправки: "+pend:""}</p>`:""}
+  <p class="small muted" style="margin:8px 0 0">пока приложение открыто, оно само сверяется с сервером примерно раз в полминуты.</p></div>
+  <div class="stack">${Store.online()?`<button class="btn accent wide" data-act="syncNow">синхронизировать сейчас</button>
+  <button class="btn ghost wide" data-act="verifyBot">сверить задачи через бота</button>`:""}
+  <button class="btn ghost wide" data-act="trash">архив: удалённое и изменённое</button>
   <button class="btn ghost wide" data-act="backup">скачать резервную копию</button></div>`);
 }
+const ACT={del:"удалено",move:"перенесено",done:"отмечено сделанным",edit:"изменено"};
 function trashSheet(){
-  const L=S.entries.filter(e=>e.del&&e.title).sort((a,b)=>(b.upd||0)-(a.upd||0)).slice(0,60);
-  sheet(`<div class="sheet-h"><h2>удалённые</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
-  <p class="small muted" style="margin:0 0 10px">${gx("здесь всё, что ты удалил{а|}. нажми «вернуть», и запись встанет на место.")}</p>
-  ${L.length?`<div class="card" style="padding:4px 14px">${L.map(e=>`<div class="row" style="justify-content:space-between;flex-wrap:nowrap;gap:10px;padding:10px 0;border-bottom:1px solid var(--line,rgba(0,0,0,.08))"><div style="min-width:0"><div style="overflow:hidden;text-overflow:ellipsis">${esc(e.title)}</div><div class="small muted">${e.planned?"в планах":"сделано"} · ${esc(fmtD(e.date))}</div></div><button class="btn ghost" style="flex:none" data-act="restore" data-id="${esc(e.id)}">вернуть</button></div>`).join("")}</div>`:`<p class="small muted">пока пусто.</p>`}`);
+  const H=S.hist.filter(h=>h&&h.prev&&h.prev.title).slice().sort((a,b)=>b.ts-a.ts).slice(0,80);
+  const row=h=>{const cur=S.entries.find(e=>e.id===h.id);const p=h.prev;
+    const what=h.act==="move"?`перенесено ${esc(fmtD(p.date))} → ${esc(fmtD(h.to||(cur&&cur.date)||p.date))}`:esc(ACT[h.act]||"изменено")+(h.act==="done"?"":` (было в ${p.planned?"планах":"сделанном"} на ${esc(fmtD(p.date))})`);
+    const when=new Date(h.ts);const wt=fmtD(when.toISOString().slice(0,10))+" в "+when.toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"});
+    return`<div class="row" style="justify-content:space-between;flex-wrap:nowrap;gap:10px;padding:10px 0;border-bottom:1px solid var(--line,rgba(0,0,0,.08))"><div style="min-width:0"><div style="overflow:hidden;text-overflow:ellipsis">${esc(p.title)}</div><div class="small muted">${what}</div><div class="small muted">${esc(wt)}${cur&&cur.del&&h.act!=="del"?" · сейчас удалено":""}</div></div><button class="btn ghost" style="flex:none" data-act="restore" data-id="${esc(h.hid)}">вернуть</button></div>`};
+  sheet(`<div class="sheet-h"><h2>архив</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
+  <p class="small muted" style="margin:0 0 10px">${gx("здесь всё, что удалялось, переносилось или менялось, с тем, как было до этого. нажми «вернуть», и запись встанет как была. архив общий для всех твоих устройств.")}</p>
+  ${H.length?`<div class="card" style="padding:4px 14px">${H.map(row).join("")}</div>`:`<p class="small muted">пока пусто.</p>`}`);
 }
 async function allowCloud(){closeSheet();await Store.connect()}
 async function managePerms(){}
@@ -1675,7 +1700,7 @@ function vPlan(d){
   ${sd>=t?`<button class="btn ghost wide" style="margin-top:12px" data-act="add" data-plan="1" data-day="${sd}">+ добавить дело на ${esc(dayWord(sd))}</button>`:""}
   <p class="small muted" style="margin:10px 0 0">если сделала раньше срока, отметь кружок: опыт засчитается в день отметки.</p></section>
   <p class="small muted" style="margin:14px 4px 0">${wAll.length?"на неделе дел: "+wAll.length+", сделано "+wDone:"на этой неделе пока пусто"}</p>
-  <button class="link" style="margin:12px 4px 0" data-act="trash">удалённые дела →</button>`;
+  <button class="link" style="margin:12px 4px 0" data-act="trash">архив: удалённое и перенесённое →</button>`;
 }
 /* статистика для владельца: бот отдаёт цифры только если telegram id совпадает с id владельца */
 let OWN=null;
@@ -2104,7 +2129,7 @@ function openSettings(){
   });
 }
 async function backup(){
-  const data=JSON.stringify({app:"prokachka",v:2,exported:new Date().toISOString(),profile:S.profile,entries:S.entries},null,1);
+  const data=JSON.stringify({app:"prokachka",v:2,exported:new Date().toISOString(),profile:S.profile,entries:S.entries,hist:S.hist},null,1);
   const name="prokachka-"+today()+".json";
   if(downloadsNs){try{await downloadsNs.save({filename:name,data});S.profile.lastBackup=today();Store.saveProfile();toast("копия сохранена");return}catch(x){if(x&&x.code==="declined")return}}
   const box=$("#backupBox");if(!box){openSettings();return backup()}
@@ -2324,8 +2349,9 @@ document.addEventListener("click",ev=>{
     case"allowCloud":allowCloud();break;
     case"syncNow":{b.disabled=true;b.textContent="синхронизирую…";Store.sync(true).then(()=>{toast(Store.status==="cloud"?"синхронизировала":"облако не ответило, попробую позже");syncSheet()});break}
     case"trash":trashSheet();break;
-    case"restore":{const e=S.entries.find(x=>x.id===b.dataset.id);if(e){const n=clone(e);delete n.del;Store.putEntry(n);afterChange();toast("вернула: "+e.title.slice(0,40))}trashSheet();break}
-    case"retrySync":closeSheet();Store.ready?Store.flush():Store.connect();break;
+    case"restore":{const h=S.hist.find(x=>x.hid===b.dataset.id);if(h){const cur=S.entries.find(x=>x.id===h.id);const n=clone(h.prev);delete n.del;if(cur&&cur.upd)n.upd=cur.upd;Store.putEntry(n);afterChange();toast("вернула: "+String(n.title).slice(0,40)+(n.planned&&n.date<today()?" (в «раньше осталось»)":""))}trashSheet();break}
+    case"verifyBot":{b.disabled=true;b.textContent="отправляю…";Store.sync(true).then(()=>fetch(BOT_API+"/verify",{method:"POST",headers:{"content-type":"text/plain"},body:JSON.stringify({initData:TG.initData,tz:-new Date().getTimezoneOffset(),date:today()})})).then(r=>r&&r.ok?r.json():null).then(j=>{toast(j&&j.ok?"отправила список в чат с ботом":"бот не ответил, попробуй ещё раз");closeSheet()}).catch(()=>{toast("бот не ответил, попробуй ещё раз");b.disabled=false;b.textContent="сверить задачи через бота"});break}
+    case"retrySync":closeSheet();Store.ready?Store.sync(true):Store.connect();break;
     case"managePerms":managePerms();break;
   }
 });
@@ -2358,6 +2384,7 @@ const loc=Store.loadLocal();
 S.profile=loc.p?normalize(loc.p):defaultProfile();
 if(loc.p&&loc.p.v!==2)S.profile.upd=Date.now(); // переезд считается свежим изменением
 S.entries=loc.e;
+unpackImgs(S.profile);S.entries.forEach(unpackImgs);
 afterChange();
 (async()=>{
   await Promise.race([Store.connect(),sleep(4000)]);
