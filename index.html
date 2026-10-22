@@ -836,6 +836,7 @@ const allSkills=()=>CATALOG.concat((S.profile&&S.profile.custom||[]).map(c=>({id
 const skillById=id=>allSkills().find(s=>s.id===id);
 const activeSkills=()=>{const all=allSkills();return S.profile.active.map(id=>all.find(s=>s.id===id)).filter(Boolean)};
 const live=()=>S.entries.filter(e=>!e.del);
+const markGone=id=>{const P=S.profile;P.gone=(Array.isArray(P.gone)?P.gone:[]).concat(id).slice(-400)};
 
 /* ================= хранилище телеграма =================
    у каждого человека своё облачное хранилище внутри бота (1024 ключа по 4096 символов).
@@ -847,6 +848,7 @@ const cloudCall=(fn)=>new Promise((res,rej)=>{const t=setTimeout(()=>rej(new Err
 const cs={
   keys:()=>cloudCall(cb=>CS.getKeys(cb)).then(k=>k||[]),
   get:async keys=>{const out={};for(let i=0;i<keys.length;i+=40){const part=keys.slice(i,i+40);const v=await cloudCall(cb=>CS.getItems(part,cb));Object.assign(out,v||{})}return out},
+  get1:k=>cloudCall(cb=>CS.getItem(k,cb)).then(v=>v||""),
   set:(k,v)=>cloudCall(cb=>CS.setItem(k,v,cb)),
   del:keys=>keys.length?cloudCall(cb=>CS.removeItems(keys,cb)):Promise.resolve()
 };
@@ -880,21 +882,49 @@ const Store={
     if(!CS){this.setStatus("local",TG?"телеграм у тебя устаревший, обнови приложение, чтобы данные хранились в облаке.":"это обычный браузер, данные хранятся только на этом устройстве. открой приложение через бота в телеграме.");return}
     this.setStatus("syncing");
     try{
-      const keys=await this.keysAll();
-      const nKeys=keys.filter(k=>k.endsWith("_n"));const meta=await cs.get(nKeys);
-      nKeys.forEach(k=>{this.counts[k.slice(0,-2)]=+meta[k]||0});
-      const want=[];Object.entries(this.counts).forEach(([pre,n])=>{if(pre[0]==="i")return;for(let i=0;i<n;i++)want.push(pre+"_"+i)});
-      const vals=await cs.get(want);
-      const blob=pre=>{const n=this.counts[pre]||0;let s="";for(let i=0;i<n;i++)s+=vals[pre+"_"+i]||"";return s};
-      let rp=null;if(this.counts.p){try{rp=JSON.parse(blob("p"))}catch(x){}}
-      let re=[];Object.keys(this.counts).filter(p=>/^e\d{6}$/.test(p)).forEach(p=>{try{re=re.concat(JSON.parse(blob(p)))}catch(x){}});
-      unpackImgs(S.profile);S.entries.forEach(unpackImgs);
-      if(rp)this.mergeProfile(unpackImgs(rp));else this.mark("p");
-      this.mergeEntries(re.map(unpackImgs));
+      await this.pullAll(true);
       this.ready=true;refresh();
       await this.flush();
       this.loadImgs();
-    }catch(x){this.setStatus("error","не получилось связаться с облаком телеграма. всё сохранено на телефоне, попробую ещё раз.");clearTimeout(this.retryT);this.retryT=setTimeout(()=>this.connect(),8000)}
+      this.startPoll();
+    }catch(x){this.setStatus("error","не получилось связаться с облаком телеграма. всё сохранено на этом устройстве, попробую ещё раз.");clearTimeout(this.retryT);this.retryT=setTimeout(()=>this.connect(),8000)}
+  },
+  /* читаем всё облако (кроме фото) и объединяем с тем, что есть на устройстве */
+  async pullAll(first){
+    const keys=await this.keysAll();
+    const nKeys=keys.filter(k=>k.endsWith("_n"));const meta=await cs.get(nKeys.concat(["ver"]));
+    this.seenVer=meta.ver||"";
+    nKeys.forEach(k=>{this.counts[k.slice(0,-2)]=+meta[k]||0});
+    const want=[];Object.entries(this.counts).forEach(([pre,n])=>{if(pre[0]==="i")return;for(let i=0;i<n;i++)want.push(pre+"_"+i)});
+    const vals=want.length?await cs.get(want):{};
+    const blob=pre=>{const n=this.counts[pre]||0;let s="";for(let i=0;i<n;i++)s+=vals[pre+"_"+i]||"";return s};
+    let rp=null;if(this.counts.p){try{rp=JSON.parse(blob("p"))}catch(x){}}
+    let re=[];Object.keys(this.counts).filter(p=>/^e\d{6}$/.test(p)).forEach(p=>{try{re=re.concat(JSON.parse(blob(p)))}catch(x){}});
+    unpackImgs(S.profile);S.entries.forEach(unpackImgs);
+    let ch=false;
+    if(rp)ch=this.mergeProfile(unpackImgs(rp))||ch;else this.mark("p");
+    ch=this.mergeEntries(re.map(unpackImgs))||ch;
+    if(!first&&Object.keys(this.counts).some(p=>p[0]==="i"&&!imgSaved.has(p.slice(1))))this.loadImgs();
+    return ch;
+  },
+  /* синхронизация, пока приложение открыто: дешёвая проверка метки версии, полное чтение только если кто-то что-то записал */
+  async sync(force){
+    if(!CS||!this.ready||this.pulling)return;this.pulling=true;
+    try{
+      let ver="";try{ver=await cs.get1("ver")}catch(x){}
+      if(force||ver!==this.seenVer){if(force)this.setStatus("syncing");const ch=await this.pullAll(false);if(ch)refresh();}
+      await this.flush();
+      if(force&&!this.dirty.size&&this.status!=="error")this.setStatus("cloud");
+      this.lastCheck=Date.now();
+    }catch(x){if(force)this.setStatus("error","облако телеграма не ответило. всё сохранено на этом устройстве, попробую ещё раз.")}
+    this.pulling=false;
+  },
+  startPoll(){clearInterval(this.pollT);this.pollT=setInterval(()=>{if(document.visibilityState==="visible")this.sync(false)},30000)},
+  async readBlob(pre){
+    const n=+(await cs.get1(pre+"_n"))||0;if(n)this.counts[pre]=n;if(!n)return null;
+    const ks=[];for(let i=0;i<n;i++)ks.push(pre+"_"+i);const v=await cs.get(ks);
+    let str="";for(let i=0;i<n;i++)str+=v[pre+"_"+i]||"";
+    try{return JSON.parse(str)}catch(x){return undefined}
   },
   async keysAll(){return cs.keys()},
   /* фото подгружаем уже после того, как дела и профиль на месте, чтобы метка «сохраняю» не висела */
@@ -911,16 +941,32 @@ const Store={
   },
   mark(k){this.dirty.add(k);if(!this.ready&&CS)return;clearTimeout(this.qT);this.qT=setTimeout(()=>this.flush(),250)},
   flushNow(){clearTimeout(this.qT);if(this.dirty.size)this.flush()},
+  /* профиль: свежее побеждает в настройках, а списки (хотелки, квесты, цели, ачивки, покупки) объединяются по id, удалённое помнится в gone */
   mergeProfile(r){
-    const L=S.profile;const ru=r.upd||0,lu=L.upd||0;
-    if(L.fresh||ru>lu){S.profile=normalize(r);S.profile.fresh=false;this.cache();return true}
-    if(lu>ru)this.mark("p");return false;
+    const L=S.profile;
+    if(L.fresh){S.profile=normalize(r);S.profile.fresh=false;this.cache();return true}
+    const ru=r.upd||0,lu=L.upd||0;
+    const newer=ru>lu?r:L,older=ru>lu?L:r;
+    const gone=new Set([].concat(L.gone||[],r.gone||[]));
+    const out=normalize(clone(newer));out.fresh=false;
+    ["rewards","challenges","goals","achCustom","purchases","custom"].forEach(k=>{
+      const A=Array.isArray(newer[k])?newer[k]:[],B=Array.isArray(older[k])?older[k]:[];
+      if(!A.concat(B).every(x=>x&&typeof x==="object"&&x.id))return;
+      const ids=new Set(A.map(x=>x.id));
+      out[k]=clone(A.concat(B.filter(x=>!ids.has(x.id)))).filter(x=>!gone.has(x.id));
+    });
+    out.gone=[...gone].slice(-400);out.upd=Math.max(ru,lu);
+    const same=o=>JSON.stringify(Object.assign({},o,{fresh:false}));
+    const changed=same(out)!==same(L);
+    if(changed){S.profile=out;this.cache()}
+    if(same(out)!==same(r))this.mark("p");
+    return changed;
   },
-  mergeEntries(arr){
+  mergeEntries(arr,only){
     let changed=false;const map=new Map(S.entries.map(e=>[e.id,e]));const seen=new Set();
     arr.forEach(r=>{if(!r||!r.id)return;seen.add(r.id);const l=map.get(r.id);const ru=r.upd||r.ts||0,lu=l?(l.upd||l.ts||0):-1;
       if(!l||ru>lu){if(l&&bucketOf(l.date)!==bucketOf(r.date))this.mark(bucketOf(l.date));map.set(r.id,r);changed=true}else if(lu>ru){this.mark(bucketOf(l.date));this.mark(bucketOf(r.date))}});
-    map.forEach((e,id)=>{if(!seen.has(id))this.mark(bucketOf(e.date))});
+    map.forEach((e,id)=>{if(!seen.has(id)&&(!only||bucketOf(e.date)===only))this.mark(bucketOf(e.date))});
     if(changed){S.entries=[...map.values()];this.cache()}
     return changed;
   },
@@ -934,16 +980,24 @@ const Store={
   async flush(){
     if(!CS||!this.ready||this.flushing)return;this.flushing=true;
     if(this.dirty.size)this.setStatus("syncing");
+    let wrote=false;
     try{
       while(this.dirty.size){
         const k=this.dirty.values().next().value;this.dirty.delete(k);
+        // сначала читаем, что сейчас лежит в облаке (могло записать другое устройство), и объединяем
+        const remote=await this.readBlob(k);
+        if(remote&&typeof remote==="object"){
+          let ch;if(k==="p")ch=this.mergeProfile(unpackImgs(remote));else if(Array.isArray(remote))ch=this.mergeEntries(remote.map(unpackImgs),k);
+          this.dirty.delete(k);if(ch)refresh();
+        }
         let str;
         if(k==="p")str=JSON.stringify(packImgs(S.profile));
         else str=JSON.stringify(packImgs(S.entries.filter(e=>bucketOf(e.date)===k)));
         // новые фото
         for(const rid of Object.keys(IMG))if(!imgSaved.has(rid)&&IMG[rid]){await this.writeBlob("i"+rid,IMG[rid]);imgSaved.add(rid)}
-        await this.writeBlob(k,str);
+        await this.writeBlob(k,str);wrote=true;
       }
+      if(wrote){this.seenVer=Date.now().toString(36)+Math.random().toString(36).slice(2,6);await cs.set("ver",this.seenVer)}
       this.lastSync=Date.now();
       const used=Object.values(this.counts).reduce((a,n)=>a+n+1,0);
       this.setStatus("cloud",used>900?"облако телеграма почти заполнено ("+used+" из 1024 ячеек). удали старые фото или сделай резервную копию.":"");
@@ -1000,7 +1054,8 @@ function heartbeat(){
 if(TG)setTimeout(()=>{heartbeat();_hb=setInterval(heartbeat,8000)},4000);
 /* приложение закрыли раньше, чем ушла отложенная отправка: досылаем список дел сразу, чтобы бот не напоминал о том, что уже сделано */
 const flushSync=()=>{try{Store.flushNow()}catch(x){}if(_pendingSync)pushSync(true,false,true)};
-document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"){flushSync();pingClosed()}});
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"){flushSync();pingClosed()}else Store.sync(false)});
+window.addEventListener("focus",()=>Store.sync(false));
 window.addEventListener("pagehide",()=>{flushSync();pingClosed()});
 ["saveProfile","putEntry","delEntry"].forEach(k=>{const f=Store[k];Store[k]=function(){const r=f.apply(this,arguments);pushSync();return r}});
 function paintSync(){
@@ -1013,9 +1068,17 @@ function syncSheet(){
     syncing:"сохраняю изменения в облако телеграма…",local:"пока данные лежат только на этом устройстве.",error:"на телефоне всё сохранено, а в облако телеграма пока не дошло."}[st];
   sheet(`<div class="sheet-h"><h2>где мои данные</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
   <div class="card"><p style="margin:0">${esc(txt)}</p>${Store.err?`<p class="small muted" style="margin:8px 0 0">${esc(Store.err)}</p>`:""}
-  ${Store.lastSync?`<p class="small muted" style="margin:8px 0 0">последнее сохранение: ${new Date(Store.lastSync).toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"})}</p>`:""}</div>
-  <div class="stack">${st==="error"?`<button class="btn accent wide" data-act="retrySync">попробовать ещё раз</button>`:""}
+  ${Store.lastSync?`<p class="small muted" style="margin:8px 0 0">последнее сохранение: ${new Date(Store.lastSync).toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"})}</p>`:""}
+  <p class="small muted" style="margin:8px 0 0">пока приложение открыто, оно само проверяет облако каждые полминуты и подтягивает то, что ты добавила на другом устройстве.</p></div>
+  <div class="stack">${CS?`<button class="btn accent wide" data-act="syncNow">синхронизировать сейчас</button>`:""}
+  <button class="btn ghost wide" data-act="trash">удалённые записи</button>
   <button class="btn ghost wide" data-act="backup">скачать резервную копию</button></div>`);
+}
+function trashSheet(){
+  const L=S.entries.filter(e=>e.del&&e.title).sort((a,b)=>(b.upd||0)-(a.upd||0)).slice(0,60);
+  sheet(`<div class="sheet-h"><h2>удалённые</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
+  <p class="small muted" style="margin:0 0 10px">${gx("здесь всё, что ты удалил{а|}. нажми «вернуть», и запись встанет на место.")}</p>
+  ${L.length?`<div class="card" style="padding:4px 14px">${L.map(e=>`<div class="row" style="justify-content:space-between;flex-wrap:nowrap;gap:10px;padding:10px 0;border-bottom:1px solid var(--line,rgba(0,0,0,.08))"><div style="min-width:0"><div style="overflow:hidden;text-overflow:ellipsis">${esc(e.title)}</div><div class="small muted">${e.planned?"в планах":"сделано"} · ${esc(fmtD(e.date))}</div></div><button class="btn ghost" style="flex:none" data-act="restore" data-id="${esc(e.id)}">вернуть</button></div>`).join("")}</div>`:`<p class="small muted">пока пусто.</p>`}`);
 }
 async function allowCloud(){closeSheet();await Store.connect()}
 async function managePerms(){}
@@ -1611,7 +1674,8 @@ function vPlan(d){
   ${rt?`<div class="small muted" style="margin-top:6px">рутина ×${rt}</div>`:""}
   ${sd>=t?`<button class="btn ghost wide" style="margin-top:12px" data-act="add" data-plan="1" data-day="${sd}">+ добавить дело на ${esc(dayWord(sd))}</button>`:""}
   <p class="small muted" style="margin:10px 0 0">если сделала раньше срока, отметь кружок: опыт засчитается в день отметки.</p></section>
-  <p class="small muted" style="margin:14px 4px 0">${wAll.length?"на неделе дел: "+wAll.length+", сделано "+wDone:"на этой неделе пока пусто"}</p>`;
+  <p class="small muted" style="margin:14px 4px 0">${wAll.length?"на неделе дел: "+wAll.length+", сделано "+wDone:"на этой неделе пока пусто"}</p>
+  <button class="link" style="margin:12px 4px 0" data-act="trash">удалённые дела →</button>`;
 }
 /* статистика для владельца: бот отдаёт цифры только если telegram id совпадает с id владельца */
 let OWN=null;
@@ -1803,7 +1867,7 @@ function rewardForm(r0){
       const d=el.querySelector("#rDs").value.trim();if(d)nr.desc=d;
       const m=parseInt(el.querySelector("#rM").value,10);if(m>0)nr.shop={amount:m,cur:"₽",ru:true};
       if(i>=0)list[i]=nr;else list.push(nr);Store.saveProfile();closeSheet();toast("хотелка сохранена");afterChange()};
-    const del=el.querySelector("#rD");if(del)del.onclick=()=>{S.profile.rewards=S.profile.rewards.filter(x=>x.id!==r.id);Store.saveProfile();closeSheet();afterChange()};
+    const del=el.querySelector("#rD");if(del)del.onclick=()=>{markGone(r.id);S.profile.rewards=S.profile.rewards.filter(x=>x.id!==r.id);Store.saveProfile();closeSheet();afterChange()};
   });
 }
 function wishView(id){
@@ -2209,7 +2273,7 @@ document.addEventListener("click",ev=>{
       if(inSheet){render();questSheet(id)}else render();break}
     case"qStepDel":{const c=P.challenges.find(x=>x.id===id);if(!c)break;c.steps=(c.steps||[]).filter(x=>x.id!==b.dataset.s);Store.saveProfile();render();questSheet(id);break}
     case"qMove":{const c=P.challenges.find(x=>x.id===id);if(!c)break;c.moved=(c.moved||0)+1;c.due=c.period==="day"?addDays(today(),1):c.period==="week"?endOfWeek(addDays(today(),7)):endOfMonth(addDays(endOfMonth(today()),1));Store.saveProfile();toast("перенесено до "+fmtD(c.due));render();break}
-    case"qDel":{const c=P.challenges.find(x=>x.id===id);if(!c)break;closeSheet();confirmSheet("удалить квест?","«"+c.title+"»","удалить",()=>{P.challenges=P.challenges.filter(x=>x.id!==id);Store.saveProfile();afterChange()});break}
+    case"qDel":{const c=P.challenges.find(x=>x.id===id);if(!c)break;closeSheet();confirmSheet("удалить квест?","«"+c.title+"»","удалить",()=>{markGone(id);P.challenges=P.challenges.filter(x=>x.id!==id);Store.saveProfile();afterChange()});break}
     case"qReview":{const c=P.challenges.find(x=>x.id===id);if(!c)break;
       sheet(`<h2>разбор квеста</h2><p class="small">«${esc(c.title)}»</p><div class="field"><label for="rvTxt">что помешало и что {поняла|понял}? за честный разбор +10 xp</label><textarea class="in-text" id="rvTxt"></textarea></div><div class="row" style="margin-top:14px"><button class="btn accent" id="rvSave">закрыть разбором</button><button class="btn ghost" data-act="close">отмена</button></div>`,el=>{
         el.querySelector("#rvSave").onclick=()=>{c.note=el.querySelector("#rvTxt").value.trim();c.status="reviewed";c.doneAt=today();Store.saveProfile();closeSheet();toast("разбор сохранён");afterChange()}});break}
@@ -2218,7 +2282,7 @@ document.addEventListener("click",ev=>{
     case"fears":openFears(false);break;
     case"goalNew":sheet(`<div class="sheet-h"><h2>новая цель</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div><form id="goalForm"><div class="field"><label for="gT">цель сезона</label><input class="in-text" id="gT" name="t" placeholder="например: закрыть кредитки"></div><button class="btn accent wide" style="margin-top:14px" type="submit">добавить</button></form>`,el=>{el.querySelector("#goalForm").onsubmit=ev2=>{ev2.preventDefault();const t=el.querySelector("#gT").value.trim();if(!t){el.querySelector("#gT").focus();return}P.goals.push({id:uid(),title:t,steps:[]});Store.saveProfile();closeSheet();toast("цель добавлена");afterChange()}});break;
     case"goalQuick":{const gl=GOAL_LIB.find(x=>x.t===b.dataset.t);P.goals.push({id:uid(),title:b.dataset.t,steps:(gl?gl.s:[]).map(t=>({id:uid(),t,done:false}))});}Store.saveProfile();toast("цель добавлена");afterChange();break;
-    case"goalDel":{const g=P.goals.find(x=>x.id===b.dataset.g);if(!g)break;confirmSheet("удалить цель?","«"+g.title+"» и её шаги исчезнут.","удалить",()=>{P.goals=P.goals.filter(x=>x.id!==g.id);Store.saveProfile();afterChange()});break}
+    case"goalDel":{const g=P.goals.find(x=>x.id===b.dataset.g);if(!g)break;confirmSheet("удалить цель?","«"+g.title+"» и её шаги исчезнут.","удалить",()=>{markGone(g.id);P.goals=P.goals.filter(x=>x.id!==g.id);Store.saveProfile();afterChange()});break}
     case"stepToggle":{const g=P.goals.find(x=>x.id===b.dataset.g);const s=g&&g.steps.find(x=>x.id===b.dataset.s);if(!s)break;s.done=!s.done;s.doneAt=s.done?today():null;Store.saveProfile();toast(s.done?"шаг закрыт: +40 xp · +4 монеты":"отметка снята");afterChange();break}
     case"stepDel":{const g=P.goals.find(x=>x.id===b.dataset.g);if(!g)break;g.steps=g.steps.filter(x=>x.id!==b.dataset.s);Store.saveProfile();afterChange();break}
     case"buy":{const r=P.rewards.find(x=>x.id===id);if(!r)break;confirmSheet("взять награду?","«"+r.title+"» за "+coinsW(r.price)+". ты это заработал{а|}.","взять",()=>{P.purchases.push({id:uid(),rid:r.id,title:r.title,price:r.price,at:today()});Store.saveProfile();toast("наслаждайся");afterChange()});break}
@@ -2230,7 +2294,7 @@ document.addEventListener("click",ev=>{
     case"achGot":{const a=(P.achCustom||[]).find(x=>x.id===id);if(!a)break;a.got=b.dataset.v==="1"?today():null;Store.saveProfile();closeSheet();if(!a.got)P.seenAch=(P.seenAch||[]).filter(x=>x!==id);afterChange();break}
     case"achHide":P.achEdit[id]=Object.assign({},P.achEdit[id]||{},{hidden:true});Store.saveProfile();closeSheet();toast("ачивка скрыта");afterChange();break;
     case"achUnhide":Object.values(P.achEdit).forEach(x=>{delete x.hidden});Store.saveProfile();afterChange();break;
-    case"achDel":{const a=(P.achCustom||[]).find(x=>x.id===id);if(!a)break;confirmSheet("удалить ачивку?","«"+a.n+"»","удалить",()=>{P.achCustom=P.achCustom.filter(x=>x.id!==id);Store.saveProfile();afterChange()});break}
+    case"achDel":{const a=(P.achCustom||[]).find(x=>x.id===id);if(!a)break;confirmSheet("удалить ачивку?","«"+a.n+"»","удалить",()=>{markGone(id);P.achCustom=P.achCustom.filter(x=>x.id!==id);Store.saveProfile();afterChange()});break}
     case"meet":meetSheet();break;
     case"rewardEdit":rewardForm(P.rewards.find(x=>x.id===id));break;
     case"settings":openSettings();break;
@@ -2258,6 +2322,9 @@ document.addEventListener("click",ev=>{
     case"rules":rulesSheet();break;
     case"sync":syncSheet();break;
     case"allowCloud":allowCloud();break;
+    case"syncNow":{b.disabled=true;b.textContent="синхронизирую…";Store.sync(true).then(()=>{toast(Store.status==="cloud"?"синхронизировала":"облако не ответило, попробую позже");syncSheet()});break}
+    case"trash":trashSheet();break;
+    case"restore":{const e=S.entries.find(x=>x.id===b.dataset.id);if(e){const n=clone(e);delete n.del;Store.putEntry(n);afterChange();toast("вернула: "+e.title.slice(0,40))}trashSheet();break}
     case"retrySync":closeSheet();Store.ready?Store.flush():Store.connect();break;
     case"managePerms":managePerms();break;
   }
