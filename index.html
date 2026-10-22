@@ -715,7 +715,7 @@ html.tt,html.tt *{transition:background-color .4s ease,color .4s ease,border-col
 .hero .hq-car{margin-top:18px}
 .hero .hq{background:#fff;color:#171C24;padding:16px 16px 14px;border-radius:20px;margin-top:0}
 .hero .hq .hq-top{opacity:1;color:#5668C5;letter-spacing:.02em}
-.hero .hq .hq-top span:last-child{color:#667385;font-weight:600}
+.hero .hq .hq-top span:last-child:not(:first-child){color:#667385;font-weight:600}
 .hero .hq .hq-t{font-size:21px;line-height:1.2;margin-top:8px}
 .hero .hq .hq-m{color:#667385;opacity:1}
 .hero .hq .hq-m>span,.hero .hq .hq-m>b{display:inline-flex;align-items:center;gap:4px}
@@ -733,6 +733,9 @@ html.tt,html.tt *{transition:background-color .4s ease,color .4s ease,border-col
 #addRow{margin-top:16px}
 #addRow .btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line);border-color:color-mix(in srgb,var(--ink) 30%,transparent)}
 .nav button[aria-current="page"]{background:#EEF1F5}
+.hero .hq .hq-dl{background:#EEF1F5;color:#58647A}
+.hero .hq .hq-row .btn.ghost,.hero .hq .hq-b .btn.ghost{background:#fff;color:#171C24;box-shadow:inset 0 0 0 1.5px #D8DEFF}
+.hero .hq .avs .av{border-color:#fff}
 @media (min-width:1000px){.hero .big{font-size:96px}.hero .stats{grid-row:6}.hero .hq{grid-row:auto}.hero .hq .hq-b{align-self:end}}
 </style>
 
@@ -2459,7 +2462,7 @@ function hintSheet(k){const[h,t]=HELP[k];sheet(`<span class="pill">подска�
    как добавить новость: допиши объект в NEWS (приложение) или в news.json рядом с index.html (без выпуска приложения).
    kind: "update" | "news". acts: до двух кнопок {l:"посмотреть"|"протестировать", go:"..."}.
    куда ведёт go: tab:home|path|skills|quests|rewards · path:feed · hint:<ключ из HELP> · add:plan · add:done */
-const APP_V="v63";
+const APP_V="v64";
 const NEWS=[
   {id:"u61-quests",date:"2026-10-23",kind:"update",title:"квест можно создать сразу: свой или командный",text:"если квестов ещё нет, в разделе «квесты» сразу две кнопки: свой квест или командный. а ниже пример того, как будет выглядеть таймлайн квеста с этапами, ответственными и дедлайнами.",acts:[{l:"посмотреть",go:"tab:quests"}]},
   {id:"u61-mood",date:"2026-10-23",kind:"update",title:"«как ты сегодня» теперь в «пути»",text:"отметить энергию, настроение и насыщенность дня можно в «пути», в ленте за сегодня. прошлые отметки на месте.",acts:[{l:"посмотреть",go:"path:feed"}]},
