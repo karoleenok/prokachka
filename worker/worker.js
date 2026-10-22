@@ -234,11 +234,36 @@ const SUP_TTL = 30 * 60 * 1000;
 const SUP_TEXT = "это поддержка прокачки 🛟\n\nнапиши, что случилось или что хочется улучшить, и приложи скриншоты, если есть. всё, что пришлёшь сюда в ближайшие 30 минут, я передам лично создательнице приложения. она читает каждое сообщение: исправляет ошибки и учитывает идеи в следующих обновлениях.\n\nчто уйдёт: только то, что ты сюда напишешь или пришлёшь, и твоё имя в телеграме, чтобы можно было ответить. данные из приложения не отправляются.\n\nответ придёт сюда, в этот чат. когда закончишь, нажми «готово».";
 const SUP_KB = { inline_keyboard: [[{ text: "готово", callback_data: "sup:off" }]] };
 const menuKb = r => ({ inline_keyboard: [[{ text: "открыть прокачку", web_app: { url: APP } }], [{ text: "написать в поддержку", callback_data: "sup:on" }], [r && r.news === false ? { text: "снова присылать новости", callback_data: "nw:on" } : { text: "не присылать новости", callback_data: "x:news" }]] });
+
+// календарь владельца: присылаешь боту .ics, события копятся в kv и отдаются живой лентой, на которую айфон подписывается один раз
+const calKey = async env => { let k = await env.USERS.get("cal:key"); if (!k) { k = [...crypto.getRandomValues(new Uint8Array(12))].map(x => x.toString(16).padStart(2, "0")).join(""); await env.USERS.put("cal:key", k); } return k; };
+function icsParse(t) {
+  t = t.replace(/\r?\n[ \t]/g, "");
+  const tz = (t.match(/BEGIN:VTIMEZONE[\s\S]*?END:VTIMEZONE/g) || []).map(x => x.replace(/\r?\n/g, "\r\n"));
+  const ev = (t.match(/BEGIN:VEVENT[\s\S]*?END:VEVENT/g) || []).map(b => { const m = b.match(/^UID:(.+)$/m); return m ? { uid: m[1].trim(), body: b.replace(/\r?\n/g, "\r\n") } : null; }).filter(Boolean);
+  return { tz, ev };
+}
+async function calSave(env, text) {
+  const p = icsParse(text); if (!p.ev.length) return 0;
+  const cur = await env.USERS.get("cal:data", "json") || { tz: [], ev: {} };
+  for (const e of p.ev) cur.ev[e.uid] = e.body;
+  for (const z of p.tz) { const id = (z.match(/TZID:(.+)/) || [])[1]; if (id && !cur.tz.some(x => x.includes("TZID:" + id))) cur.tz.push(z); }
+  await env.USERS.put("cal:data", JSON.stringify(cur));
+  return p.ev.length;
+}
+async function calFeed(env) {
+  const d = await env.USERS.get("cal:data", "json") || { tz: [], ev: {} };
+  return ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//prokachka//calendar//RU", "CALSCALE:GREGORIAN", "X-WR-CALNAME:прокачка", "REFRESH-INTERVAL;VALUE=DURATION:PT1H", "X-PUBLISHED-TTL:PT1H"].concat(d.tz, Object.values(d.ev), ["END:VCALENDAR"]).join("\r\n") + "\r\n";
+}
+async function calLinks(env, origin) {
+  const k = await calKey(env), n = Object.keys((await env.USERS.get("cal:data", "json") || { ev: {} }).ev).length;
+  return "📅 календарь\nсобытий в ленте: " + n + "\n\nподписка (один раз, потом обновляется сама): открой в safari на айфоне\n" + origin + "/cal/" + k + "/go\n\nпросто добавить события один раз (без подписки):\n" + origin + "/cal/" + k + ".ics\n\nчтобы добавить новые события, пришли мне сюда .ics файлом: они допишутся в ленту.";
+}
 async function setCommands(env) {
-  if (await env.USERS.get("cmds:v3")) return;
+  if (await env.USERS.get("cmds:v4")) return;
   await tg(env, "setMyCommands", { commands: [{ command: "menu", description: "меню" }, { command: "support", description: "написать в поддержку" }, { command: "start", description: "открыть прокачку" }] });
-  await tg(env, "setMyCommands", { scope: { type: "chat", chat_id: OWNER }, commands: [{ command: "menu", description: "меню" }, { command: "support", description: "написать в поддержку" }, { command: "send", description: "рассылка новостей" }, { command: "stats", description: "статистика" }, { command: "members", description: "кто в прокачке" }, { command: "start", description: "открыть прокачку" }] });
-  await env.USERS.put("cmds:v3", "1");
+  await tg(env, "setMyCommands", { scope: { type: "chat", chat_id: OWNER }, commands: [{ command: "menu", description: "меню" }, { command: "support", description: "написать в поддержку" }, { command: "send", description: "рассылка новостей" }, { command: "stats", description: "статистика" }, { command: "members", description: "кто в прокачке" }, { command: "calendar", description: "календарь для айфона" }, { command: "start", description: "открыть прокачку" }] });
+  await env.USERS.put("cmds:v4", "1");
 }
 async function supStart(env, chat, rec) {
   rec.sup = Date.now(); rec.supId = rec.sup; await env.USERS.put("u:" + chat, JSON.stringify(rec));
@@ -761,6 +786,14 @@ export default {
       return new Response(JSON.stringify(out, null, 1), { headers: { "content-type": "application/json; charset=utf-8" } });
     }
 
+    if (env.USERS) {
+      const cm = url.pathname.match(/^\/cal\/([0-9a-f]+)(\.ics|\/go)$/);
+      if (cm && cm[1] === await calKey(env)) {
+        if (cm[2] === "/go") return new Response(null, { status: 302, headers: { location: "webcal://" + url.host + "/cal/" + cm[1] + ".ics" } });
+        return new Response(await calFeed(env), { headers: { "content-type": "text/calendar; charset=utf-8", "cache-control": "no-store" } });
+      }
+    }
+
     if (url.pathname === await statsPath(env) && env.USERS) return statsPage(env);
 
     // то же самое для владельца прямо в приложении: доступ по telegram id, который проверяется подписью
@@ -943,6 +976,17 @@ export default {
         if (/^\/news(@\w+)?\s*$/.test(raw) && rec) {
           rec.news = true; await env.USERS.put("u:" + chat, JSON.stringify(rec));
           await tg(env, "sendMessage", { chat_id: chat, text: "хорошо, новости снова буду присылать." });
+          return new Response("ok");
+        }
+        if (m.from && m.from.id === OWNER && env.USERS && /^\/calendar(@\w+)?\s*$/.test(raw)) {
+          await tg(env, "sendMessage", { chat_id: chat, text: await calLinks(env, new URL(req.url).origin), disable_web_page_preview: true });
+          return new Response("ok");
+        }
+        if (m.from && m.from.id === OWNER && env.USERS && m.document && (/\.ics$/i.test(m.document.file_name || "") || /calendar/.test(m.document.mime_type || ""))) {
+          const f = await tg(env, "getFile", { file_id: m.document.file_id });
+          const txt = f.ok ? await (await fetch("https://api.telegram.org/file/bot" + env.BOT_TOKEN + "/" + f.result.file_path)).text() : "";
+          const n = txt ? await calSave(env, txt) : 0;
+          await tg(env, "sendMessage", { chat_id: chat, text: n ? "добавила событий: " + n + " 📅\n\n" + await calLinks(env, new URL(req.url).origin) : "не нашла событий в этом файле", disable_web_page_preview: true });
           return new Response("ok");
         }
         if (rec) ctx.waitUntil(setCommands(env));
