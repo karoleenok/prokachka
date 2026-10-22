@@ -630,6 +630,18 @@ html.tt,html.tt *{transition:background-color .4s ease,color .4s ease,border-col
 .fgrp{width:100%;margin-bottom:8px}.fgl{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--muted);margin:2px 0 6px}
 .fsph{width:100%;display:flex;align-items:center;gap:8px;margin-top:8px;padding:8px 10px;border-radius:10px;background:color-mix(in srgb,var(--accent) 10%,transparent);font-size:13px}
 .m-sph{display:inline-flex;vertical-align:-2px;margin-right:4px;opacity:.75}
+.sk-sort{display:flex;align-items:center;gap:10px;margin-top:12px}.seg.sm button{font-size:12.5px;padding:7px 8px}.sk-sort .seg{flex:1;margin:0}
+.sphc{margin-top:10px;padding:6px 14px 8px}.sph-h{display:flex;align-items:center;gap:10px;width:100%;background:none;border:0;color:inherit;font:inherit;padding:10px 0;cursor:pointer;text-align:left}.sph-h b{font-size:16px}.sph-h .cmut{color:var(--muted)}
+.sk-sub{font-size:12px;font-weight:600;color:var(--muted);margin:10px 0 2px}
+.skr{display:flex;align-items:flex-start;gap:8px;padding:10px 0;border-top:1px solid var(--line)}.skl-list .skr:first-child{border-top:0}
+.skr.drag{opacity:.85;background:color-mix(in srgb,var(--accent) 12%,transparent);border-radius:12px}.skr.paused{opacity:.55;align-items:center}
+.skh{flex:none;cursor:grab;touch-action:none;user-select:none;color:var(--muted);font-size:15px;letter-spacing:-3px;padding:4px 6px 4px 0;line-height:1.1}
+.skb{flex:1;min-width:0;cursor:pointer}.skt{display:flex;justify-content:space-between;gap:10px;align-items:baseline}.skt b{font-size:15px;min-width:0}.skl{font-family:var(--f-display);font-size:26px;line-height:.9}
+.sks{font-size:12.5px;color:var(--muted);margin-top:1px}.skbar{height:4px;border-radius:2px;background:var(--line);margin-top:7px;overflow:hidden}.skbar i{display:block;height:100%;background:var(--accent);border-radius:inherit}
+.skm{flex:none;background:none;border:0;color:var(--muted);font-size:20px;line-height:1;padding:2px 2px 6px 6px;cursor:pointer}
+.sph-empty{margin:12px 4px 0}.sph-empty .link{font-size:13px}
+.skmenu{display:flex;flex-direction:column;gap:2px;margin-top:16px}.skmenu button{display:flex;align-items:flex-start;gap:12px;background:none;border:0;color:inherit;font:inherit;font-size:15px;text-align:left;padding:12px 4px;border-top:1px solid var(--line);cursor:pointer}.skmenu button svg{flex:none;margin-top:1px}.skmenu small{display:block;font-size:12.5px;color:var(--muted);margin-top:2px}
+.mgbox{margin-top:14px;border:1.5px solid var(--line);border-radius:16px;padding:12px 14px}
 .pstrip{display:flex;align-items:center;gap:12px;width:100%;margin-top:12px;padding:8px 12px 8px 8px;border-radius:16px;background:var(--panel-soft);border:0;color:inherit;font:inherit;text-align:left;cursor:pointer}
 .pstrip svg{display:block;flex:none}.ps-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.ps-t b{font-size:13.5px;font-weight:600}.ps-up{color:var(--s-accent-t)}.ps-s{font-size:12.5px;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ps-ar{opacity:.6}
 .fsub{font-size:11.5px;color:var(--muted);opacity:.85;margin:10px 0 6px 2px}.fgrp .fsub:first-of-type{margin-top:2px}.fskq{margin:0 0 10px;padding:9px 12px}
@@ -992,7 +1004,7 @@ function stateIcon(k,n){
 }
 
 /* ================= профиль ================= */
-const S={qGantt:(()=>{try{return localStorage.getItem("prk-qgantt2")!=="0"}catch(x){return true}})(),gSurf:"",gq:(()=>{try{return localStorage.getItem("prk-gq")||""}catch(x){return""}})(),gBack:"",tqView:(()=>{try{return localStorage.getItem("prk-tqview")||"list"}catch(x){return"list"}})(),hist:[],qTab:(()=>{try{return localStorage.getItem("prk-qtab")||"mine"}catch(x){return"mine"}})(),grpOpen:(()=>{try{return JSON.parse(localStorage.getItem("prk-grp"))||{}}catch(x){return{}}})(),profile:null,entries:[],view:"home",pathMode:"feed",pathFilter:null,thenDate:null,lastW:null};
+const S={sphClosed:(()=>{try{return JSON.parse(localStorage.getItem("prk-sphc"))||{}}catch(x){return{}}})(),qGantt:(()=>{try{return localStorage.getItem("prk-qgantt2")!=="0"}catch(x){return true}})(),gSurf:"",gq:(()=>{try{return localStorage.getItem("prk-gq")||""}catch(x){return""}})(),gBack:"",tqView:(()=>{try{return localStorage.getItem("prk-tqview")||"list"}catch(x){return"list"}})(),hist:[],qTab:(()=>{try{return localStorage.getItem("prk-qtab")||"mine"}catch(x){return"mine"}})(),grpOpen:(()=>{try{return JSON.parse(localStorage.getItem("prk-grp"))||{}}catch(x){return{}}})(),profile:null,entries:[],view:"home",pathMode:"feed",pathFilter:null,thenDate:null,lastW:null};
 function defaultProfile(){
   const t=today();
   return {v:2,fresh:true,upd:0,seasonStart:t,seasonDays:90,active:[],custom:[],startLevels:{},fears:"",
@@ -1020,7 +1032,7 @@ function normalize(p){
   o.rewards.forEach(r=>{if(!Array.isArray(r.imgs))r.imgs=r.img?[r.img]:[];delete r.img});
   return o;
 }
-const allSkills=()=>CATALOG.concat((S.profile&&S.profile.custom||[]).map(c=>({id:c.id,g:c.g||"craft",name:c.name,d:c.d||"свой навык",custom:true})));
+const allSkills=()=>{const nm=(S.profile&&S.profile.skNames)||{};const l=CATALOG.concat((S.profile&&S.profile.custom||[]).map(c=>({id:c.id,g:c.g||"craft",name:c.name,d:c.d||"свой навык",custom:true})));return Object.keys(nm).length?l.map(k=>nm[k.id]?Object.assign({},k,{name:nm[k.id],orig:k.name}):k):l};
 const skillById=id=>allSkills().find(s=>s.id===id);
 /* сферы героя: 6 постоянных осей портрета, каждый навык живёт в одной сфере */
 const SPH_IC={work:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7M3 12.5h18"/>',money:'<circle cx="12" cy="12" r="8.5"/><path d="M14.6 9.4c-.5-.9-1.5-1.4-2.6-1.4-1.4 0-2.5.8-2.5 2s1.1 1.6 2.5 2 2.5.8 2.5 2-1.1 2-2.5 2c-1.1 0-2.1-.5-2.6-1.4M12 6.5V8M12 16v1.5"/>',people:'<circle cx="9" cy="8.5" r="3"/><path d="M3.5 19.5c0-3 2.5-5.5 5.5-5.5s5.5 2.5 5.5 5.5"/><circle cx="17" cy="9.5" r="2.3"/><path d="M16.5 14.2c2.4.1 4 1.9 4 4.6"/>',body:'<path d="M3 12.5h4l2.2-4.5 4 9 2.3-4.5H21"/>',soul:'<path d="M12 3.5l1.9 5.6 5.6 1.9-5.6 1.9L12 18.5l-1.9-5.6-5.6-1.9 5.6-1.9z"/>',mind:'<path d="M5 4.5h11.5a2 2 0 0 1 2 2V20H7a2 2 0 0 1-2-2zM5 18a2 2 0 0 1 2-2h11.5"/>'};
@@ -1418,7 +1430,7 @@ function setupHq(){
   car.onscroll=()=>{const i=Math.round(car.scrollLeft/Math.max(1,car.clientWidth));bs.forEach((b,k)=>b.classList.toggle("on",k===i))};
 }
 function animateIn(root){
-  if(!root)return;setupHq();ganttScroll(root);let rm=false;try{rm=matchMedia("(prefers-reduced-motion: reduce)").matches}catch(x){}
+  if(!root)return;setupHq();ganttScroll(root);setupSkDrag(root);let rm=false;try{rm=matchMedia("(prefers-reduced-motion: reduce)").matches}catch(x){}
   root.querySelectorAll("[data-h]").forEach(el=>{if(rm){el.style.height=el.dataset.h;return}el.style.height="3px";requestAnimationFrame(()=>requestAnimationFrame(()=>{el.style.height=el.dataset.h}))});
   root.querySelectorAll("[data-gw]").forEach(el=>{if(rm){el.style.width=el.dataset.gw;return}requestAnimationFrame(()=>requestAnimationFrame(()=>{el.style.width=el.dataset.gw}))});
   root.querySelectorAll("[data-count]").forEach(el=>{const to=+el.dataset.count||0;if(rm||to<=0){el.textContent=to;return}const t0=performance.now(),dur=900;const step=t=>{const k=Math.min(1,(t-t0)/dur);el.textContent=Math.round(to*(1-Math.pow(1-k,3)));if(k<1)requestAnimationFrame(step)};requestAnimationFrame(step)});
@@ -1830,19 +1842,103 @@ function focusCard(){
 }
 
 function vSkills(d){
-  const act=activeSkills();
-  return`${act.length?`${secTitle("герой","skills")}${portraitCard(d)}${isNew()?"":focusCard()}${secTitle("ветки навыков","skills")}<div class="card stack" style="gap:6px;margin-top:12px">${branchBlock(d)}</div>`:""}
+  const act=activeSkills();const P=S.profile;
+  return`${act.length?`${secTitle("герой","skills")}${portraitCard(d)}${isNew()?"":focusCard()}`:""}
   ${secTitle("мои навыки","skills")}
   <div class="row" style="margin-top:12px" id="skillBtns"><button class="btn accent" data-act="skillCat" id="skillCatBtn">выбрать навыки</button><button class="btn ghost" data-act="startLevels" id="startLvlBtn">стартовые уровни</button><button class="btn ghost" data-act="profPick">подобрать по профессии</button></div>
-  ${!act.length?`<div class="card empty" style="margin-top:12px"><div class="big">пока пусто</div><p class="muted">выбери 5–12 навыков, которые хочешь качать в этом сезоне.</p></div><div class="ghost-v" aria-hidden="true">${[["дизайн",3,60],["нейросети",5,35],["съёмка",2,80]].map(x=>`<div class="g"><b>${x[1]}</b><div style="flex:1"><div style="font-weight:600;font-size:14px">${x[0]}</div><div class="bar"><u style="width:${x[2]}%"></u></div></div></div>`).join("")}<div class="gd" style="text-align:center">так будет выглядеть, когда выберешь навыки</div></div>`:""}
-  <div class="stack">${groupedSkills(s=>{const k=d.skills[s.id];const n=d.done.filter(e=>e.primary===s.id).length;const last=d.done.filter(e=>e.primary===s.id||(e.secondary||[]).includes(s.id)).sort((a,b)=>a.date<b.date?1:-1)[0];
-    const dust=last&&diffDays(last.date,today())>=14;const nt=sktNext(k.level);
-    return`<div class="card ${dust?"dusty":""}" data-act="skOpen" data-id="${s.id}" style="cursor:pointer"><div class="row" style="justify-content:space-between;flex-wrap:nowrap"><div style="min-width:0"><div style="font-weight:700">${inFocus(s.id)?'<span style="color:var(--accent-t)">★</span> ':""}${esc(s.name)} ${isNew()?"":`<span class="tag">${esc(sktOf(k.level))}</span>`}</div></div><div class="big num" style="font-size:38px">${k.level}</div></div>
-    ${segs(k.frac,k.level)}
-    <div class="row small muted num" style="justify-content:space-between;margin-top:6px"><span>${k.level<MAXL?k.into+" / "+k.need+" xp до "+(k.level+1)+" ур.":"максимум"}</span><span>${n} ${plural(n,"действие","действия","действий")}</span></div>
-    ${nt&&!isNew()&&S.skOpen===s.id?`<div class="small muted" style="margin-top:4px">до звания «${esc(nt[1])}»: ${skillCum(nt[0])-skillCum(k.level)-k.into} xp · +${SKT_COINS} монет</div>`:""}
-    ${last&&(dust||S.skOpen===s.id)?`<div class="small" style="margin-top:6px">${dust?"🕸 давно не качал{а|}: ":"последнее: "}${esc(last.title)} · ${fmtDay(last.date)}</div>`:""}
-    ${S.skOpen!==s.id?"":`<div class="row" style="margin-top:8px"><button class="btn sm ghost" data-act="add" data-skill="${s.id}">${IC.plus} действие</button><button class="btn sm ghost" data-act="pfilterGo" data-id="${s.id}">путь навыка</button></div>`}</div>`})}</div>`;
+  ${!act.length&&!(P.paused||[]).length?`<div class="card empty" style="margin-top:12px"><div class="big">пока пусто</div><p class="muted">выбери 5–12 навыков, которые хочешь качать в этом сезоне.</p></div>`:skManager(d)}`;
+}
+/* навыки по сферам: сортировка, перетаскивание, меню навыка */
+function skManager(d){
+  const P=S.profile;const act=activeSkills();const paused=(P.paused||[]).map(skillById).filter(Boolean);
+  const sort=P.skSort||"level";const manual=sort==="manual";const old=derive(addDays(today(),-30));const closed=S.sphClosed||{};
+  const lastOf={};d.done.forEach(e=>{[e.primary,...(e.secondary||[])].forEach(id=>{if(id&&(!lastOf[id]||lastOf[id].date<e.date))lastOf[id]=e})});
+  const v=s=>{const k=d.skills[s.id];return k.level+k.frac};
+  const ord=list=>{if(sort==="recent")return list.slice().sort((a,b)=>{const x=(lastOf[a.id]||{}).date||"",y=(lastOf[b.id]||{}).date||"";return x<y?1:x>y?-1:v(b)-v(a)});
+    if(manual){const o=P.skOrder||[];return list.slice().sort((a,b)=>(o.indexOf(a.id)+1||999)-(o.indexOf(b.id)+1||999))}
+    return list.slice().sort((a,b)=>v(b)-v(a))};
+  const row=s=>{const k=d.skills[s.id];const g=k.xp-((old.skills[s.id]||{}).xp||0);const last=lastOf[s.id];const dust=last&&diffDays(last.date,today())>=14;const nt=sktNext(k.level);const open=S.skOpen===s.id;
+    return`<div class="skr ${dust?"dusty":""} ${open?"open":""}" data-sk="${s.id}">${manual?`<span class="skh" aria-label="перетащить" role="button">⋮⋮</span>`:""}<div class="skb" data-act="skOpen" data-id="${s.id}">
+      <div class="skt"><b>${inFocus(s.id)?'<span style="color:var(--accent-t)">★</span> ':""}${esc(s.name)}</b><span class="skl num">${k.level}</span></div>
+      <div class="sks">${esc(sktOf(k.level))}${g>0?` · <b class="sph-up">+${g} xp</b> за месяц`:dust?` · 🕸 давно не качал{а|}`:""}</div>
+      <div class="skbar"><i style="width:${Math.max(3,Math.round(k.frac*100))}%"></i></div>
+      ${open?`<div class="small muted" style="margin-top:8px">${k.level<MAXL?k.into+" / "+k.need+" xp до "+(k.level+1)+" ур.":"максимальный уровень"}${nt?` · до звания «${esc(nt[1])}»: ${skillCum(nt[0])-skillCum(k.level)-k.into} xp`:""}</div>${last?`<div class="small" style="margin-top:4px">последнее: ${esc(last.title)} · ${fmtDay(last.date)}</div>`:""}
+      <div class="row" style="margin-top:8px"><button class="btn sm ghost" data-act="add" data-skill="${s.id}">${IC.plus} действие</button><button class="btn sm ghost" data-act="pfilterGo" data-id="${s.id}">путь навыка</button></div>`:""}
+    </div><button class="skm" data-act="skMenu" data-id="${s.id}" aria-label="действия с навыком ${esc(s.name)}">⋯</button></div>`};
+  const sp=spheresOf(d);
+  let h=`<div class="sk-sort"><span class="small muted">порядок</span><div class="seg sm" role="group" aria-label="порядок навыков">${[["level","по уровню"],["recent","недавние"],["manual","вручную"]].map(([id,l])=>`<button data-act="skSort" data-id="${id}" aria-pressed="${sort===id}">${l}</button>`).join("")}</div></div>
+  ${manual?`<p class="small muted" style="margin:6px 2px 0">перетаскивай за ⋮⋮. в таком же порядке навыки будут в форме записи.</p>`:""}`;
+  const empty=[];
+  SPHERES.forEach(spd=>{const x=sp.find(y=>y.sp.id===spd.id);const list=act.filter(k=>sphereOf(k)===spd.id);const pz=paused.filter(k=>sphereOf(k)===spd.id);
+    if(!list.length&&!pz.length){empty.push(spd);return}
+    const isC=!!closed[spd.id];const ol=ord(list);
+    let body="";
+    if(!manual&&ol.length>5){const gs=[...new Set(ol.map(k=>k.g))];if(gs.length>1)body=gs.map(gid=>`<div class="sk-sub">${esc((GROUPS.find(z=>z.id===gid)||{name:"своё"}).name)}</div><div class="skl-list">${ol.filter(k=>k.g===gid).map(row).join("")}</div>`).join("");}
+    if(!body)body=`<div class="skl-list" data-sph="${spd.id}">${ol.map(row).join("")}</div>`;
+    if(pz.length)body+=`<div class="sk-sub">на паузе</div><div class="skl-list">${pz.map(k=>`<div class="skr paused"><div class="skb"><div class="skt"><b>${esc(k.name)}</b><span class="skl num">${d.skills[k.id].level}</span></div><div class="sks">опыт сохранён, в форме записи не показывается</div></div><button class="btn sm ghost" data-act="skUnpause" data-id="${k.id}">вернуть</button></div>`).join("")}</div>`;
+    h+=`<section class="card sphc"><button class="sph-h" data-act="sphTog" data-id="${spd.id}" aria-expanded="${!isC}">${sphIc(spd.id,18)}<b>${esc(spd.n)}</b><span class="small cmut num">ур. ${x.level} · ${list.length} ${plural(list.length,"навык","навыка","навыков")}</span><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="margin-left:auto;flex:none;transform:rotate(${isC?0:180}deg)"><path d="M6 9l6 6 6-6"/></svg></button>${isC?"":body}</section>`});
+  if(empty.length)h+=`<div class="sph-empty small"><span class="muted">пока пусто:</span> ${empty.map(x=>`<button class="link" data-act="sphere" data-id="${x.id}">${esc(x.n)}</button>`).join(", ")}</div>`;
+  return h;
+}
+function setupSkDrag(root){root.querySelectorAll(".skh").forEach(hd=>{if(hd._d)return;hd._d=1;
+  hd.addEventListener("pointerdown",ev=>{ev.preventDefault();const row=hd.closest(".skr");const list=row.parentNode;row.classList.add("drag");
+    const move=e=>{const y=e.clientY;const sibs=[...list.querySelectorAll(".skr:not(.drag)")];const after=sibs.find(x=>{const r=x.getBoundingClientRect();return y<r.top+r.height/2});if(after)list.insertBefore(row,after);else list.appendChild(row)};
+    const up=()=>{window.removeEventListener("pointermove",move);window.removeEventListener("pointerup",up);window.removeEventListener("pointercancel",up);row.classList.remove("drag");
+      const ids=[...document.querySelectorAll(".skr[data-sk]")].map(r=>r.dataset.sk);const P=S.profile;P.skOrder=ids.concat((P.skOrder||[]).filter(x=>!ids.includes(x)));Store.saveProfile();try{TG&&TG.HapticFeedback&&TG.HapticFeedback.impactOccurred("light")}catch(x){}};
+    window.addEventListener("pointermove",move);window.addEventListener("pointerup",up);window.addEventListener("pointercancel",up)})})}
+const SKI={rn:'<path d="M4 20h4L19 9l-4-4L4 16z"/>',mg:'<path d="M7 4v6a5 5 0 0 0 5 5 5 5 0 0 0 5-5V4M12 15v6"/>',um:'<path d="M7 20v-6a5 5 0 0 1 5-5 5 5 0 0 1 5 5v6M12 9V3"/>',pz:'<path d="M9 5v14M15 5v14"/>'};
+const skI=k=>`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${SKI[k]}</svg>`;
+function skMenuSheet(id){
+  const P=S.profile;const k=skillById(id);if(!k)return;const cur=sphereOf(k);
+  const mg=(P.merges||[]).filter(m=>m.b===id&&diffDays(m.at,today())<=30).slice(-1)[0];
+  sheet(`<div class="sheet-h"><h2 style="font-size:28px">${esc(k.name)}</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
+  <div class="small muted" style="margin:0 0 6px">сфера в портрете героя</div><div class="chips">${SPHERES.map(o=>`<button class="chip" data-mv="${o.id}" aria-pressed="${o.id===cur}"><span class="row" style="gap:6px;flex-wrap:nowrap">${sphIc(o.id,14)}${esc(o.n)}</span></button>`).join("")}</div>
+  <div class="skmenu">
+    <button data-act="skRename" data-id="${id}">${skI("rn")}<span>переименовать</span></button>
+    <button data-act="skMerge" data-id="${id}">${skI("mg")}<span>объединить с другим навыком<small>если навыки дублируют друг друга: опыт сложится</small></span></button>
+    ${mg?`<button data-act="skUnmerge" data-id="${id}">${skI("um")}<span>разъединить<small>вернуть «${esc(mg.aName)}» отдельным навыком</small></span></button>`:""}
+    <button data-act="skPause" data-id="${id}">${skI("pz")}<span>на паузу<small>уберу из формы записи, опыт останется</small></span></button>
+  </div>`,el=>{el.addEventListener("click",ev=>{const b=ev.target.closest("[data-mv]");if(!b)return;P.sphereMap=Object.assign({},P.sphereMap||{},{[id]:b.dataset.mv});Store.saveProfile();afterChange();toast("«"+k.name+"» теперь в сфере «"+sphereById(b.dataset.mv).n+"»");skMenuSheet(id)})});
+}
+function skRenameSheet(id){const P=S.profile;const k=skillById(id);
+  sheet(`<h2>переименовать</h2><input class="in-text" id="rnIn" value="${esc(k.name)}" maxlength="40"><div class="small muted" style="margin-top:6px">${k.orig?"в каталоге: «"+esc(k.orig)+"»":""}</div><div class="row" style="margin-top:14px"><button class="btn accent" id="rnOk">сохранить</button><button class="btn ghost" data-act="close">отмена</button></div>`,el=>{const i=el.querySelector("#rnIn");i.focus();i.select();
+    el.querySelector("#rnOk").onclick=()=>{const v=i.value.trim();if(!v)return;P.skNames=Object.assign({},P.skNames||{});const base=(CATALOG.find(c=>c.id===id)||(P.custom||[]).find(c=>c.id===id)||{}).name;if(base&&v===base)delete P.skNames[id];else P.skNames[id]=v;Store.saveProfile();closeSheet();afterChange();toast("готово")}});
+}
+function skMergeSheet(a){
+  const P=S.profile;const d=derive();const A=skillById(a);const sa=sphereOf(A);
+  const others=activeSkills().filter(k=>k.id!==a).sort((x,y)=>(sphereOf(y)===sa)-(sphereOf(x)===sa));let b=others[0];if(!b){toast("нужен хотя бы ещё один навык");return}
+  const paint=el=>{const sl=Math.max(P.startLevels[a]||1,P.startLevels[b.id]||1);const nl=skillLevel(skillCum(sl)+d.skills[a].xp+d.skills[b.id].xp).level;
+    const cnt=S.entries.filter(e=>!e.del&&(e.primary===a||(e.secondary||[]).includes(a))).length;
+    el.querySelector("#mgCh").innerHTML=others.map(k=>`<button class="chip" data-mg="${k.id}" aria-pressed="${k.id===b.id}">${esc(k.name)}</button>`).join("");
+    el.querySelector("#mgName").value=b.name;
+    el.querySelector("#mgInfo").innerHTML=`<span class="muted">${cnt} ${plural(cnt,"запись переедет","записи переедут","записей переедет")}</span><b style="color:var(--accent-t)">ур. ${d.skills[b.id].level} → ур. ${nl}</b>`;
+    el.querySelector("#mgSph").innerHTML=`${sphIc(sphereOf(b),13)} сфера: ${esc(sphereById(sphereOf(b)).n)}`};
+  sheet(`<span class="pill">объединить навыки</span><h2 style="margin-top:12px">${esc(A.name)} +</h2><p class="small muted" style="margin:0">выбери, с чем объединить. опыт сложится, записи переедут, уровень пересчитается.</p>
+  <div class="chips" id="mgCh" style="margin-top:12px"></div>
+  <div class="mgbox"><div class="small muted" style="font-weight:600">получится</div><input class="in-text" id="mgName" maxlength="40" style="font-weight:700;margin-top:6px" aria-label="название навыка"><div class="row small" style="justify-content:space-between;margin-top:10px" id="mgInfo"></div><div class="row small muted" style="margin-top:6px;gap:6px" id="mgSph"></div></div>
+  <button class="btn accent wide" style="margin-top:14px" id="mgOk">объединить</button><div class="small muted" style="text-align:center;margin-top:8px">разъединить можно в течение 30 дней в меню навыка</div>`,el=>{paint(el);
+    el.addEventListener("click",ev=>{const c=ev.target.closest("[data-mg]");if(c){b=skillById(c.dataset.mg);paint(el)}});
+    el.querySelector("#mgOk").onclick=()=>{const nm=el.querySelector("#mgName").value.trim();closeSheet();doMerge(a,b.id,nm)}});
+}
+function doMerge(a,b,name){
+  const P=S.profile;const A=skillById(a),B=skillById(b);const ents=[];
+  S.entries.forEach(e=>{if(e.primary!==a&&!(e.secondary||[]).includes(a))return;ents.push({id:e.id,p:e.primary,s:(e.secondary||[]).slice()});const n=clone(e);if(n.primary===a)n.primary=b;n.secondary=[...new Set((n.secondary||[]).map(x=>x===a?b:x))].filter(x=>x!==n.primary);Store.putEntry(n)});
+  const ch=[];(P.challenges||[]).forEach(c=>{if(c.skill===a){c.skill=b;ch.push(c.id)}});
+  const gl=[];(P.goals||[]).forEach(g=>{if((g.skills||[]).includes(a)){g.skills=[...new Set(g.skills.map(x=>x===a?b:x))];gl.push(g.id)}});
+  const rec={a,b,at:today(),aName:A.name,bName0:(P.skNames||{})[b]||"",sla:P.startLevels[a]||1,slb:P.startLevels[b]||1,ents,ch,gl,foc:inFocus(a)};
+  P.startLevels[b]=Math.max(rec.sla,rec.slb);
+  P.active=P.active.filter(x=>x!==a);P.focus=[...new Set((P.focus||[]).map(x=>x===a?b:x))];
+  if(name&&name!==B.name)P.skNames=Object.assign({},P.skNames||{},{[b]:name});
+  P.merges=(P.merges||[]).concat(rec).slice(-20);Store.saveProfile();afterChange();toast("объединено: «"+(name||B.name)+"»");
+}
+function doUnmerge(b){
+  const P=S.profile;const rec=(P.merges||[]).filter(m=>m.b===b).slice(-1)[0];if(!rec)return;
+  rec.ents.forEach(r=>{const e=S.entries.find(x=>x.id===r.id);if(!e)return;const n=clone(e);if(n.primary===b&&r.p===rec.a)n.primary=rec.a;n.secondary=r.s.slice();Store.putEntry(n)});
+  (P.challenges||[]).forEach(c=>{if(rec.ch.includes(c.id)&&c.skill===b)c.skill=rec.a});
+  (P.goals||[]).forEach(g=>{if(rec.gl.includes(g.id))g.skills=[...new Set((g.skills||[]).concat(rec.a))]});
+  P.startLevels[rec.a]=rec.sla;P.startLevels[b]=rec.slb;if(!P.active.includes(rec.a))P.active.push(rec.a);if(rec.foc&&!(P.focus||[]).includes(rec.a))P.focus=(P.focus||[]).concat(rec.a);
+  P.skNames=Object.assign({},P.skNames||{});if(rec.bName0)P.skNames[b]=rec.bName0;else delete P.skNames[b];
+  P.merges=P.merges.filter(m=>m!==rec);Store.saveProfile();afterChange();toast("«"+rec.aName+"» снова отдельный навык");
 }
 
 function vQuests(){
@@ -2254,7 +2350,7 @@ const tplsFor=id=>{const s=skillById(id);return((s&&s.t)||[]).concat(GEN_T).map(
 function recentList(){const seen=new Set(),out=[];live().filter(e=>!e.planned&&e.type!=="bonus"&&S.profile.active.includes(e.primary)).sort((a,b)=>(b.ts||0)-(a.ts||0)).forEach(e=>{const k=e.title+"|"+e.primary;if(!seen.has(k)&&out.length<4){seen.add(k);out.push(e)}});return out}
 function skillChoices(){
   const cnt={};live().forEach(e=>{if(e.primary)cnt[e.primary]=(cnt[e.primary]||0)+1});
-  const act=activeSkills().slice().sort((a,b)=>(cnt[b.id]||0)-(cnt[a.id]||0));
+  const o=S.profile.skSort==="manual"?(S.profile.skOrder||[]):null;const act=activeSkills().slice().sort((a,b)=>o?((o.indexOf(a.id)+1||999)-(o.indexOf(b.id)+1||999)):(cnt[b.id]||0)-(cnt[a.id]||0));
   const extra=[F.primary,...F.secondary].filter(id=>id&&!act.some(s=>s.id===id)).map(skillById).filter(Boolean);return act.concat(extra);
 }
 function openEntry(e,opts){
@@ -3160,6 +3256,14 @@ document.addEventListener("click",ev=>{
     case"grpTog":{S.grpOpen=S.grpOpen||{};S.grpOpen[id]=!S.grpOpen[id];try{localStorage.setItem("prk-grp",JSON.stringify(S.grpOpen))}catch(x){}render();break}
     case"skillCat":skillCatalog();break;
     case"sphere":sphereSheet(id);break;
+    case"skSort":P.skSort=id;Store.saveProfile();render();break;
+    case"sphTog":S.sphClosed=Object.assign({},S.sphClosed||{},{[id]:!(S.sphClosed||{})[id]});try{localStorage.setItem("prk-sphc",JSON.stringify(S.sphClosed))}catch(x){}render();break;
+    case"skMenu":skMenuSheet(id);break;
+    case"skRename":skRenameSheet(id);break;
+    case"skMerge":skMergeSheet(id);break;
+    case"skUnmerge":closeSheet();doUnmerge(id);break;
+    case"skPause":{closeSheet();const k=skillById(id);P.active=P.active.filter(x=>x!==id);P.paused=[...new Set((P.paused||[]).concat(id))];P.focus=(P.focus||[]).filter(x=>x!==id);Store.saveProfile();afterChange();toast("«"+(k?k.name:"навык")+"» на паузе, опыт сохранён");break}
+    case"skUnpause":{P.paused=(P.paused||[]).filter(x=>x!==id);if(!P.active.includes(id))P.active.push(id);Store.saveProfile();afterChange();toast("навык снова в игре");break}
     case"goPortraitClose":closeSheet();S.view="skills";render();window.scrollTo(0,0);break;
     case"goPortrait":S.view="skills";render();window.scrollTo(0,0);break;
     case"catThenAdd":closeSheet();if(S.profile.active.length)openEntry(null,{});break;
