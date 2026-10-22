@@ -705,6 +705,35 @@ html.tt,html.tt *{transition:background-color .4s ease,color .4s ease,border-col
 .gxbtn svg{width:16px;height:16px}
 .gclose{width:40px;height:40px;border-radius:50%;background:transparent;border:1px solid color-mix(in srgb,currentColor 20%,transparent);font-size:17px;line-height:1;color:inherit;cursor:pointer;flex:none}
 @media (min-width:1000px){.gantt:not(.wide){--glw:200px}}
+
+/* v63: иерархия главной */
+.sync.cloud,.sync.syncing{display:none}
+.brand small{max-width:52vw;overflow:hidden;text-overflow:ellipsis}
+.hero .big{font-size:clamp(40px,12vw,48px)}
+.hero .xpbar{background:rgba(255,255,255,.25)}.hero .xpbar i{background:#fff}
+.hero .xpmeta{opacity:.85}
+.hero .hq-car{margin-top:18px}
+.hero .hq{background:#fff;color:#171C24;padding:16px 16px 14px;border-radius:20px;margin-top:0}
+.hero .hq .hq-top{opacity:1;color:#5668C5;letter-spacing:.02em}
+.hero .hq .hq-top span:last-child{color:#667385;font-weight:600}
+.hero .hq .hq-t{font-size:21px;line-height:1.2;margin-top:8px}
+.hero .hq .hq-m{color:#667385;opacity:1}
+.hero .hq .hq-m>span,.hero .hq .hq-m>b{display:inline-flex;align-items:center;gap:4px}
+.hero .hq .hq-m svg{width:14px;height:14px}
+.hero .hq .hq-next{background:#F1F3FF;border-radius:14px;padding:10px 12px;margin-top:12px}
+.hero .hq .btn{background:#5668C5;color:#fff;border:0}
+.hero .hq .btn.ghost{background:#EEF1F5;color:#171C24}
+.hero .hq .link{color:#4350A8}
+.hq-b{margin-top:8px}
+.hq-done{display:inline-flex;align-items:center;gap:6px;background:none;border:0;padding:6px 0;font:inherit;font-size:14px;font-weight:600;color:#667385;cursor:pointer}
+.hq-done svg{width:16px;height:16px}
+.hero #statsRow{opacity:.75;margin-top:14px;gap:4px 14px}
+.hero #statsRow .stat{background:transparent;color:#fff;padding:0;border-radius:0}
+.hero #statsRow .stat svg{width:14px;height:14px}
+#addRow{margin-top:16px}
+#addRow .btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line);border-color:color-mix(in srgb,var(--ink) 30%,transparent)}
+.nav button[aria-current="page"]{background:#EEF1F5}
+@media (min-width:1000px){.hero .big{font-size:96px}.hero .stats{grid-row:6}.hero .hq{grid-row:auto}.hero .hq .hq-b{align-self:end}}
 </style>
 
 </head>
@@ -715,9 +744,7 @@ html.tt,html.tt *{transition:background-color .4s ease,color .4s ease,border-col
     <div class="row" style="flex-wrap:nowrap;gap:6px">
       <button class="sync local" id="syncBtn" data-act="sync" aria-label="где сохраняются данные: устройство"><i></i><span id="syncTxt" class="sr">устройство</span></button>
       <button class="iconbtn bell" id="newsBtn" data-act="news" aria-label="новости и обновления"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/></svg><span class="nbadge" id="newsBadge" hidden></span></button>
-      <button class="iconbtn" id="helpBtn" data-act="help" aria-label="помощь" style="font-weight:700;font-size:18px">?</button>
-      <button class="iconbtn" id="themeBtn" data-act="themeToggle" aria-label="сменить тему"></button>
-      <button class="iconbtn" data-act="settings" aria-label="настройки"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg></button>
+      <button class="iconbtn" id="setBtn" data-act="settings" aria-label="настройки"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg></button>
     </div>
   </header>
   <main id="view"></main>
@@ -1489,7 +1516,7 @@ function afterChange(){
 function render(d){
   d=d||derive();const P=S.profile;
   const day=Math.max(1,Math.min(P.seasonDays,diffDays(P.seasonStart,today())+1));
-  $("#seasonLbl").textContent="день "+day+" из "+P.seasonDays;
+  $("#seasonLbl").textContent=(P.name?P.name+" · ":"")+"день "+day+" из "+P.seasonDays;
   const tabs=[["home","главная",IC.home],["path","путь",IC.path],["skills","навыки",IC.skills],["quests","квесты",IC.quest],["rewards","награды",IC.gift]];
   $("#nav").innerHTML=tabs.map(([id,l,ic])=>`<button data-act="tab" data-id="${id}" ${S.view===id||(id==="home"&&S.view==="plan")?'aria-current="page"':""}>${ic}<span>${l}</span></button>`).join("");
   {const vw=$("#view");vw.classList.toggle("enter",S._lv!==S.view);vw.dataset.v=S.view;S._lv=S.view}
@@ -1575,15 +1602,14 @@ function vHome(d){
     <button class="rank rank-btn" data-act="ranks" aria-label="уровни и звания">${esc(rankOf(d.level))} <span style="opacity:.7;font-weight:500">· что дают уровни →</span></button>
     <div class="xpbar" role="progressbar" aria-valuemin="0" aria-valuemax="${d.lv.need}" aria-valuenow="${d.lv.into}"><i style="width:${S.lastW||"0%"}" data-w="${Math.max(2,Math.round(d.lv.frac*100))}%"></i></div>
     <div class="xpmeta num"><span>${d.lv.into} xp</span><span>до ${d.level+1} ур.: ${d.lv.need-d.lv.into}</span></div>
+    ${noSkills?"":`<div class="hq-car" id="hqCar">${q?heroQuest(q):""}<div id="tqHero" class="hq-slot">${tqHero(!q)}</div></div><div class="hq-dots" id="hqDots"></div>`}
     <div class="stats" id="statsRow">
       ${d.coins>0?`<span class="stat num">${IC.coin} ${coinsW(d.coins)}</span>`:""}
       ${d.streak.cur>0?`<span class="stat num">${IC.flame} серия ${d.streak.cur} ${plural(d.streak.cur,"день","дня","дней")}</span>`:""}
       ${d.streak.freezes>0?`<button class="stat num" data-act="freezeHelp" style="border:0;cursor:pointer">${IC.snow} заморозки ${d.streak.freezes} <span style="opacity:.6;font-weight:700">?</span></button>`:""}
       ${d.coins>0||d.streak.cur>0||d.streak.freezes>0?"":`<span class="small" style="opacity:.8">монеты и серия появятся после первой записи</span>`}
     </div>
-    ${noSkills?"":`<div class="hq-car" id="hqCar">${q?heroQuest(q):""}<div id="tqHero" class="hq-slot">${tqHero(!q)}</div></div><div class="hq-dots" id="hqDots"></div>`}
   </section>
-  <h2 class="greet">${P.name?`<span>&gt;&gt; ${esc(P.name)},</span> `:"<span>&gt;&gt;</span> "}ты в игре?</h2>
   ${noSkills?`<div class="card" style="margin-top:12px"><b>сначала выбери, что качаешь</b><p class="small muted" style="margin:6px 0 10px">пока навыки не выбраны, опыт некуда начислять.</p><button class="btn accent" data-act="skillCat">выбрать навыки</button></div>`:""}
   <div class="addrow" id="addRow"><button class="btn accent" data-act="add" id="addBtn">${IC.plus} записать действие</button><button class="btn ghost" data-act="add" data-plan="1" data-day="tomorrow">запланировать</button></div>
 
@@ -1602,7 +1628,7 @@ function heroQuest(q){
   ${(()=>{const nx=steps.find(x=>!x.done);if(!nx)return steps.length?"":`<div class="hq-m" style="margin-top:8px"><button class="link" style="text-align:left" data-act="qInfo" data-id="${q.id}" style="color:inherit">разбей квест на этапы, и я буду подсказывать следующий шаг →</button></div>`;
     const pl=live().find(e=>e.planned&&e.qref&&e.qref.c===q.id&&e.qref.s===nx.id);
     return`<div class="hq-next"><span class="small" style="opacity:.85">следующий шаг</span><div style="font-weight:600;margin-top:2px;overflow-wrap:anywhere">${esc(nx.t)}</div>${pl?`<div class="small" style="margin-top:6px;opacity:.85">✓ в планах на ${esc(dayWord(pl.date))}</div>`:`<button class="btn sm" style="margin-top:8px" data-act="qStepPlan" data-id="${q.id}" data-s="${nx.id}">${IC.plus} на сегодня</button>`}</div>`})()}
-  <div class="hq-b"><button class="btn sm" data-act="qDone" data-id="${q.id}">${IC.check} пройден</button><button class="btn sm ghost" data-act="qInfo" data-id="${q.id}">подробнее</button></div></div>`;
+  <div class="hq-b"><button class="hq-done" data-act="qDone" data-id="${q.id}">${IC.check} пройден</button></div></div>`;
 }
 /* копилка: сколько монет, что можно забрать уже сейчас и что ближе всего */
 function coinPace(){
@@ -2433,7 +2459,7 @@ function hintSheet(k){const[h,t]=HELP[k];sheet(`<span class="pill">подска�
    как добавить новость: допиши объект в NEWS (приложение) или в news.json рядом с index.html (без выпуска приложения).
    kind: "update" | "news". acts: до двух кнопок {l:"посмотреть"|"протестировать", go:"..."}.
    куда ведёт go: tab:home|path|skills|quests|rewards · path:feed · hint:<ключ из HELP> · add:plan · add:done */
-const APP_V="v62";
+const APP_V="v63";
 const NEWS=[
   {id:"u61-quests",date:"2026-10-23",kind:"update",title:"квест можно создать сразу: свой или командный",text:"если квестов ещё нет, в разделе «квесты» сразу две кнопки: свой квест или командный. а ниже пример того, как будет выглядеть таймлайн квеста с этапами, ответственными и дедлайнами.",acts:[{l:"посмотреть",go:"tab:quests"}]},
   {id:"u61-mood",date:"2026-10-23",kind:"update",title:"«как ты сегодня» теперь в «пути»",text:"отметить энергию, настроение и насыщенность дня можно в «пути», в ленте за сегодня. прошлые отметки на месте.",acts:[{l:"посмотреть",go:"path:feed"}]},
@@ -2759,7 +2785,7 @@ function planCard(){
   const od=L.filter(e=>e.date<t).length;const fut=L.filter(e=>e.date>t).sort((a,b)=>a.date<b.date?-1:1);
   return`<section class="card" id="planCard" style="margin-top:12px" aria-label="на сегодня"><div class="row" style="justify-content:space-between;flex-wrap:nowrap"><b style="font-size:17px">на сегодня</b><button class="link" data-act="planOpen">неделя →</button></div>
   ${od?overdueRow(od):""}
-  ${cur.length?`<div style="margin-top:6px">${cur.map(planRow).join("")}</div>`:`<p class="small muted" style="margin:10px 0 0">пока ничего не запланировано. добавь дело или загляни в неделю.</p>`}
+  ${cur.length?`<div style="margin-top:6px">${cur.map(planRow).join("")}</div>`:`<p class="small muted" style="margin:10px 0 0">пока пусто</p>`}
   ${fut.length?`<div class="small muted" style="margin-top:8px">впереди: ${fut.length} ${plural(fut.length,"дело","дела","дел")}, ближайшее ${fut[0].date===addDays(t,1)?"завтра":fmtD(fut[0].date)}</div>`:""}
   ${routineStrip()}
   ${(()=>{const dn=live().filter(e=>e.date===t&&!e.planned&&e.type!=="routine").sort((a,b)=>(b.ts||0)-(a.ts||0));if(!dn.length)return"";const xp=live().filter(e=>e.date===t&&!e.planned).reduce((a,e)=>a+xpOf(e),0);
@@ -3187,6 +3213,7 @@ async function weeklyRecap(){
 function openSettings(){
   let th="dark";try{th=localStorage.getItem("prk-theme")||"dark"}catch(x){}
   sheet(`<div class="sheet-h"><h2>настройки</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
+  <div class="row" style="gap:8px;margin-bottom:16px"><button class="btn ghost sm" data-act="help">? помощь и обучение</button><button class="btn ghost sm" data-act="sync">где мои данные</button></div>
   <div class="field"><span class="lbl">тема</span><div class="seg" role="group">${[["system","как в системе"],["light","светлая"],["dark","тёмная"]].map(([k,l])=>`<button data-act="theme" data-id="${k}" aria-pressed="${th===k}">${l}</button>`).join("")}</div></div>
   ${TG?`<div class="field" style="margin-top:16px"><span class="lbl">напоминания в телеграме</span>
     <div class="seg" role="group" id="remSeg">${[[0,"выключены"],[1,"включены"]].map(([k,l])=>`<button data-rem="${k}" aria-pressed="${(S.profile.remind&&S.profile.remind.on?1:0)===k}">${l}</button>`).join("")}</div>
@@ -3300,8 +3327,7 @@ const TOUR=[
   {id:"rw",t:".nav [data-id='rewards']",h:"награды",p:"а тут монеты тратят.",tap:"нажми «награды»",until:()=>S.view==="rewards"},
   {id:"wish",v:"rewards",t:"#wishSec",h:"вишлист",p:"добавь хотелку с фото и ценой в монетах. полоска покажет, сколько ещё копить."},
   {id:"ach",v:"rewards",t:"#achSec",h:"ачивки",p:"значки за особые моменты. нажми на любую, чтобы переименовать или поставить свою картинку. можно придумать и свои, с условием и наградой."},
-  {id:"sync",t:"#syncBtn",h:"сохранение",p:"зелёная точка значит, что всё сохранено в облаке телеграма и будет на любом твоём устройстве. нажми, если хочешь подробнее."},
-  {id:"help",t:"#helpBtn",h:"если забудешь",p:"здесь можно пройти обучение ещё раз и посмотреть, сколько опыта за что дают."}
+  {id:"help",t:"#setBtn",h:"если забудешь",p:"в настройках можно пройти обучение ещё раз, посмотреть, сколько опыта за что дают, и проверить, где сохраняются данные."}
 ];
 let T=null;
 function tourStart(withSkills){
