@@ -243,7 +243,8 @@ async function bcSend(env, chat, b, kb) {
     if (last) body.reply_markup = kb;
     keep(await tg(env, m, body));
   } else if (b.type === "album") {
-    const media = b.files.map((f, i) => i === 0 && fits ? Object.assign({ type: "photo", media: f, caption: text }, ents.length ? { caption_entities: ents } : {}) : { type: "photo", media: f });
+    const items = b.media || b.files.map(f => ({ t: "photo", f }));
+    const media = items.map((x, i) => i === 0 && fits ? Object.assign({ type: x.t, media: x.f, caption: text }, ents.length ? { caption_entities: ents } : {}) : { type: x.t, media: x.f });
     keep(await tg(env, "sendMediaGroup", { chat_id: chat, media }));
     if (!first.ok) return first;
     if (last) await tg(env, "sendMessage", { chat_id: chat, text: "что нового в прокачке ↑", reply_markup: kb });
@@ -259,23 +260,41 @@ async function bcSend(env, chat, b, kb) {
   }
   return first || { ok: false };
 }
-// альбом: фото из группы копятся по одному в KV (bcp:<id группы>:<номер сообщения>), до 5 штук берём в рассылку
-async function albumFiles(env, gid) {
-  const l = await env.USERS.list({ prefix: "bcp:" + gid + ":" });
-  const out = [];
-  for (const k of l.keys.slice(0, 10)) { const f = await env.USERS.get(k.name); if (f) out.push(f); }
-  return { files: out, total: l.keys.length };
+// альбом: телеграм присылает каждое фото отдельным сообщением. копим их в D1 (там нет задержки, как у списка KV),
+// первое сообщение группы «забирает» сборку и через 4 секунды собирает пост целиком
+async function bcpInit(env) { await env.DB.prepare("CREATE TABLE IF NOT EXISTS bcp (gid TEXT NOT NULL, mid INTEGER NOT NULL, kind TEXT, file TEXT, cap TEXT, ents TEXT, PRIMARY KEY (gid, mid))").run(); }
+async function bcpAdd(env, m) {
+  await bcpInit(env);
+  const kind = m.photo ? "photo" : m.video ? "video" : "";
+  const file = m.photo ? m.photo[m.photo.length - 1].file_id : m.video ? m.video.file_id : "";
+  await env.DB.prepare("INSERT OR REPLACE INTO bcp (gid, mid, kind, file, cap, ents) VALUES (?1, ?2, ?3, ?4, ?5, ?6)").bind(String(m.media_group_id), m.message_id, kind, file, m.caption || "", JSON.stringify(m.caption_entities || [])).run();
+  const c = await env.DB.prepare("INSERT OR IGNORE INTO bcp (gid, mid, kind) VALUES (?1, -1, 'claim')").bind(String(m.media_group_id)).run();
+  return !!(c.meta && c.meta.changes);
 }
-async function albumPreview(env, chat, b) {
-  await new Promise(r => setTimeout(r, 3000)); // ждём, пока телеграм доставит все фото альбома
-  const { files, total } = await albumFiles(env, b.gid);
-  if (!files.length) { await tg(env, "sendMessage", { chat_id: chat, text: "не получилось собрать фото, попробуй ещё раз." }); return; }
-  b.files = files;
-  if (files.length === 1) { b.type = "photo"; b.file = files[0]; }
+async function albumFlow(env, chat, gid) {
+  await new Promise(r => setTimeout(r, 4000)); // ждём, пока телеграм доставит все фото альбома
+  const rows = (await env.DB.prepare("SELECT mid, kind, file, cap, ents FROM bcp WHERE gid = ?1 AND mid >= 0 ORDER BY mid").bind(String(gid)).all()).results || [];
+  if (!rows.length) return;
+  const capRow = rows.find(r => /^\/send(@\w+)?(\s|$)/.test(r.cap || "")) || null;
+  const cur = await env.USERS.get("bc:cur", "json");
+  if (cur && cur.state === "sending") { await tg(env, "sendMessage", { chat_id: chat, text: "прошлая рассылка ещё идёт, подожди отчёта." }); return; }
+  const draftText = cur && cur.state === "draft" && cur.type === "text" && cur.text && Date.now() - parseInt(cur.id, 36) < 3600000 ? cur : null;
+  let text = "", ents = [];
+  if (capRow) {
+    const raw = capRow.cap; const pre = raw.length - raw.replace(/^\/send(@\w+)?\s*/, "").length;
+    text = raw.slice(pre).replace(/\s+$/, "");
+    ents = JSON.parse(capRow.ents || "[]").filter(x => x.offset >= pre && x.offset + x.length <= pre + text.length && x.type !== "bot_command").map(x => Object.assign({}, x, { offset: x.offset - pre }));
+    if (!text && draftText) { text = draftText.text; ents = draftText.ents || []; }
+  } else if (draftText) { text = draftText.text; ents = draftText.ents || []; }
+  else {
+    await tg(env, "sendMessage", { chat_id: chat, text: "вижу альбом. чтобы сделать из него рассылку, начни подпись с /send или сначала пришли /send и текст, а потом картинки." });
+    return;
+  }
+  const items = rows.filter(r => r.file).slice(0, 10).map(r => ({ t: r.kind || "photo", f: r.file }));
+  const b = { id: Date.now().toString(36), text, ents, type: items.length > 1 ? "album" : (items[0].t === "video" ? "video" : "photo"), file: items[0].f, media: items, files: items.map(x => x.f), state: "draft", ok: 0, fail: 0, skip: 0 };
   await env.USERS.put("bc:cur", JSON.stringify(b));
-  await tg(env, "sendMessage", { chat_id: chat, text: "так увидят люди" + (total > 10 ? " (взяла первые 10 фото из " + total + ")" : "") });
-  await bcSend(env, chat, b, { inline_keyboard: [] });
-  await tg(env, "sendMessage", { chat_id: chat, text: "отправляем всем?", reply_markup: BC_KB });
+  await tg(env, "sendMessage", { chat_id: chat, text: "так увидят люди" + (rows.length > 10 ? " (взяла первые 10 из " + rows.length + ")" : "") + (text.length > CAP ? "\n(текст длиннее подписи в 1024 знака, это предел телеграма. поэтому он придёт отдельным сообщением сразу под картинками. чтобы был один пост, сократи текст до 1024 знаков)" : "") });
+  await bcSend(env, chat, b, BC_KB);
 }
 async function bcRun(env) {
   const b = await env.USERS.get("bc:cur", "json");
@@ -860,11 +879,17 @@ export default {
         if (/^\/support(@\w+)?\s*$/.test(raw) && rec) { await supStart(env, chat, rec); return new Response("ok"); }
         if (/^\/done(@\w+)?\s*$/.test(raw) && rec) { await supStop(env, chat, rec); return new Response("ok"); }
         if (rec && rec.sup && Date.now() - rec.sup < SUP_TTL && !/^\//.test(raw)) { await supForward(env, m, rec); return new Response("ok"); }
-        if (m.from && m.from.id === OWNER && m.photo && m.media_group_id && env.USERS) {
-          await env.USERS.put("bcp:" + m.media_group_id + ":" + String(m.message_id).padStart(12, "0"), m.photo[m.photo.length - 1].file_id, { expirationTtl: 86400 });
-          if (!/^\/send/.test(raw)) return new Response("ok");
+        if (m.from && m.from.id === OWNER && (m.photo || m.video) && m.media_group_id && env.USERS && env.DB) {
+          if (await bcpAdd(env, m)) ctx.waitUntil(albumFlow(env, chat, m.media_group_id));
+          return new Response("ok");
         }
-        if (/^\/send(@\w+)?(\s|$)/.test(raw) && m.from && m.from.id === OWNER && env.USERS) {
+        // одиночная картинка без подписи сразу после текста /send — приклеиваем к нему
+        let sendLike = /^\/send(@\w+)?(\s|$)/.test(raw);
+        if (!sendLike && m.from && m.from.id === OWNER && (m.photo || m.video || m.animation) && !raw && env.USERS) {
+          const cd = await env.USERS.get("bc:cur", "json");
+          if (cd && cd.state === "draft" && cd.type === "text" && Date.now() - parseInt(cd.id, 36) < 3600000) sendLike = true;
+        }
+        if (sendLike && m.from && m.from.id === OWNER && env.USERS) {
           const pre = raw.length - raw.replace(/^\/send(@\w+)?\s*/, "").length;
           const text = raw.slice(pre).replace(/\s+$/, "");
           const ents = (m.entities || m.caption_entities || []).filter(x => x.offset >= pre && x.offset + x.length <= pre + text.length && x.type !== "bot_command").map(x => Object.assign({}, x, { offset: x.offset - pre }));
@@ -874,16 +899,15 @@ export default {
           else if (m.video) { type = "video"; file = m.video.file_id; }
           const cur = await env.USERS.get("bc:cur", "json");
           if (cur && cur.state === "sending") { await tg(env, "sendMessage", { chat_id: chat, text: "прошлая рассылка ещё идёт, подожди отчёта." }); return new Response("ok"); }
-          if (!text && type === "text") { await tg(env, "sendMessage", { chat_id: chat, text: "как отправить новость:\n\n1) /send и текст — любой длины, жирный и ссылки сохранятся\n2) потом картинки, гифку или видео с подписью /send — приклею их к этому тексту\n\nможно и сразу картинки с текстом в подписи. если текст длиннее подписи, он придёт отдельным сообщением сразу под картинками." }); return new Response("ok"); }
+          if (!text && type === "text") { await tg(env, "sendMessage", { chat_id: chat, text: "как отправить новость:\n\n1) /send и текст — любой длины, жирный и ссылки сохранятся\n2) потом картинки (можно альбомом до 10 штук), гифку или видео — приклею их к этому тексту\n\nможно и сразу картинки с текстом в подписи. если текст длиннее подписи, он придёт отдельным сообщением сразу под картинками." }); return new Response("ok"); }
           const b = { id: Date.now().toString(36), text: text || "", ents, type, file, state: "draft", ok: 0, fail: 0, skip: 0 };
           // склейка черновика: сначала текст, потом картинки (или наоборот)
           if (cur && cur.state === "draft" && Date.now() - parseInt(cur.id, 36) < 3600000) {
             if (type !== "text" && !text && cur.text) { b.text = cur.text; b.ents = cur.ents || []; }
-            if (type === "text" && cur.type !== "text") { b.type = cur.type; b.file = cur.file; b.files = cur.files; b.gid = cur.gid; }
+            if (type === "text" && cur.type !== "text") { b.type = cur.type; b.file = cur.file; b.files = cur.files; b.media = cur.media; }
           }
-          if (b.type === "album" && type === "album") { b.gid = m.media_group_id; await env.USERS.put("bc:cur", JSON.stringify(b)); ctx.waitUntil(albumPreview(env, chat, b)); return new Response("ok"); }
           await env.USERS.put("bc:cur", JSON.stringify(b));
-          await tg(env, "sendMessage", { chat_id: chat, text: "так увидят люди" + (b.type === "text" ? ". можно ещё прислать картинки с подписью /send, приклею к тексту." : "") + (b.text.length > CAP && b.type !== "text" ? "\n(текст длиннее подписи, поэтому придёт отдельным сообщением под картинками)" : "") });
+          await tg(env, "sendMessage", { chat_id: chat, text: "так увидят люди" + (b.type === "text" ? ". можешь прислать картинки или альбом следующим сообщением, приклею их к тексту." : "") + (b.text.length > CAP && b.type !== "text" ? "\n(текст длиннее подписи, поэтому придёт отдельным сообщением под картинками)" : "") });
           await bcSend(env, chat, b, BC_KB);
           return new Response("ok");
         }

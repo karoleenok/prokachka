@@ -641,6 +641,8 @@ html.tt,html.tt *{transition:background-color .4s ease,color .4s ease,border-col
 .skm{flex:none;background:none;border:0;color:var(--muted);font-size:20px;line-height:1;padding:2px 2px 6px 6px;cursor:pointer}
 .sph-empty{margin:12px 4px 0}.sph-empty .link{font-size:13px}
 .skmenu{display:flex;flex-direction:column;gap:2px;margin-top:16px}.skmenu button{display:flex;align-items:flex-start;gap:12px;background:none;border:0;color:inherit;font:inherit;font-size:15px;text-align:left;padding:12px 4px;border-top:1px solid var(--line);cursor:pointer}.skmenu button svg{flex:none;margin-top:1px}.skmenu small{display:block;font-size:12.5px;color:var(--muted);margin-top:2px}
+.tq-sk{display:flex;align-items:center;gap:10px;width:100%;margin:0 0 12px;padding:10px 12px;border-radius:12px;border:1px dashed var(--line);background:none;color:inherit;font:inherit;font-size:13.5px;text-align:left;cursor:pointer}.tq-sk .link{font-size:13px;white-space:nowrap}
+.q-sk{display:inline-flex;align-items:center;gap:5px;margin-left:auto;opacity:.8;font-weight:600}
 .mgbox{margin-top:14px;border:1.5px solid var(--line);border-radius:16px;padding:12px 14px}
 .pstrip{display:flex;align-items:center;gap:12px;width:100%;margin-top:12px;padding:8px 12px 8px 8px;border-radius:16px;background:var(--panel-soft);border:0;color:inherit;font:inherit;text-align:left;cursor:pointer}
 .pstrip svg{display:block;flex:none}.ps-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.ps-t b{font-size:13.5px;font-weight:600}.ps-up{color:var(--s-accent-t)}.ps-s{font-size:12.5px;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ps-ar{opacity:.6}
@@ -1611,7 +1613,7 @@ function questCard(c){
   const steps=c.steps||[];const left=steps.filter(x=>!x.done).length;const lvl={day:1,week:2,month:3}[c.period]||2;
   const hp=steps.length?`<div class="hp"><div class="hp-l"><span>осталось этапов</span><b class="num">${left} / ${steps.length}</b></div><div class="hp-bar">${steps.map(x=>`<i class="${x.done?"":"on"}"></i>`).join("")}</div></div>`:"";
   return`<div class="qcard q-${c.period} ${st!=="active"?"q-closed":""}">
-    <div class="q-top"><span class="q-badge">${QNAME[c.period]||Pd.label}</span>${c.moved?`<span class="q-moved small">перенесён ×${c.moved}</span>`:""}</div>
+    <div class="q-top"><span class="q-badge">${QNAME[c.period]||Pd.label}</span>${c.moved?`<span class="q-moved small">перенесён ×${c.moved}</span>`:""}${sk?`<span class="q-sk small">${sphIc(sphereOf(sk),13)}${esc(sk.name)}</span>`:""}</div>
     <div class="q-title">${esc(c.title)}</div>
     ${hp}
     ${steps.length?`<div class="q-steps">${steps.map(x=>`<button class="q-step ${x.done?"done":""}" data-act="qStep" data-id="${c.id}" data-s="${x.id}" aria-pressed="${!!x.done}" ${st!=="active"?"disabled":""}><span class="q-box">${x.done?IC.check:""}</span><span>${esc(x.t)}</span></button>`).join("")}</div>`:""}
@@ -1809,6 +1811,13 @@ function chainSheet(e,sk,sp){
   <p style="margin:14px 0 0">опыт за запись идёт в навык, а навыки складываются в шесть сфер жизни: работа, деньги, люди, тело, душа и ум. из них и рисуется портрет героя.</p>
   <p class="small muted" style="margin:8px 0 0">качать можно сколько угодно навыков, сферы просто показывают баланс: где ты растёшь, а что давно стоит.</p>
   <div class="row" style="margin-top:16px;flex-wrap:nowrap"><button class="btn accent" style="flex:1" data-act="goPortraitClose">посмотреть портрет</button><button class="btn ghost" style="flex:1" data-act="close">понятно</button></div>`);
+}
+/* выбор навыка, разложенный по сферам: для квестов и командных квестов */
+function skPickHTML(sel,attr){const act=activeSkills();
+  return SPHERES.map(sp=>{const ls=act.filter(k=>sphereOf(k)===sp.id);return ls.length?`<div class="fgrp"><div class="fgl">${sphIc(sp.id,13)}${esc(sp.n)}</div><div class="chips">${ls.map(s=>`<button type="button" class="chip" ${attr} data-id="${s.id}" aria-pressed="${sel===s.id}">${esc(s.name)}</button>`).join("")}</div></div>`:""}).join("")+(sel&&skillById(sel)?(()=>{const sp=sphereById(sphereOf(skillById(sel)));return`<div class="fsph">${sphIc(sp.id,15)}<span>опыт за квест пойдёт в навык <b>${esc(skillById(sel).name)}</b> и сферу <b>${esc(sp.n)}</b></span></div>`})():"")}
+function tqSkSheet(qid){const P=S.profile;const cur=(P.tqSkill||{})[qid];
+  sheet(`<div class="sheet-h"><h2 style="font-size:28px">мой навык в квесте</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div><p class="small muted" style="margin:0 0 10px">у каждого участника свой навык. за каждую закрытую тобой задачу +20 xp пойдут в него и в его сферу.</p><div id="tqsBox">${skPickHTML(cur,'data-tqs="1"')}</div><button class="btn ghost wide" style="margin-top:14px" data-act="tqOpen" data-id="${esc(qid)}">назад к квесту</button>`,el=>{
+    el.addEventListener("click",ev=>{const b=ev.target.closest("[data-tqs]");if(!b)return;P.tqSkill=Object.assign({},P.tqSkill||{},{[qid]:b.dataset.id});Store.saveProfile();toast("опыт за задачи пойдёт в «"+skillById(b.dataset.id).name+"»");tqSheet(qid)})});
 }
 function miniPortrait(d){
   const sp=spheresOf(d);const n=sp.length;const S0=46,c=S0/2,R=18;const max=Math.max(5,Math.ceil(Math.max(...sp.map(x=>x.val))));
@@ -2158,6 +2167,7 @@ function tqSheet(qid,keep){
   const free=group("");
   sheet(`<div class="sheet-h"><h2 style="overflow-wrap:anywhere">${esc(q.title)}</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
   ${q.about?`<p style="margin:0 0 10px;white-space:pre-wrap">${esc(q.about)}</p>`:""}
+  ${(()=>{const k=skillById((S.profile.tqSkill||{})[q.id]);return`<button class="tq-sk" data-act="tqSkPick" data-q="${esc(q.id)}">${k?`${sphIc(sphereOf(k),15)}<span>мой навык в квесте: <b>${esc(k.name)}</b> · ${esc(sphereById(sphereOf(k)).n)}</span><span class="link" style="margin-left:auto">изменить</span>`:`${sphIc("work",15)}<span>выбери свой навык: опыт за твои задачи пойдёт в него и в портрет героя</span><span class="link" style="margin-left:auto">выбрать</span>`}</button>`})()}
   <div class="card"><div class="row" style="justify-content:space-between"><span class="small muted">${p.all?`готово ${p.dn} из ${p.all}`:"задач пока нет"}</span>${q.deadline?`<span class="small">дедлайн квеста: ${dlChip(q.deadline,p.all&&p.dn===p.all)}</span>`:""}</div>
   <div class="prog" style="margin-top:8px"><i style="width:${p.pr}%"></i></div>${q.deadline?`<div style="margin-top:8px">${calLinks("квест: "+q.title,q.deadline,q.about)}</div>`:""}</div>
   <div class="card" style="margin-top:10px"><div class="row" style="justify-content:space-between"><b>команда · ${(q.members||[]).length}</b><button class="btn sm accent" data-act="tqInvite" data-q="${esc(q.id)}">позвать</button></div>
@@ -2241,7 +2251,8 @@ async function tqToggle(qid,tid){
     await TQ.call("task",{qid,task:nt});
     // опыт за командную задачу получает тот, кто её сделал
     const eid="tq_"+tid;const ex=S.entries.find(e=>e.id===eid);
-    if(nt.done&&(!ex||ex.del)){Store.putEntry({id:eid,date:today(),type:"bonus",xp:20,title:"командный квест: "+t.title,primary:null,secondary:[]});afterChange();toast("готово! +20 xp, команда получит уведомление")}
+    const tsk=(S.profile.tqSkill||{})[qid];const tsk1=tsk&&skillById(tsk)?tsk:null;
+    if(nt.done&&(!ex||ex.del)){Store.putEntry({id:eid,date:today(),type:"bonus",xp:20,title:"командный квест: "+t.title,primary:tsk1,secondary:[]});afterChange();if(tsk1)S.pulse={sid:sphereOf(skillById(tsk1)),t:Date.now()};toast(tsk1?"готово! +20 xp → "+skillById(tsk1).name+" · "+sphereById(sphereOf(skillById(tsk1))).n+" ↑":"готово! +20 xp. выбери в квесте свой навык, чтобы опыт шёл в портрет")}
     else if(!nt.done&&ex&&!ex.del){Store.delEntry(eid);afterChange();toast("вернула в работу")}
     tqRepaint();
   }catch(x){t.done=!nt.done;tqRepaint();toast("не получилось, проверь интернет")}
@@ -2796,7 +2807,7 @@ function skillCatalog(fromEntry,after){
   const P=S.profile;
   const paint=el=>{
     const act=new Set(P.active);
-    el.querySelector("#catBody").innerHTML=GROUPS.map(g=>{const list=allSkills().filter(s=>s.g===g.id);return`<div class="card"><div class="grp" style="margin:0 0 8px">${esc(g.name)}</div><div class="chips">${list.map(s=>`<button type="button" class="chip" data-c="tog" data-id="${s.id}" aria-pressed="${act.has(s.id)}" title="${esc(s.d)}">${act.has(s.id)?"✓ ":""}${esc(s.name)}</button>`).join("")}</div></div>`}).join("");
+    el.querySelector("#catBody").innerHTML=SPHERES.map(sp=>{const gs=GROUPS.map(g=>({g,list:allSkills().filter(s=>s.g===g.id&&sphereOf(s)===sp.id)})).filter(x=>x.list.length);if(!gs.length)return"";const n=gs.reduce((t,x)=>t+x.list.filter(s=>act.has(s.id)).length,0);return`<div class="card"><div class="row" style="gap:8px;margin:0 0 4px">${sphIc(sp.id,17)}<b style="font-size:16px">${esc(sp.n)}</b>${n?`<span class="small muted">выбрано ${n}</span>`:""}</div><div class="small muted" style="margin:0 0 6px">${esc(sp.d)}</div>${gs.map(x=>`<div class="grp" style="margin:10px 0 6px">${esc(x.g.name)}</div><div class="chips">${x.list.map(s=>`<button type="button" class="chip" data-c="tog" data-id="${s.id}" aria-pressed="${act.has(s.id)}" title="${esc(s.d)}">${act.has(s.id)?"✓ ":""}${esc(s.name)}</button>`).join("")}</div>`).join("")}</div>`}).join("");
     el.querySelector("#catCount").textContent="выбрано: "+P.active.length;
   };
   sheet(`<div class="sheet-h"><h2>выбери навыки</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
@@ -2908,7 +2919,7 @@ function newQuest(pre){
   <div id="qAbout">${aboutBlock(about,pre.steps)}</div>
   <div class="field"><label for="qTitle">квест</label><textarea class="in-text" id="qTitle" style="min-height:64px" placeholder="что сделаешь, чтобы стать сильнее">${esc(pre.title||"")}</textarea></div>
   <div class="field"><span class="lbl">срок</span><div class="chips">${Object.entries(PERIODS).map(([k,p])=>`<button type="button" class="chip" data-q="per" data-id="${k}" aria-pressed="${per===k}">${p.label} · ${p.xp} xp</button>`).join("")}</div></div>
-  <div class="field"><span class="lbl">какой навык качает</span><div class="chips">${activeSkills().map(s=>`<button type="button" class="chip" data-q="sk" data-id="${s.id}" aria-pressed="${sk===s.id}">${esc(s.name)}</button>`).join("")}</div></div>
+  <div class="field"><span class="lbl">какой навык качает</span><div id="qSk">${skPickHTML(sk,'data-q="sk"')}</div></div>
   ${pre.title?"":`<div class="field"><span class="lbl">готовые квесты с пояснением, нажми чтобы выбрать</span><div class="chips" id="qIdeas"></div></div>
   <details id="qOwn"><summary>своё пояснение, если хочешь</summary>
     <div class="field"><label for="qEss">в чём суть</label><textarea class="in-text" id="qEss" style="min-height:60px" placeholder="что сделать и как понять, что готово"></textarea></div>
@@ -2919,7 +2930,7 @@ function newQuest(pre){
     el.addEventListener("click",ev=>{const b=ev.target.closest("[data-q]");if(!b)return;
       if(b.dataset.q==="idea"){const x=ideaFor(sk,per)[+b.dataset.i];if(!x)return;el.querySelector("#qTitle").value=x.t;fromIdea=x.t;about=x.about;el.querySelector("#qAbout").innerHTML=gx(aboutBlock(about));paintI();return}
       if(b.dataset.q==="per"){per=b.dataset.id;el.querySelectorAll('[data-q="per"]').forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.id===per)));paintI()}
-      if(b.dataset.q==="sk"){sk=b.dataset.id;el.querySelectorAll('[data-q="sk"]').forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.id===sk)));paintI()}
+      if(b.dataset.q==="sk"){sk=b.dataset.id;el.querySelector("#qSk").innerHTML=gx(skPickHTML(sk,'data-q="sk"'));paintI()}
       if(b.dataset.q==="save"){const t=el.querySelector("#qTitle").value.trim();if(!t){toast("сформулируй квест");return}
         if(fromIdea&&t!==fromIdea&&about&&about.by==="app")about=null; // текст переписали, пояснение уже не про то
         const e1=el.querySelector("#qEss"),b1=el.querySelector("#qBen");
@@ -3259,6 +3270,7 @@ document.addEventListener("click",ev=>{
     case"skSort":P.skSort=id;Store.saveProfile();render();break;
     case"sphTog":S.sphClosed=Object.assign({},S.sphClosed||{},{[id]:!(S.sphClosed||{})[id]});try{localStorage.setItem("prk-sphc",JSON.stringify(S.sphClosed))}catch(x){}render();break;
     case"skMenu":skMenuSheet(id);break;
+    case"tqSkPick":tqSkSheet(b.dataset.q);break;
     case"skRename":skRenameSheet(id);break;
     case"skMerge":skMergeSheet(id);break;
     case"skUnmerge":closeSheet();doUnmerge(id);break;
