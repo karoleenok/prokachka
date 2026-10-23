@@ -37,5 +37,6 @@
 ## как обновлять
 
 1. правка `index.html` → загрузить на cloudflare pages (deployments → new, production)
+1a. код бота можно выложить прямо из браузера на dash.cloudflare.com: fetch PUT `/api/v4/accounts/<acc>/workers/scripts/prokachka-bot/content` (multipart: metadata `{"main_module":"worker.js"}` + файл). привязки (BOT_TOKEN, DB, USERS) при этом сохраняются. проверка версии: адрес бота `/v`
 2. правка бота → открыть редактор воркера `prokachka-bot`, вставить `worker/worker.js`, deploy
 3. откат: взять нужный `index-vNN.html` из `архив-версий` на маке и загрузить как `index.html`
