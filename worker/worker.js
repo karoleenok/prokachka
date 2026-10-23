@@ -1,7 +1,7 @@
 // бот прокачки: приветствие на /start, напоминания и синхронизация данных приложения между устройствами.
 // токен в секрете BOT_TOKEN, настройки напоминаний в KV USERS, данные приложения в базе D1 (привязка DB).
 const APP = "https://prokachka.pages.dev";
-const BOT_V = "v27"; // версия бота: видно по адресу /v, чтобы проверить, что выложилась свежая
+const BOT_V = "v28"; // версия бота: видно по адресу /v, чтобы проверить, что выложилась свежая
 const OWNER = 424765559; // telegram id владельца: ему приложение показывает статистику
 const HELLO = [
   "о, наконец-то ты тут! рад тебя видеть! скорее жми кнопку, давай превратим жизнь в игру",
@@ -340,10 +340,10 @@ async function calDel(env, nums) {
 }
 const CAL_HELP = "📅 как добавить событие:\n/add 24.11 18:30 эфир с куратором\n\nможно несколько, каждое с новой строки:\n/add\n23.10 11:00 эфир\n26.11 23:59 дедлайн проекта\n\nформаты: дата 24.11 или 24 ноября (год по желанию), время 18:30 (без времени = на весь день). длительность: 2ч или 90мин (по умолчанию 1 час). напоминание: !30мин, !2ч, !1д или !нет (по умолчанию за час, а для события на весь день в 9:00).";
 async function setCommands(env) {
-  if (await env.USERS.get("cmds:v6")) return;
+  if (await env.USERS.get("cmds:" + BOT_V)) return;
   await tg(env, "setMyCommands", { commands: [{ command: "menu", description: "меню" }, { command: "events", description: "события за 48 часов" }, { command: "support", description: "написать в поддержку" }, { command: "start", description: "открыть прокачку" }] });
   await tg(env, "setMyCommands", { scope: { type: "chat", chat_id: OWNER }, commands: [{ command: "menu", description: "меню" }, { command: "events", description: "события за 48 часов" }, { command: "support", description: "написать в поддержку" }, { command: "send", description: "рассылка новостей" }, { command: "stats", description: "статистика" }, { command: "members", description: "кто в прокачке" }, { command: "calendar", description: "календарь для айфона" }, { command: "add", description: "добавить событие в календарь" }, { command: "list", description: "ближайшие события" }, { command: "del", description: "удалить событие по номеру" }, { command: "start", description: "открыть прокачку" }] });
-  await env.USERS.put("cmds:v6", "1");
+  await env.USERS.put("cmds:" + BOT_V, "1");
 }
 async function supStart(env, chat, rec) {
   rec.sup = Date.now(); rec.supId = rec.sup; await env.USERS.put("u:" + chat, JSON.stringify(rec));
@@ -851,6 +851,26 @@ async function tqOp(env, ctx, u, b) {
     later(tqLog(env, qid, u.id, "✉️ " + u.name + " в задаче «" + (t.title || "") + "»: " + cut(text, 140), tid, [...whosOf(t), t.by, ...spoke]));
     return { list: await tqList(env, u.id) };
   }
+  if (op === "nudge") {
+    // напоминание о задаче: ответственным или всей команде, по кнопке из приложения
+    const qid = b.qid, tid = b.tid;
+    if (!sid(qid) || !sid(tid) || !await tqMember(env, qid, u.id)) return { error: "bad" };
+    const tr = await env.DB.prepare("SELECT data FROM tqt WHERE qid = ?1 AND id = ?2").bind(qid, tid).first(); const t = pj(tr && tr.data);
+    if (!t || t.del || t.done) return { error: "bad" };
+    const qr = await env.DB.prepare("SELECT data FROM tq WHERE id = ?1").bind(qid).first(); const q = pj(qr && qr.data) || {};
+    const ms = await tqMembers(env, qid);
+    const key = "nudge:" + qid + ":" + tid + ":" + u.id;
+    if (env.USERS && await env.USERS.get(key)) return { error: "wait" };
+    const all = b.scope === "all";
+    const rec = uniqIds(all ? ms.map(m => m.uid) : whosOf(t)).filter(x => x > 0 && x !== u.id);
+    if (!rec.length) return { error: "nobody" };
+    const names = whosOf(t).map(x => memName(ms, x)).filter(Boolean).join(", ");
+    const text = "🔔 " + u.name + " напоминает о задачке\n\n🪧 Какой квест: " + (q.title || "без названия") + "\n🪷 Суть задачи: " + (t.title || "") + "\n⌛️ Дедлайн: " + (t.deadline ? ddmm(t.deadline) : "без дедлайна") + "\n👥 Ответственные: " + (names || "пока никто");
+    for (const uid of rec) await tqSend(env, uid, text, qid);
+    if (env.USERS) await env.USERS.put(key, "1", { expirationTtl: 120 });
+    later(tqLog(env, qid, u.id, "🔔 " + u.name + " " + V("напомнил", "напомнила") + " о задаче «" + (t.title || "") + "»" + (all ? " всей команде" : ""), tid, [...whosOf(t), t.by]));
+    return { sent: rec.length };
+  }
   if (op === "join") {
     const code = String(b.code || "").slice(0, 20);
     const q = await env.DB.prepare("SELECT id, data FROM tq WHERE code = ?1").bind(code).first();
@@ -1008,7 +1028,7 @@ export default {
       const out = {};
       out.webhook = await tg(env, "setWebhook", { url: url.origin + path, allowed_updates: ["message", "callback_query"] });
       out.menu = await tg(env, "setChatMenuButton", { menu_button: { type: "web_app", text: "прокачка", web_app: { url: APP } } });
-      await env.USERS.delete("cmds:v2"); await setCommands(env); out.commands = "ok";
+      await env.USERS.delete("cmds:" + BOT_V); await setCommands(env); out.commands = "ok";
       out.short = await tg(env, "setMyShortDescription", { short_description: "превращаю жизнь в игру: навыки, опыт и квесты" });
       out.kv = env.USERS ? "ok" : "нет привязки USERS";
       out.stats = url.origin + await statsPath(env);

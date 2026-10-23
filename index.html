@@ -2554,7 +2554,7 @@ function tqTaskSheet(qid,tid,keep){
   <div class="row" style="gap:10px;flex-wrap:nowrap;align-items:flex-end"><div class="field" style="flex:1;min-width:0"><label for="ttB">начало</label><input class="in-text" type="date" id="ttB" value="${t?esc(t.start||""):today()}"></div><div class="field" style="flex:1;min-width:0"><label for="ttD">дедлайн</label><input class="in-text" type="date" id="ttD" value="${t?esc(t.deadline||""):""}"></div></div>
   ${t&&t.deadline?`<div style="margin-top:6px">${calLinks(t.title+" · "+q.title,t.deadline,t.essence)}</div>`:""}<div class="small muted" style="margin-top:4px">начало и дедлайн рисуют полосу задачи на таймлайне</div>
   ${(q.stages||[]).length?`<div class="field"><label for="ttS">этап</label><select class="in-text" id="ttS"><option value="">без этапа</option>${q.stages.map(x=>`<option value="${esc(x.id)}" ${x.id===F.stage?"selected":""}>${esc(x.title)}${x.deadline?" · до "+esc(fmtD(x.deadline)):""}</option>`).join("")}</select></div>`:""}
-  <div class="stack"><button class="btn accent wide" id="ttSave">${t?"сохранить изменения":"добавить задачу"}</button>${t&&!t.done?`<button class="btn ghost wide" data-act="tqWhen" data-q="${esc(q.id)}" data-id="${esc(t.id)}">${CAL_IC} ${plannedOf("t",q.id,t.id)?"в плане: "+esc(dayWord(plannedOf("t",q.id,t.id).date))+" · изменить":"поставить на день"}</button>`:""}${t?`<button class="btn ghost wide" data-act="tqDone" data-q="${esc(q.id)}" data-id="${esc(t.id)}">${t.done?"вернуть в работу":"✓ отметить выполненной"}</button>`:""}</div>
+  <div class="stack"><button class="btn accent wide" id="ttSave">${t?"сохранить изменения":"добавить задачу"}</button>${t&&!t.done?`<button class="btn ghost wide" data-act="tqNudge" data-q="${esc(q.id)}" data-id="${esc(t.id)}">${IC.bell} напомнить в телеграме</button>`:""}${t&&!t.done?`<button class="btn ghost wide" data-act="tqWhen" data-q="${esc(q.id)}" data-id="${esc(t.id)}">${CAL_IC} ${plannedOf("t",q.id,t.id)?"в плане: "+esc(dayWord(plannedOf("t",q.id,t.id).date))+" · изменить":"поставить на день"}</button>`:""}${t?`<button class="btn ghost wide" data-act="tqDone" data-q="${esc(q.id)}" data-id="${esc(t.id)}">${t.done?"вернуть в работу":"✓ отметить выполненной"}</button>`:""}</div>
   <p class="small muted" style="margin:8px 0 0;text-align:center">${t?"после сохранения уведомление придёт тем, кто связан с задачей":"уведомление придёт ответственным, а если их нет — всей команде"}</p>
   ${t?`<div class="card" style="margin-top:14px"><b>комментарии${cm.length?" · "+cm.length:""}</b>
   ${cm.map(c=>{const m=tqMem(q,c.uid)||{uid:c.uid,name:"бывший участник"};const w=new Date(c.ts);return`<div class="cmt">${avatar(m,28)}<div style="min-width:0"><div class="small"><b>${esc(m.name)}</b> <span class="muted">${esc(fmtD(w.toISOString().slice(0,10)))} в ${w.toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"})}</span></div><div class="tx">${esc(c.text)}</div></div></div>`}).join("")||`<p class="small muted" style="margin:6px 0 0">пока тихо. напиши, если есть вопрос или апдейт: бот перешлёт команде.</p>`}
@@ -2675,6 +2675,24 @@ function sheet(html,onMount){
 function closeSheet(){try{TQ.open=null}catch(x){}$("#layer").innerHTML="";document.body.style.overflow="";tgBack()}
 function tgBack(){if(!TG||!TG.BackButton)return;try{$("#layer").innerHTML?TG.BackButton.show():TG.BackButton.hide()}catch(x){}}
 let toastT;function toast(msg){let t=document.querySelector(".toast");if(!t){t=document.createElement("div");t.className="toast";t.setAttribute("role","status");document.body.appendChild(t)}t.textContent=gx(msg);try{TG&&TG.HapticFeedback&&TG.HapticFeedback.impactOccurred("light")}catch(x){}if(T){t.style.top="calc(64px + env(safe-area-inset-top,0px))";t.style.bottom="auto"}else{t.style.top="";t.style.bottom=""}clearTimeout(toastT);toastT=setTimeout(()=>t.remove(),2600)}
+function tqNudgeSheet(qid,tid){
+  const q=TQ.q(qid);const t=q&&(q.tasks||[]).find(x=>x.id===tid);if(!t)return;
+  const me=TQ.me(),mem=u=>(q.members||[]).find(m=>m.uid===u);
+  const who=whosOf(t).filter(u=>u>0&&u!==me).map(mem).filter(Boolean);
+  const all=(q.members||[]).filter(m=>m.uid>0&&m.uid!==me);
+  const send=async scope=>{
+    try{const j=await TQ.call("nudge",{qid,tid,scope});closeSheet();toast("напоминание отправлено: "+j.sent+" "+plural(j.sent,"человеку","людям","людям"))}
+    catch(x){const m=String(x.message||"");toast(m==="wait"?"об этой задаче уже напоминали пару минут назад":m==="nobody"?"некому напоминать":m==="offline"?"нет интернета":"не получилось отправить")}
+  };
+  sheet(`<div class="sheet-h"><button class="iconbtn" data-act="tqTask" data-q="${esc(qid)}" data-id="${esc(tid)}" aria-label="назад">←</button><h2 style="flex:1;margin-left:8px">напомнить</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
+  <p class="small muted" style="margin:0 0 14px">в телеграм придёт сообщение «твоё имя напоминает о задачке» с названием квеста, сутью и дедлайном.</p>
+  <div class="card" style="margin-bottom:12px"><b>${esc(t.title)}</b><div class="small muted">квест «${esc(q.title)}»</div></div>
+  <div class="stack">${who.length?`<button class="btn accent wide" id="nuWho">${IC.bell} ответственным · ${who.map(m=>esc(m.name)).join(", ")}</button>`:`<p class="small muted" style="margin:0">у задачи нет ответственных, кроме тебя: можно напомнить всей команде.</p>`}
+  ${all.length?`<button class="btn ghost wide" id="nuAll">всей команде · ${all.length}</button>`:""}</div>`,el=>{
+    const a=el.querySelector("#nuWho");if(a)a.onclick=()=>send("who");
+    const b=el.querySelector("#nuAll");if(b)b.onclick=()=>send("all");
+  });
+}
 function confirmSheet(title,text,okLabel,onOk){
   sheet(`<h2>${esc(title)}</h2><p>${esc(text)}</p><div class="row" style="margin-top:16px"><button class="btn accent" id="okBtn">${esc(okLabel)}</button><button class="btn ghost" data-act="close">отмена</button></div>`,el=>{el.querySelector("#okBtn").onclick=()=>{closeSheet();onOk()}});
 }
@@ -2685,8 +2703,9 @@ function hintSheet(k){const[h,t]=HELP[k];sheet(`<span class="pill">подска�
    как добавить новость: допиши объект в NEWS (приложение) или в news.json рядом с index.html (без выпуска приложения).
    kind: "update" | "news". acts: до двух кнопок {l:"посмотреть"|"протестировать", go:"..."}.
    куда ведёт go: tab:home|path|skills|quests|rewards · path:feed · hint:<ключ из HELP> · add:plan · add:done */
-const APP_V="v75";
+const APP_V="v76";
 const NEWS=[
+  {id:"u76-nudge",date:"2026-10-23",kind:"update",title:"можно напомнить о задаче в телеграме",text:"открой задачу в командном квесте и нажми «напомнить в телеграме»: ответственным или всей команде придёт сообщение с квестом, сутью задачи и дедлайном.",go:"tab:quests"},
   {id:"u70-events",date:"2026-10-23",kind:"update",title:"бот покажет, что случилось за 48 часов",text:"напиши боту /events или нажми «события за 48 часов» в /menu: можно посмотреть, что менялось в конкретном командном квесте, что было по твоим задачам и какие вышли обновления. ещё у клода в участниках теперь своя аватарка.",go:"tab:quests"},
   {id:"u69-whos",date:"2026-10-23",kind:"update",title:"у задачи может быть несколько ответственных",text:"в командном квесте в задаче теперь отмечаются сразу несколько человек: нажимай на имена, чтобы добавить или снять. в команде появился клод: на него тоже можно ставить задачи. уведомления в боте приходят тем, кто связан с задачей, и стали понятнее: квест, суть, кто поставил, дедлайн и ответственные. если новых задач набралось больше трёх, бот соберёт их в одно сообщение со списком.",acts:[{l:"посмотреть",go:"tab:quests"}]},
   {id:"u68-when",date:"2026-10-23",kind:"update",title:"любую задачу можно поставить на нужный день",text:"у каждой задачи квеста, личного или командного, есть календарь: выбери сегодня, завтра или любой день, и задача появится в плане. а если квестов несколько, на главной они листаются стрелками и свайпом.",acts:[{l:"посмотреть",go:"tab:home"}]},
@@ -3764,6 +3783,7 @@ document.addEventListener("click",ev=>{
     case"tqInvite":tqInvite(b.dataset.q);break;
     case"openUrl":{const u=b.dataset.url;try{if(TG&&TG.openTelegramLink&&/^https:\/\/t\.me\//.test(u))TG.openTelegramLink(u);else if(TG&&TG.openLink)TG.openLink(u);else window.open(u,"_blank")}catch(x){window.open(u,"_blank")}break}
     case"tqStage":{const q=TQ.q(b.dataset.q);if(!q)break;const stages=(q.stages||[]).map(x=>x.id===b.dataset.id?Object.assign({},x,{done:!x.done}):x);TQ.call("save",{quest:Object.assign({},q,{stages})}).then(()=>tqRepaint()).catch(()=>toast("не получилось, проверь интернет"));break}
+    case"tqNudge":tqNudgeSheet(b.dataset.q,b.dataset.id);break;
     case"tqTaskDel":{const q=TQ.q(b.dataset.q);const t=q&&(q.tasks||[]).find(x=>x.id===b.dataset.id);if(!t)break;confirmSheet("удалить задачу?","«"+t.title+"» пропадёт у всей команды.","удалить",()=>{TQ.call("task",{qid:q.id,task:Object.assign({},t,{del:true,upd:Date.now()})}).then(()=>{tqSheet(q.id);toast("задача удалена")}).catch(()=>toast("не получилось, проверь интернет"))});break}
     case"tqLeave":{const q=TQ.q(b.dataset.q);if(!q)break;confirmSheet("выйти из квеста?","«"+q.title+"» пропадёт у тебя, а команда получит уведомление. вернуться можно по ссылке-приглашению.","выйти",()=>{TQ.call("leave",{qid:q.id}).then(()=>{TQ.open=null;closeSheet();tqRepaint();toast("ты вышла из квеста")}).catch(()=>toast("не получилось, проверь интернет"))});break}
     case"syncNow":{b.disabled=true;b.textContent="синхронизирую…";Store.sync(true).then(()=>{toast(Store.status==="cloud"?"синхронизировала":"облако не ответило, попробую позже");syncSheet()});break}
