@@ -1,7 +1,7 @@
 // бот прокачки: приветствие на /start, напоминания и синхронизация данных приложения между устройствами.
 // токен в секрете BOT_TOKEN, настройки напоминаний в KV USERS, данные приложения в базе D1 (привязка DB).
 const APP = "https://prokachka.pages.dev";
-const BOT_V = "v29"; // версия бота: видно по адресу /v, чтобы проверить, что выложилась свежая
+const BOT_V = "v30"; // версия бота: видно по адресу /v, чтобы проверить, что выложилась свежая
 const OWNER = 424765559; // telegram id владельца: ему приложение показывает статистику
 const HELLO = [
   "о, наконец-то ты тут! рад тебя видеть! скорее жми кнопку, давай превратим жизнь в игру",
@@ -710,13 +710,24 @@ function cleanTask(t, old) {
   return { id: t.id, title: cut(t.title, 160) || o.title || "задача", essence: String(t.essence || "").slice(0, 2000), whos, who: whos.find(x => x > 0) || whos[0] || 0, start: /^\d{4}-\d{2}-\d{2}$/.test(t.start || "") ? t.start : "", deadline: /^\d{4}-\d{2}-\d{2}$/.test(t.deadline || "") ? t.deadline : "", stage: sid(t.stage) ? t.stage : "", done: !!t.done, doneBy: t.done ? (Number(t.doneBy) || o.doneBy || 0) : 0, doneAt: t.done ? (o.done ? o.doneAt : Date.now()) : 0, del: !!t.del, by: o.by || Number(t.by) || 0, created: o.created || Date.now(), upd: Number(t.upd) || Date.now(), r1: o.deadline === t.deadline ? (o.r1 || "") : "", r0: o.deadline === t.deadline ? (o.r0 || "") : "" };
 }
 async function tqMember(env, qid, uid) { return !!(await env.DB.prepare("SELECT 1 AS x FROM tqm WHERE qid = ?1 AND uid = ?2").bind(qid, uid).first()); }
+// владелице приходит копия всего, что ушло другим из-за её действий: видно, что и кому отправилось
+async function tqEcho(env, qid, from, uids, text) {
+  if (from !== OWNER) return;
+  const ids = uniqIds(uids).filter(x => x !== from && x > 0);
+  if (!ids.length) return;
+  const ms = await tqMembers(env, qid);
+  const names = ids.map(x => memName(ms, x) || "участник").join(", ");
+  await tqSend(env, from, "📤 ушло: " + names + "\n\n" + text, qid);
+}
 async function tqNotify(env, qid, exceptUid, text) {
   const ms = (await env.DB.prepare("SELECT uid FROM tqm WHERE qid = ?1").bind(qid).all()).results;
   for (const m of ms) if (m.uid !== exceptUid) await tqSend(env, m.uid, text, qid);
+  await tqEcho(env, qid, exceptUid, ms.map(m => m.uid), text);
 }
 // уведомление только тем, кто связан с задачей: ответственные, автор, участники обсуждения
 async function tqNotifyTo(env, qid, uids, exceptUid, text, nt) {
   for (const uid of uniqIds(uids)) if (uid !== exceptUid) await tqSend(env, uid, text, qid, nt);
+  await tqEcho(env, qid, exceptUid, uids, text);
 }
 async function tqList(env, uid) {
   const qs = (await env.DB.prepare("SELECT q.id, q.code, q.owner, q.data FROM tq q JOIN tqm m ON m.qid = q.id WHERE m.uid = ?1").bind(uid).all()).results;
@@ -838,6 +849,7 @@ async function tqOp(env, ctx, u, b) {
     const names = whosOf(t).map(x => memName(ms, x)).filter(Boolean).join(", ");
     const text = "🔔 " + u.name + " напоминает о задачке\n\n🪧 Какой квест: " + (q.title || "без названия") + "\n🪷 Суть задачи: " + (t.title || "") + "\n⌛️ Дедлайн: " + (t.deadline ? ddmm(t.deadline) : "без дедлайна") + "\n👥 Ответственные: " + (names || "пока никто");
     for (const uid of rec) await tqSend(env, uid, text, qid);
+    await tqEcho(env, qid, u.id, rec, text);
     if (env.USERS) await env.USERS.put(key, "1", { expirationTtl: 120 });
     later(tqLog(env, qid, u.id, "🔔 " + u.name + " " + V("напомнил", "напомнила") + " о задаче «" + (t.title || "") + "»" + (all ? " всей команде" : ""), tid, [...whosOf(t), t.by]));
     return { sent: rec.length };
