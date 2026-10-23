@@ -1,7 +1,7 @@
 // бот прокачки: приветствие на /start, напоминания и синхронизация данных приложения между устройствами.
 // токен в секрете BOT_TOKEN, настройки напоминаний в KV USERS, данные приложения в базе D1 (привязка DB).
 const APP = "https://prokachka.pages.dev";
-const BOT_V = "v28"; // версия бота: видно по адресу /v, чтобы проверить, что выложилась свежая
+const BOT_V = "v29"; // версия бота: видно по адресу /v, чтобы проверить, что выложилась свежая
 const OWNER = 424765559; // telegram id владельца: ему приложение показывает статистику
 const HELLO = [
   "о, наконец-то ты тут! рад тебя видеть! скорее жми кнопку, давай превратим жизнь в игру",
@@ -177,35 +177,6 @@ async function offerIfNeeded(env, uid, tz) {
   return r;
 }
 
-// /members: кто открывал прокачку, свежие сверху. имена берём из записи; у давних людей их нет, дотягиваем у телеграма понемногу
-async function membersText(env) {
-  const rows = []; let cursor, budget = 35, missing = 0;
-  do {
-    const l = await env.USERS.list({ prefix: "u:", cursor });
-    for (const k of l.keys) {
-      const id = Number(k.name.slice(2)); if (!id || id === OWNER) continue;
-      const r = await env.USERS.get(k.name, "json"); if (!r) continue;
-      if (!r.nm && !r.nmx) {
-        if (budget > 0) {
-          budget--;
-          const c = await tg(env, "getChat", { chat_id: id });
-          if (c.ok) { r.nm = cut([c.result.first_name, c.result.last_name].filter(Boolean).join(" "), 40) || "без имени"; r.un = cut(c.result.username, 40); }
-          else r.nmx = 1; // телеграм не отдал имя (например, человек удалил аккаунт): больше не спрашиваем
-          await env.USERS.put(k.name, JSON.stringify(r));
-        } else missing++;
-      }
-      rows.push({ nm: r.nm || "", un: r.un || "", first: r.first || "" });
-    }
-    cursor = l.list_complete ? undefined : l.cursor;
-  } while (cursor);
-  const opened = rows.filter(x => x.first).sort((a, b) => a.first < b.first ? 1 : a.first > b.first ? -1 : 0);
-  const onlyStart = rows.length - opened.length;
-  const line = x => ddmm(x.first) + " · " + (x.nm || "без имени") + (x.un ? " @" + x.un : "");
-  return "в прокачке: " + opened.length + " " + plural(opened.length, "человек", "человека", "человек") + " (открывали приложение)" +
-    (onlyStart ? "\nещё " + onlyStart + " нажали /start, но приложение не открывали" : "") + "\n\n" +
-    (opened.length ? opened.map(line).join("\n") : "пока никого") +
-    (missing ? "\n\nу " + missing + " пока нет имени: пришли /members ещё раз, дотяну" : "");
-}
 // сколько всего людей: считаем только ключи, значения не читаем, поэтому дёшево
 async function userCount(env) {
   let n = 0, cursor;
@@ -342,7 +313,7 @@ const CAL_HELP = "📅 как добавить событие:\n/add 24.11 18:30
 async function setCommands(env) {
   if (await env.USERS.get("cmds:" + BOT_V)) return;
   await tg(env, "setMyCommands", { commands: [{ command: "menu", description: "меню" }, { command: "events", description: "события за 48 часов" }, { command: "support", description: "написать в поддержку" }, { command: "start", description: "открыть прокачку" }] });
-  await tg(env, "setMyCommands", { scope: { type: "chat", chat_id: OWNER }, commands: [{ command: "menu", description: "меню" }, { command: "events", description: "события за 48 часов" }, { command: "support", description: "написать в поддержку" }, { command: "send", description: "рассылка новостей" }, { command: "stats", description: "статистика" }, { command: "members", description: "кто в прокачке" }, { command: "calendar", description: "календарь для айфона" }, { command: "add", description: "добавить событие в календарь" }, { command: "list", description: "ближайшие события" }, { command: "del", description: "удалить событие по номеру" }, { command: "start", description: "открыть прокачку" }] });
+  await tg(env, "setMyCommands", { scope: { type: "chat", chat_id: OWNER }, commands: [{ command: "menu", description: "меню" }, { command: "events", description: "события за 48 часов" }, { command: "support", description: "написать в поддержку" }, { command: "send", description: "рассылка новостей" }, { command: "stats", description: "статистика" }, { command: "calendar", description: "календарь для айфона" }, { command: "add", description: "добавить событие в календарь" }, { command: "list", description: "ближайшие события" }, { command: "del", description: "удалить событие по номеру" }, { command: "start", description: "открыть прокачку" }] });
   await env.USERS.put("cmds:" + BOT_V, "1");
 }
 async function supStart(env, chat, rec) {
@@ -1327,11 +1298,6 @@ export default {
           await env.USERS.put("bc:cur", JSON.stringify(b));
           await tg(env, "sendMessage", { chat_id: chat, text: "так увидят люди" + (b.type === "text" ? ". можешь прислать картинки или альбом следующим сообщением, приклею их к тексту." : "") + (b.text.length > CAP && b.type !== "text" ? "\n(текст длиннее подписи, поэтому придёт отдельным сообщением под картинками)" : "") });
           await bcSend(env, chat, b, BC_KB);
-          return new Response("ok");
-        }
-        if (/^\/members(@\w+)?\s*$/.test(m.text || "") && m.from && m.from.id === OWNER && env.USERS) {
-          const parts = bcParts(await membersText(env), []);
-          for (const p of parts) await tg(env, "sendMessage", { chat_id: chat, text: p.text, disable_web_page_preview: true });
           return new Response("ok");
         }
         if (/^\/stats/.test(m.text || "") && m.from && m.from.id === OWNER && env.USERS) {
