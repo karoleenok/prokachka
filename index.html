@@ -2632,7 +2632,7 @@ const pkBlock=()=>`<div class="pk-h">работа и продукты:</div><div
  ${pkRow("b","бутик кастомных обвесов «твинс»","сооснователь",{links:[["тгк @twins_vibe","https://t.me/twins_vibe"],["сайт","https://twinsvibe.ru/"]]})}
  ${pkRow("n","Нейротайник","куратор на обучении",{url:"https://t.me/vika_sheshura/3847"})}
  ${pkRow("c","дизайн-коллаборации","организатор",{links:[["проект NULL","https://t.me/ohmyprompts/676"],["марафон упаковок","https://t.me/ohmyprompts/793"]]})}
- ${pkRow("k","картотека свиданий в saint p","создатель продукта<br>релиз этой осенью",{url:"https://t.me/ohmyprompts/704"})}</div>`;
+ ${pkRow("k","картотека свиданий в saint p","создатель продукта · <span style='white-space:nowrap'>релиз этой осенью</span>",{url:"https://t.me/ohmyprompts/704"})}</div>`;
 function authorCard(full){
   return`<section class="card au-card ${full?"au-pg":""}"><span class="au-pill">${full?"создатель прокачки":"о создателе"}</span>
   <div class="au-top"><img class="au-ph" src="au-me.jpg" alt=""><div style="min-width:0"><div class="au-mini">Каролина</div><p class="small muted" style="margin:4px 0 0">${AU_TXT}</p></div></div>
@@ -2685,7 +2685,7 @@ function hintSheet(k){const[h,t]=HELP[k];sheet(`<span class="pill">подска�
    как добавить новость: допиши объект в NEWS (приложение) или в news.json рядом с index.html (без выпуска приложения).
    kind: "update" | "news". acts: до двух кнопок {l:"посмотреть"|"протестировать", go:"..."}.
    куда ведёт go: tab:home|path|skills|quests|rewards · path:feed · hint:<ключ из HELP> · add:plan · add:done */
-const APP_V="v74";
+const APP_V="v75";
 const NEWS=[
   {id:"u70-events",date:"2026-10-23",kind:"update",title:"бот покажет, что случилось за 48 часов",text:"напиши боту /events или нажми «события за 48 часов» в /menu: можно посмотреть, что менялось в конкретном командном квесте, что было по твоим задачам и какие вышли обновления. ещё у клода в участниках теперь своя аватарка.",go:"tab:quests"},
   {id:"u69-whos",date:"2026-10-23",kind:"update",title:"у задачи может быть несколько ответственных",text:"в командном квесте в задаче теперь отмечаются сразу несколько человек: нажимай на имена, чтобы добавить или снять. в команде появился клод: на него тоже можно ставить задачи. уведомления в боте приходят тем, кто связан с задачей, и стали понятнее: квест, суть, кто поставил, дедлайн и ответственные. если новых задач набралось больше трёх, бот соберёт их в одно сообщение со списком.",acts:[{l:"посмотреть",go:"tab:quests"}]},
