@@ -803,7 +803,7 @@ html.tt,html.tt *{transition:background-color .4s ease,color .4s ease,border-col
 .au-open{margin-top:14px;border-radius:18px;background:rgba(86,104,197,.09);padding:12px 14px;display:flex;gap:10px;align-items:flex-start}
 .au-open b{display:block;font-size:15px}.au-open span{font-size:13px;opacity:.8;line-height:1.4}
 .au-open i{flex:none;width:9px;height:9px;border-radius:50%;background:#4CC98A;margin-top:6px;box-shadow:0 0 0 4px rgba(76,201,138,.22)}
-.au-ch{display:flex;align-items:center;gap:12px;padding:12px;border-radius:18px;background:rgba(86,104,197,.07);margin-top:12px}
+.au-ch{display:flex;align-items:center;gap:12px;padding:12px 14px;cursor:pointer;border-radius:18px;background:rgba(86,104,197,.07);margin-top:12px}
 .au-ch img{width:44px;height:44px;border-radius:50%;flex:none}.au-ch b{display:block;font-size:15px}.au-ch small{opacity:.65}
 .au-works{display:flex;gap:10px;overflow-x:auto;margin:12px -4px 0;padding:0 4px 4px;scroll-snap-type:x mandatory}
 .au-works img{height:168px;border-radius:14px;flex:none;scroll-snap-align:start;object-fit:cover}
@@ -812,13 +812,13 @@ html.tt,html.tt *{transition:background-color .4s ease,color .4s ease,border-col
 .au-set .ar{margin-left:auto;color:var(--muted)}
 .pk-h{font-size:13px;opacity:.55;margin:18px 0 8px}
 .pk-l{display:flex;flex-direction:column;gap:8px}
-.pk-r{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:16px;text-align:left;width:100%;box-shadow:inset 0 0 0 1px rgba(23,28,36,.1);color:inherit;background:none}
+.pk-r{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:16px;text-align:left;width:100%;color:inherit;background:rgba(86,104,197,.07)}
 .pk-ic{width:20px;height:20px;opacity:.5;flex:none}.pk-ic svg{width:20px;height:20px}
 .pk-r .t{font-size:15px;font-weight:600;line-height:1.25}
 .pk-r .s{font-size:13px;opacity:.55;margin-top:1px}
 .pk-r .ar{margin-left:auto;opacity:.35;flex:none}.pk-r .ar svg{width:16px;height:16px}
 .pk-two{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-.pk-two button{font-size:13.5px;font-weight:500;border-radius:999px;padding:5px 11px;background:rgba(86,104,197,.13);color:inherit}
+.pk-two button{font-size:13.5px;font-weight:500;border-radius:999px;padding:6px 12px;background:#fff;color:inherit;box-shadow:0 1px 2px rgba(23,28,36,.06)}
 .tq-meta svg{width:13px;height:13px;flex:none}
 .tq-dn{display:inline-flex;align-items:center;gap:4px}
 img.av-bot{background:#D97757}
@@ -2614,7 +2614,7 @@ const AU_W=["au-w1.jpg","au-w2.jpg","au-w3.jpg","au-w4.jpg"];
 const AU_AR='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>';
 const AU_TXT="дизайнер из Saint P и основатель ai-комьюнити с коллаборациями. прокачку собрала сама вместе с claude: для себя, а теперь и для вас.";
 const AU_OPEN=`<div class="au-open"><i></i><div><b>открыта к сотрудничеству</b><span>новые проекты, коллаборации и совместные продукты: пиши, придумаем что-нибудь вместе.</span></div></div>`;
-const AU_BTNS=`<div class="row" style="margin-top:14px;gap:8px"><button class="btn accent" data-act="openUrl" data-url="${AU_CONTACT}">написать в тг</button><button class="btn ghost" data-act="openUrl" data-url="${AU_TG}">тг-канал</button></div>`;
+const AU_BTNS=`<button class="btn accent wide" style="margin-top:14px" data-act="openUrl" data-url="${AU_CONTACT}">написать в тг</button>`;
 const auWorks=()=>`<div class="au-works">${AU_W.map(w=>`<img src="${w}" alt="" loading="lazy">`).join("")}</div>`;
 const PKI={
  b:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 8.5h13l-1 11.5h-11z"/><path d="M9 8.5V7a3 3 0 0 1 6 0v1.5"/></svg>',
@@ -2635,7 +2635,7 @@ const pkBlock=()=>`<div class="pk-h">работа и продукты:</div><div
 function authorCard(full){
   return`<section class="card au-card ${full?"au-pg":""}"><span class="au-pill">${full?"создатель прокачки":"о создателе"}</span>
   <div class="au-top"><img class="au-ph" src="au-me.jpg" alt=""><div style="min-width:0"><div class="au-mini">Каролина</div><p class="small muted" style="margin:4px 0 0">${AU_TXT}</p></div></div>
-  ${AU_OPEN}${pkBlock()}${full?`<div class="au-ch" data-act="openUrl" data-url="${AU_TG}" role="button"><img src="au-ch.jpg" alt=""><div style="min-width:0"><b>Без правок на ошибку</b><small>тг-канал · 609 подписчиков</small></div></div>`:""}
+  ${AU_OPEN}${pkBlock()}<div class="au-ch" data-act="openUrl" data-url="${AU_TG}" role="button"><img src="au-ch.jpg" alt=""><div style="min-width:0"><b>Без правок на ошибку</b><small>тг-канал · 609 подписчиков</small></div><span class="ar" style="margin-left:auto;opacity:.35;flex:none">${AU_AR}</span></div>
   ${auWorks()}${AU_BTNS}</section>`;
 }
 function aboutPage(){
@@ -2684,7 +2684,7 @@ function hintSheet(k){const[h,t]=HELP[k];sheet(`<span class="pill">подска�
    как добавить новость: допиши объект в NEWS (приложение) или в news.json рядом с index.html (без выпуска приложения).
    kind: "update" | "news". acts: до двух кнопок {l:"посмотреть"|"протестировать", go:"..."}.
    куда ведёт go: tab:home|path|skills|quests|rewards · path:feed · hint:<ключ из HELP> · add:plan · add:done */
-const APP_V="v71";
+const APP_V="v72";
 const NEWS=[
   {id:"u70-events",date:"2026-10-23",kind:"update",title:"бот покажет, что случилось за 48 часов",text:"напиши боту /events или нажми «события за 48 часов» в /menu: можно посмотреть, что менялось в конкретном командном квесте, что было по твоим задачам и какие вышли обновления. ещё у клода в участниках теперь своя аватарка.",go:"tab:quests"},
   {id:"u69-whos",date:"2026-10-23",kind:"update",title:"у задачи может быть несколько ответственных",text:"в командном квесте в задаче теперь отмечаются сразу несколько человек: нажимай на имена, чтобы добавить или снять. в команде появился клод: на него тоже можно ставить задачи. уведомления в боте приходят тем, кто связан с задачей, и стали понятнее: квест, суть, кто поставил, дедлайн и ответственные. если новых задач набралось больше трёх, бот соберёт их в одно сообщение со списком.",acts:[{l:"посмотреть",go:"tab:quests"}]},
