@@ -800,10 +800,10 @@ html.tt,html.tt *{transition:background-color .4s ease,color .4s ease,border-col
 .au-pg .au-ph{width:84px;height:84px}
 .au-mini{font-size:20px;line-height:1.1;font-weight:700}
 .au-pg .au-mini{font-size:24px}
-.au-open{margin-top:14px;border-radius:18px;background:rgba(86,104,197,.09);padding:12px 14px;display:flex;gap:10px;align-items:flex-start}
+.au-open{margin-top:14px;border-radius:18px;background:rgba(76,201,138,.16);padding:12px 14px;display:flex;gap:10px;align-items:flex-start}
 .au-open b{display:block;font-size:15px}.au-open span{font-size:13px;opacity:.8;line-height:1.4}
 .au-open i{flex:none;width:9px;height:9px;border-radius:50%;background:#4CC98A;margin-top:6px;box-shadow:0 0 0 4px rgba(76,201,138,.22)}
-.au-ch{display:flex;align-items:center;gap:12px;padding:12px 14px;cursor:pointer;border-radius:18px;background:rgba(86,104,197,.07);margin-top:12px}
+.au-ch{display:flex;align-items:center;gap:12px;padding:12px 14px;cursor:pointer;border-radius:18px;background:rgba(86,104,197,.08);margin-top:12px}
 .au-ch img{width:44px;height:44px;border-radius:50%;flex:none}.au-ch b{display:block;font-size:15px}.au-ch small{opacity:.65}
 .au-works{display:flex;gap:10px;overflow-x:auto;margin:12px -4px 0;padding:0 4px 4px;scroll-snap-type:x mandatory}
 .au-works img{height:168px;border-radius:14px;flex:none;scroll-snap-align:start;object-fit:cover}
@@ -812,8 +812,8 @@ html.tt,html.tt *{transition:background-color .4s ease,color .4s ease,border-col
 .au-set .ar{margin-left:auto;color:var(--muted)}
 .pk-h{font-size:13px;opacity:.55;margin:18px 0 8px}
 .pk-l{display:flex;flex-direction:column;gap:8px}
-.pk-r{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:16px;text-align:left;width:100%;color:inherit;background:rgba(86,104,197,.07)}
-.pk-ic{width:20px;height:20px;opacity:.5;flex:none}.pk-ic svg{width:20px;height:20px}
+.pk-r{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:16px;text-align:left;width:100%;color:inherit;background:rgba(86,104,197,.08)}
+.pk-ic{width:20px;height:20px;color:#5668C5;flex:none}.pk-ic svg{width:20px;height:20px}
 .pk-r .t{font-size:15px;font-weight:600;line-height:1.25}
 .pk-r .s{font-size:13px;opacity:.55;margin-top:1px}
 .pk-r .ar{margin-left:auto;opacity:.35;flex:none}.pk-r .ar svg{width:16px;height:16px}
@@ -2685,7 +2685,7 @@ function hintSheet(k){const[h,t]=HELP[k];sheet(`<span class="pill">подска�
    как добавить новость: допиши объект в NEWS (приложение) или в news.json рядом с index.html (без выпуска приложения).
    kind: "update" | "news". acts: до двух кнопок {l:"посмотреть"|"протестировать", go:"..."}.
    куда ведёт go: tab:home|path|skills|quests|rewards · path:feed · hint:<ключ из HELP> · add:plan · add:done */
-const APP_V="v73";
+const APP_V="v74";
 const NEWS=[
   {id:"u70-events",date:"2026-10-23",kind:"update",title:"бот покажет, что случилось за 48 часов",text:"напиши боту /events или нажми «события за 48 часов» в /menu: можно посмотреть, что менялось в конкретном командном квесте, что было по твоим задачам и какие вышли обновления. ещё у клода в участниках теперь своя аватарка.",go:"tab:quests"},
   {id:"u69-whos",date:"2026-10-23",kind:"update",title:"у задачи может быть несколько ответственных",text:"в командном квесте в задаче теперь отмечаются сразу несколько человек: нажимай на имена, чтобы добавить или снять. в команде появился клод: на него тоже можно ставить задачи. уведомления в боте приходят тем, кто связан с задачей, и стали понятнее: квест, суть, кто поставил, дедлайн и ответственные. если новых задач набралось больше трёх, бот соберёт их в одно сообщение со списком.",acts:[{l:"посмотреть",go:"tab:quests"}]},
