@@ -1,7 +1,7 @@
 // бот прокачки: приветствие на /start, напоминания и синхронизация данных приложения между устройствами.
 // токен в секрете BOT_TOKEN, настройки напоминаний в KV USERS, данные приложения в базе D1 (привязка DB).
 const APP = "https://prokachka.pages.dev";
-const BOT_V = "v26"; // версия бота: видно по адресу /v, чтобы проверить, что выложилась свежая
+const BOT_V = "v27"; // версия бота: видно по адресу /v, чтобы проверить, что выложилась свежая
 const OWNER = 424765559; // telegram id владельца: ему приложение показывает статистику
 const HELLO = [
   "о, наконец-то ты тут! рад тебя видеть! скорее жми кнопку, давай превратим жизнь в игру",
@@ -234,7 +234,7 @@ const BC_KB = { inline_keyboard: [[{ text: "отправить всем", callba
 const SUP_TTL = 30 * 60 * 1000;
 const SUP_TEXT = "это поддержка прокачки 🛟\n\nнапиши, что случилось или что хочется улучшить, и приложи скриншоты, если есть. всё, что пришлёшь сюда в ближайшие 30 минут, я передам лично создательнице приложения. она читает каждое сообщение: исправляет ошибки и учитывает идеи в следующих обновлениях.\n\nчто уйдёт: только то, что ты сюда напишешь или пришлёшь, и твоё имя в телеграме, чтобы можно было ответить. данные из приложения не отправляются.\n\nответ придёт сюда, в этот чат. когда закончишь, нажми «готово».";
 const SUP_KB = { inline_keyboard: [[{ text: "готово", callback_data: "sup:off" }]] };
-const menuKb = r => ({ inline_keyboard: [[{ text: "открыть прокачку", web_app: { url: APP } }], [{ text: "написать в поддержку", callback_data: "sup:on" }], [r && r.news === false ? { text: "снова присылать новости", callback_data: "nw:on" } : { text: "не присылать новости", callback_data: "x:news" }]] });
+const menuKb = r => ({ inline_keyboard: [[{ text: "открыть прокачку", web_app: { url: APP } }], [{ text: "события за 48 часов", callback_data: "ev:menu" }], [{ text: "написать в поддержку", callback_data: "sup:on" }], [r && r.news === false ? { text: "снова присылать новости", callback_data: "nw:on" } : { text: "не присылать новости", callback_data: "x:news" }]] });
 
 // календарь владельца: присылаешь боту .ics, события копятся в kv и отдаются живой лентой, на которую айфон подписывается один раз
 const calKey = async env => { let k = await env.USERS.get("cal:key"); if (!k) { k = [...crypto.getRandomValues(new Uint8Array(12))].map(x => x.toString(16).padStart(2, "0")).join(""); await env.USERS.put("cal:key", k); } return k; };
@@ -340,10 +340,10 @@ async function calDel(env, nums) {
 }
 const CAL_HELP = "📅 как добавить событие:\n/add 24.11 18:30 эфир с куратором\n\nможно несколько, каждое с новой строки:\n/add\n23.10 11:00 эфир\n26.11 23:59 дедлайн проекта\n\nформаты: дата 24.11 или 24 ноября (год по желанию), время 18:30 (без времени = на весь день). длительность: 2ч или 90мин (по умолчанию 1 час). напоминание: !30мин, !2ч, !1д или !нет (по умолчанию за час, а для события на весь день в 9:00).";
 async function setCommands(env) {
-  if (await env.USERS.get("cmds:v5")) return;
-  await tg(env, "setMyCommands", { commands: [{ command: "menu", description: "меню" }, { command: "support", description: "написать в поддержку" }, { command: "start", description: "открыть прокачку" }] });
-  await tg(env, "setMyCommands", { scope: { type: "chat", chat_id: OWNER }, commands: [{ command: "menu", description: "меню" }, { command: "support", description: "написать в поддержку" }, { command: "send", description: "рассылка новостей" }, { command: "stats", description: "статистика" }, { command: "members", description: "кто в прокачке" }, { command: "calendar", description: "календарь для айфона" }, { command: "add", description: "добавить событие в календарь" }, { command: "list", description: "ближайшие события" }, { command: "del", description: "удалить событие по номеру" }, { command: "start", description: "открыть прокачку" }] });
-  await env.USERS.put("cmds:v5", "1");
+  if (await env.USERS.get("cmds:v6")) return;
+  await tg(env, "setMyCommands", { commands: [{ command: "menu", description: "меню" }, { command: "events", description: "события за 48 часов" }, { command: "support", description: "написать в поддержку" }, { command: "start", description: "открыть прокачку" }] });
+  await tg(env, "setMyCommands", { scope: { type: "chat", chat_id: OWNER }, commands: [{ command: "menu", description: "меню" }, { command: "events", description: "события за 48 часов" }, { command: "support", description: "написать в поддержку" }, { command: "send", description: "рассылка новостей" }, { command: "stats", description: "статистика" }, { command: "members", description: "кто в прокачке" }, { command: "calendar", description: "календарь для айфона" }, { command: "add", description: "добавить событие в календарь" }, { command: "list", description: "ближайшие события" }, { command: "del", description: "удалить событие по номеру" }, { command: "start", description: "открыть прокачку" }] });
+  await env.USERS.put("cmds:v6", "1");
 }
 async function supStart(env, chat, rec) {
   rec.sup = Date.now(); rec.supId = rec.sup; await env.USERS.put("u:" + chat, JSON.stringify(rec));
@@ -596,6 +596,8 @@ async function dbInit(env) {
     env.DB.prepare("CREATE INDEX IF NOT EXISTS tqm_uid ON tqm (uid)"),
     env.DB.prepare("CREATE TABLE IF NOT EXISTS tqt (qid TEXT NOT NULL, id TEXT NOT NULL, upd INTEGER NOT NULL, data TEXT NOT NULL, PRIMARY KEY (qid, id))"),
     env.DB.prepare("CREATE TABLE IF NOT EXISTS tqc (qid TEXT NOT NULL, tid TEXT NOT NULL, id TEXT NOT NULL, uid INTEGER NOT NULL, ts INTEGER NOT NULL, text TEXT NOT NULL, PRIMARY KEY (qid, id))"),
+    env.DB.prepare("CREATE TABLE IF NOT EXISTS tqe (qid TEXT NOT NULL, ts INTEGER NOT NULL, uid INTEGER NOT NULL, tid TEXT, who TEXT, txt TEXT NOT NULL)"),
+    env.DB.prepare("CREATE INDEX IF NOT EXISTS tqe_q ON tqe (qid, ts)"),
   ]);
   dbReady = true;
 }
@@ -724,6 +726,8 @@ async function tqSend(env, uid, text, qid, nt) {
 }
 // человек открыл приложение: копилку новых задач начинаем заново
 const tqSeen = async (env, uid) => { if (env.USERS) await env.USERS.delete("tqn:" + uid); };
+// журнал событий командных квестов: из него бот собирает сводку «за 48 часов». who — связанные с задачей люди, чтобы найти «мои задачи»
+const tqLog = (env, qid, uid, txt, tid, who) => env.DB.prepare("INSERT INTO tqe (qid, ts, uid, tid, who, txt) VALUES (?1, ?2, ?3, ?4, ?5, ?6)").bind(qid, Date.now(), uid, tid || "", who && who.length ? "," + uniqIds(who).join(",") + "," : "", cut(txt, 400)).run();
 function cleanQuest(q, old) {
   const o = old || {};
   const stages = (Array.isArray(q.stages) ? q.stages : o.stages || []).slice(0, 20).filter(x => x && sid(x.id)).map(x => ({ id: x.id, title: cut(x.title, 120), deadline: /^\d{4}-\d{2}-\d{2}$/.test(x.deadline || "") ? x.deadline : "", done: !!x.done, r1: x.r1 || "", r0: x.r0 || "" }));
@@ -789,7 +793,7 @@ async function tqOp(env, ctx, u, b) {
         if (old.deadline !== data.deadline && data.deadline) ev.push("" + V("поставил", "поставила") + " дедлайн квеста: " + ddmm(data.deadline));
         data.stages.forEach(st => { const os = (old.stages || []).find(x => x.id === st.id); if (!os) ev.push("" + V("добавил", "добавила") + " этап «" + st.title + "»" + (st.deadline ? " до " + ddmm(st.deadline) : "")); else if (!os.done && st.done) ev.push("" + V("закрыл", "закрыла") + " этап «" + st.title + "» ✅"); else if (os.deadline !== st.deadline && st.deadline) ev.push("" + V("перенёс", "перенесла") + " этап «" + st.title + "» на " + ddmm(st.deadline)); });
       }
-      if (ev.length) later(tqNotify(env, q.id, u.id, u.name + " " + ev.join(", ") + "\nквест «" + data.title + "»"));
+      if (ev.length) { later(tqNotify(env, q.id, u.id, u.name + " " + ev.join(", ") + "\nквест «" + data.title + "»")); later(tqLog(env, q.id, u.id, "🪧 " + u.name + " " + ev.join(", "))); }
     }
     return { list: await tqList(env, u.id) };
   }
@@ -823,6 +827,7 @@ async function tqOp(env, ctx, u, b) {
     else if (data.whos.join() !== was.join()) head = "👥 " + u.name + " " + V("поменял", "поменяла") + " ответственных";
     else if (data.deadline !== old.deadline) head = "⌛️ " + u.name + " " + V("поменял", "поменяла") + " дедлайн";
     else if (data.title !== old.title || data.essence !== old.essence) head = "✏️ " + u.name + " " + V("изменил", "изменила") + " задачу";
+    if (head) later(tqLog(env, qid, u.id, (old ? head : "➕ " + u.name + " " + V("добавил", "добавила") + " задачу") + " «" + data.title + "»" + (head.startsWith("⌛️") && data.deadline ? " на " + ddmm(data.deadline) : "") + (head.startsWith("👥") ? ": " + (names(data.whos) || "никто") : ""), data.id, [...data.whos, ...was, data.by]));
     if (head) {
       const tail = (data.done && !old.done) ? "готово " + dn + " из " + all.length : "";
       let rec = uniqIds([...data.whos, ...was, data.by]).filter(x => x > 0 && x !== u.id);
@@ -843,6 +848,7 @@ async function tqOp(env, ctx, u, b) {
     if (!rec.length) rec = ms.map(m => m.uid).filter(x => x !== u.id);
     const msg = "✉️ " + (u.username ? "@" + u.username : u.name) + " говорит в квесте @" + (q.title || "без названия") + ":\n🪷 Суть задачи: " + (t.title || "") + "\n\n" + cut(text, 600);
     later(tqNotifyTo(env, qid, rec, u.id, msg));
+    later(tqLog(env, qid, u.id, "✉️ " + u.name + " в задаче «" + (t.title || "") + "»: " + cut(text, 140), tid, [...whosOf(t), t.by, ...spoke]));
     return { list: await tqList(env, u.id) };
   }
   if (op === "join") {
@@ -853,6 +859,7 @@ async function tqOp(env, ctx, u, b) {
     if (!was) {
       await env.DB.prepare("INSERT OR IGNORE INTO tqm (qid, uid, name, photo, joined) VALUES (?1, ?2, ?3, ?4, ?5)").bind(q.id, u.id, u.name, u.photo, Date.now()).run();
       later(tqNotify(env, q.id, u.id, "🙌 " + u.name + " " + V("присоединился", "присоединилась") + " к квесту «" + ((pj(q.data) || {}).title || "") + "»"));
+      later(tqLog(env, q.id, u.id, "🙌 " + u.name + " " + V("присоединился", "присоединилась") + " к квесту"));
     }
     return { joined: q.id, list: await tqList(env, u.id) };
   }
@@ -860,14 +867,89 @@ async function tqOp(env, ctx, u, b) {
     if (!sid(b.qid)) return { error: "bad" };
     await env.DB.prepare("DELETE FROM tqm WHERE qid = ?1 AND uid = ?2").bind(b.qid, u.id).run();
     later(tqNotify(env, b.qid, u.id, "👋 " + u.name + " " + V("вышел", "вышла") + " из квеста"));
+    later(tqLog(env, b.qid, u.id, "👋 " + u.name + " " + V("вышел", "вышла") + " из квеста"));
     return { list: await tqList(env, u.id) };
   }
   return { error: "op" };
 }
+// сводка «что было за 48 часов»: по квесту, по моим задачам, обновления приложения, для владельца — кто пришёл
+const H48 = 48 * 3600000;
+const hm = ts => { const d = new Date(ts + MSK); return p2(d.getUTCDate()) + "." + p2(d.getUTCMonth() + 1) + " " + p2(d.getUTCHours()) + ":" + p2(d.getUTCMinutes()); };
+const EV_BACK = { inline_keyboard: [[{ text: "← к выбору", callback_data: "ev:menu" }]] };
+async function evMenu(env, uid) {
+  const rows = [];
+  if (env.DB) {
+    await dbInit(env);
+    const qs = (await env.DB.prepare("SELECT q.id, q.data FROM tq q JOIN tqm m ON m.qid = q.id WHERE m.uid = ?1").bind(uid).all()).results;
+    for (const q of qs) { const d = pj(q.data) || {}; if (!d.del && q.id.length <= 50) rows.push([{ text: "🪧 " + cut(d.title || "квест", 40), callback_data: "ev:q:" + q.id }]); }
+    rows.push([{ text: "🪷 мои задачи", callback_data: "ev:my" }]);
+  }
+  rows.push([{ text: "✨ обновления прокачки", callback_data: "ev:app" }]);
+  if (uid === OWNER) rows.push([{ text: "🛠 для разработчика: кто пришёл", callback_data: "ev:dev" }]);
+  return { text: "события за последние 48 часов\n\nвыбери, что показать:", reply_markup: { inline_keyboard: rows } };
+}
+const evLines = rs => rs.map(r => hm(r.ts) + " · " + r.txt);
+async function evQuest(env, uid, qid) {
+  await dbInit(env);
+  if (!await tqMember(env, qid, uid)) return "этого квеста у тебя нет";
+  const q = pj(((await env.DB.prepare("SELECT data FROM tq WHERE id = ?1").bind(qid).first()) || {}).data) || {};
+  const rs = (await env.DB.prepare("SELECT ts, txt FROM tqe WHERE qid = ?1 AND ts > ?2 ORDER BY ts DESC LIMIT 40").bind(qid, Date.now() - H48).all()).results;
+  const ts = (await env.DB.prepare("SELECT data FROM tqt WHERE qid = ?1").bind(qid).all()).results.map(x => pj(x.data)).filter(t => t && !t.del);
+  const dn = ts.filter(t => t.done).length;
+  return "🪧 квест «" + (q.title || "") + "» · 48 часов\n" + "готово задач: " + dn + " из " + ts.length + "\n\n" + (rs.length ? evLines(rs).join("\n") : "за 48 часов в квесте ничего не менялось");
+}
+async function evMine(env, uid) {
+  await dbInit(env);
+  const qs = (await env.DB.prepare("SELECT q.id, q.data FROM tq q JOIN tqm m ON m.qid = q.id WHERE m.uid = ?1").bind(uid).all()).results;
+  const L = ["🪷 мои задачи · 48 часов"]; let open = [];
+  for (const q of qs) {
+    const d = pj(q.data) || {}; if (d.del) continue;
+    const rs = (await env.DB.prepare("SELECT ts, txt FROM tqe WHERE qid = ?1 AND ts > ?2 AND who LIKE ?3 ORDER BY ts DESC LIMIT 20").bind(q.id, Date.now() - H48, "%," + uid + ",%").all()).results;
+    const ts = (await env.DB.prepare("SELECT data FROM tqt WHERE qid = ?1").bind(q.id).all()).results.map(x => pj(x.data)).filter(t => t && !t.del && !t.done && whosOf(t).includes(uid));
+    ts.forEach(t => open.push({ t: t.title, d: t.deadline, q: d.title }));
+    if (rs.length) L.push("", "🪧 «" + cut(d.title, 60) + "»", ...evLines(rs));
+  }
+  if (L.length === 1) L.push("", "за 48 часов по твоим задачам ничего не происходило");
+  open.sort((a, b) => (a.d || "9") < (b.d || "9") ? -1 : 1);
+  if (open.length) { L.push("", "сейчас на тебе: " + open.length + " " + plural(open.length, "задача", "задачи", "задач")); open.slice(0, 8).forEach(o => L.push("— " + o.t + (o.d ? " · до " + ddmm(o.d) : "") + " (" + cut(o.q, 30) + ")")); }
+  return L.join("\n");
+}
+const gxPlain = t => String(t).replace(/\{([^|}]*)\|([^}]*)\}/g, (_, f, m) => m ? f + "/" + m : "(" + f + ")");
+async function evApp() {
+  let html = "";
+  try { const r = await fetch(APP + "/", { cf: { cacheTtl: 300 } }); html = await r.text(); } catch (e) {}
+  const re = /\{id:"([^"]+)",date:"(\d{4}-\d{2}-\d{2})",kind:"(\w+)",title:"([^"]+)"/g; const all = []; let m;
+  while ((m = re.exec(html))) all.push({ d: m[2], t: gxPlain(m[4]) });
+  const v = (html.match(/APP_V="(v\d+)"/) || [])[1] || "";
+  const lim = new Date(Date.now() + MSK - H48).toISOString().slice(0, 10);
+  const fresh = all.filter(x => x.d >= lim);
+  const list = fresh.length ? fresh : all.slice(0, 3);
+  return "✨ обновления прокачки" + (v ? " · сейчас " + v : "") + "\n\n" + (fresh.length ? "" : "за 48 часов новых не было, последние:\n") + (list.length ? list.map(x => ddmm(x.d) + " · " + x.t).join("\n") : "не получилось загрузить список, попробуй позже");
+}
+async function evDev(env) {
+  const now = Date.now(), lim = new Date(now + MSK - H48).toISOString().slice(0, 10), yd = new Date(now + MSK - 864e5).toISOString().slice(0, 10);
+  const fresh = []; let total = 0, active = 0, cursor;
+  do {
+    const l = await env.USERS.list({ prefix: "u:", cursor });
+    for (const k of l.keys) {
+      const id = Number(k.name.slice(2)); if (!id) continue; total++;
+      const r = await env.USERS.get(k.name, "json"); if (!r) continue;
+      if (r.seen && r.seen >= yd) active++;
+      if (id === OWNER) continue;
+      if (r.ft ? r.ft > now - H48 : (r.first && r.first >= lim)) fresh.push({ ts: r.ft || 0, d: r.first, nm: r.nm || "без имени", un: r.un || "", id });
+    }
+    cursor = l.list_complete ? undefined : l.cursor;
+  } while (cursor);
+  fresh.sort((a, b) => (b.ts || 0) - (a.ts || 0) || (a.d < b.d ? 1 : -1));
+  return "🛠 для разработчика · 48 часов\n\nновых людей: " + fresh.length + "\nзаходили за сутки: " + active + "\nвсего в прокачке: " + total + "\n\n" +
+    (fresh.length ? fresh.slice(0, 40).map(x => (x.ts ? hm(x.ts) : ddmm(x.d)) + " · " + x.nm + (x.un ? " @" + x.un : "") + " · id " + x.id).join("\n") : "за 48 часов новых людей не было");
+}
+
 // напоминания о дедлайнах: за день и в день дедлайна, утром по московскому времени
 async function tqRemind(env) {
   if (!env.DB) return;
   await dbInit(env);
+  await env.DB.prepare("DELETE FROM tqe WHERE ts < ?1").bind(Date.now() - 7 * 864e5).run().catch(() => {});
   const t = localNow(180); if (t.hour < 10) return;
   const today = t.date, tomorrow = shiftDate(today, 1);
   const qs = (await env.DB.prepare("SELECT id, data FROM tq").all()).results;
@@ -1006,7 +1088,7 @@ export default {
       const r = Object.assign(defRec(), old || {});
       // первый вход: записи ещё нет или человек нажимал /start, но приложение не открывал
       const firstOpen = url.pathname === "/sync" && !r.jn && !r.first;
-      if (firstOpen) r.jn = 1;
+      if (firstOpen) { r.jn = 1; r.ft = Date.now(); }
       if (url.pathname === "/sync") { r.nm = who.name || r.nm || ""; r.un = who.username || ""; }
       r.tz = Math.max(-840, Math.min(840, parseInt(b.tz, 10) || 0));
       if (url.pathname === "/sync") {
@@ -1067,6 +1149,17 @@ export default {
         const r = Object.assign(defRec(), { offered: true }, await env.USERS.get(key, "json") || {});
         const chat = cq.message.chat.id, mid = cq.message.message_id;
         const [kind, val] = cq.data.split(":");
+        if (kind === "ev") {
+          let out;
+          if (val === "menu") out = await evMenu(env, uid);
+          else {
+            const text = val === "q" ? await evQuest(env, uid, cq.data.slice(5)) : val === "my" ? await evMine(env, uid) : val === "app" ? await evApp() : val === "dev" && uid === OWNER ? await evDev(env) : "нет доступа";
+            out = { text: text.slice(0, 4000), reply_markup: EV_BACK };
+          }
+          await tg(env, "editMessageText", Object.assign({ chat_id: chat, message_id: mid, disable_web_page_preview: true }, out));
+          await tg(env, "answerCallbackQuery", { callback_query_id: cq.id });
+          return new Response("ok");
+        }
         if (kind === "s") {
           // сервер уже хранит один общий список: подтверждаем и напоминаем, что устройства подтянут его сами
           const ver = env.DB ? await env.DB.prepare("SELECT ver FROM st WHERE uid = ?1").bind(uid).first() : null;
@@ -1120,6 +1213,10 @@ export default {
         const chat = m.chat.id;
         const rec = env.USERS ? Object.assign(defRec(), await env.USERS.get("u:" + chat, "json") || {}) : null;
         const raw = m.text || m.caption || "";
+        if (/^\/(events|48)(@\w+)?\s*$/.test(raw)) {
+          await tg(env, "sendMessage", Object.assign({ chat_id: chat }, await evMenu(env, chat)));
+          return new Response("ok");
+        }
         if (/^\/news(@\w+)?\s*$/.test(raw) && rec) {
           rec.news = true; await env.USERS.put("u:" + chat, JSON.stringify(rec));
           await tg(env, "sendMessage", { chat_id: chat, text: "хорошо, новости снова буду присылать." });
