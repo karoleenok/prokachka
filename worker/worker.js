@@ -1,6 +1,7 @@
 // бот прокачки: приветствие на /start, напоминания и синхронизация данных приложения между устройствами.
 // токен в секрете BOT_TOKEN, настройки напоминаний в KV USERS, данные приложения в базе D1 (привязка DB).
 const APP = "https://prokachka.pages.dev";
+const BOT_V = "v26"; // версия бота: видно по адресу /v, чтобы проверить, что выложилась свежая
 const OWNER = 424765559; // telegram id владельца: ему приложение показывает статистику
 const HELLO = [
   "о, наконец-то ты тут! рад тебя видеть! скорее жми кнопку, давай превратим жизнь в игру",
@@ -918,6 +919,8 @@ export default {
     if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
     if (!env.BOT_TOKEN) return new Response("нет секрета BOT_TOKEN", { status: 500 });
     const path = await hookPath(env);
+
+    if (url.pathname === "/v") return new Response(BOT_V, { headers: { "content-type": "text/plain; charset=utf-8", ...CORS } });
 
     if (url.pathname === "/setup") {
       const out = {};
