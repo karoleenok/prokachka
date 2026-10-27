@@ -1,7 +1,7 @@
 // бот прокачки: приветствие на /start, напоминания и синхронизация данных приложения между устройствами.
 // токен в секрете BOT_TOKEN, настройки напоминаний в KV USERS, данные приложения в базе D1 (привязка DB).
 const APP = "https://prokachka.pages.dev";
-const BOT_V = "v32"; // версия бота: видно по адресу /v, чтобы проверить, что выложилась свежая
+const BOT_V = "v33"; // версия бота: видно по адресу /v, чтобы проверить, что выложилась свежая
 const OWNER = 424765559; // telegram id владельца: ему приложение показывает статистику
 const HELLO = [
   "о, наконец-то ты тут! рад тебя видеть! скорее жми кнопку, давай превратим жизнь в игру",
@@ -731,13 +731,15 @@ async function tqSendPhoto(env, uid, meme, caption, qid) {
   if (!short) await tg(env, "sendMessage", { chat_id: uid, text: caption.slice(0, 4000), reply_markup: tqBtn(qid) });
   return r.ok;
 }
-async function tqEcho(env, qid, from, uids, text) {
+async function tqEcho(env, qid, from, uids, text, meme) {
   if (from !== OWNER) return;
   const ids = uniqIds(uids).filter(x => x !== from && x > 0);
   if (!ids.length) return;
   const ms = await tqMembers(env, qid);
   const names = ids.map(x => memName(ms, x) || "участник").join(", ");
-  await tqSend(env, from, "📤 ушло: " + names + "\n\n" + text, qid);
+  const msg = "📤 ушло: " + names + "\n\n" + text;
+  if (meme && await tqSendPhoto(env, from, meme, msg, qid)) return;
+  await tqSend(env, from, msg, qid);
 }
 async function tqNotify(env, qid, exceptUid, text) {
   const ms = (await env.DB.prepare("SELECT uid FROM tqm WHERE qid = ?1").bind(qid).all()).results;
@@ -872,7 +874,7 @@ async function tqOp(env, ctx, u, b) {
     if (b.img && !meme) return { error: "img" };
     const text = "🔔 " + u.name + " напоминает о задачке\n\n🪧 Какой квест: " + (q.title || "без названия") + "\n🪷 Суть задачи: " + (t.title || "") + "\n⌛️ Дедлайн: " + (t.deadline ? ddmm(t.deadline) : "без дедлайна") + "\n👥 Ответственные: " + (names || "пока никто") + (note ? "\n\n💬 " + u.name + " пишет: " + note : "");
     for (const uid of rec) { if (meme) { if (!await tqSendPhoto(env, uid, meme, text, qid)) await tqSend(env, uid, text, qid); } else await tqSend(env, uid, text, qid); }
-    await tqEcho(env, qid, u.id, rec, text + (meme ? "\n🖼 с картинкой" : ""));
+    await tqEcho(env, qid, u.id, rec, text, meme);
     if (env.USERS) await env.USERS.put(key, "1", { expirationTtl: 120 });
     later(tqLog(env, qid, u.id, "🔔 " + u.name + " " + V("напомнил", "напомнила") + " о задаче «" + (t.title || "") + "»" + (all ? " всей команде" : ""), tid, [...whosOf(t), t.by]));
     return { sent: rec.length };
