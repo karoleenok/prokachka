@@ -411,7 +411,7 @@ button.ach{border:0;font:inherit;color:var(--ink);cursor:pointer}
 .q-steps{display:flex;flex-direction:column;gap:6px}
 .q-step{display:flex;gap:10px;align-items:center;text-align:left;padding:8px 10px;border-radius:12px;background:var(--panel-soft);color:inherit;font-size:14px}
 .q-day .q-step{background:var(--chip)}
-.q-step.done span:last-child{text-decoration:line-through;opacity:.6}
+.q-step.done span:nth-child(2){text-decoration:line-through;opacity:.6}
 .q-box{flex:none;width:22px;height:22px;border-radius:7px;border:2px solid currentColor;display:grid;place-items:center}
 .q-step.done .q-box{background:currentColor}
 .q-step.done .q-box svg{color:var(--panel)}
@@ -823,6 +823,27 @@ html.tt,html.tt *{transition:background-color .4s ease,color .4s ease,border-col
 .tq-meta svg{width:13px;height:13px;flex:none}
 .tq-dn{display:inline-flex;align-items:center;gap:4px}
 img.av-bot{background:#D97757}
+
+/* v79: подзадачи и материалы квеста */
+.sublist{margin:0 0 6px 13px;padding-left:12px;border-left:2px solid var(--line);display:flex;flex-direction:column;gap:0}
+.sublist .goal-step{padding:4px 0}
+.sublist .check{width:22px;height:22px;border-radius:7px}
+.sublist .check svg{width:13px;height:13px}
+.subwho{flex:none;background:none;border:0;padding:0;border-radius:50%;cursor:pointer;line-height:0}
+.subwho .nobody{width:22px;height:22px;border-radius:50%;border:1.5px dashed var(--muted);display:grid;place-items:center;color:var(--muted);font-size:12px;line-height:1}
+.mat-row{display:flex;align-items:center;gap:10px;padding:8px 0}
+.mat-ic{width:40px;height:40px;border-radius:12px;background:var(--soft);color:#4350A8;display:grid;place-items:center;flex:none;overflow:hidden}
+.mat-ic img{width:100%;height:100%;object-fit:cover;display:block}
+.mat-ic svg{width:20px;height:20px}
+.mat-t{flex:1;min-width:0}.mat-t b{display:block;font-weight:600;overflow-wrap:anywhere}
+.thesis{background:var(--soft);color:#171C24;border-radius:14px;padding:10px 12px;margin-top:8px;display:flex;gap:8px;align-items:flex-start}
+.thesis .tx{flex:1;min-width:0;white-space:pre-wrap;overflow-wrap:anywhere}
+.thesis small{display:block;opacity:.65;margin-top:3px;font-size:12px}
+.thesis .link{color:#171C24}
+.mat-add summary{list-style:none;cursor:pointer;display:inline-flex}
+.mat-add summary::-webkit-details-marker{display:none}
+.mat-add form{margin-top:8px}
+.qtab-seg{margin-top:12px}
 </style>
 
 </head>
@@ -1393,7 +1414,7 @@ const Store={
     if(!e.ts&&e.primary&&e.type!=="routine"&&e.type!=="bonus"&&inFocus(e.primary))e.fx=1;
     e.upd=Date.now();if(!e.ts)e.ts=e.upd;
     if(e.tref&&!e.planned&&!e.del){setTimeout(()=>tqDoneFromPlan(e.tref),200)}
-    if(e.qref&&!e.planned&&!e.del){const c=(S.profile.challenges||[]).find(x=>x.id===e.qref.c);const st=c&&(c.steps||[]).find(x=>x.id===e.qref.s);if(st&&!st.done){st.done=true;setTimeout(()=>{Store.saveProfile();toast("этап «"+st.t+"» закрыт в квесте"+(c.steps.every(x=>x.done)?". все этапы пройдены, нажми «пройден»":""));afterChange()},300)}}
+    if(e.qref&&!e.planned&&!e.del){const c=(S.profile.challenges||[]).find(x=>x.id===e.qref.c);const st=c&&(c.steps||[]).find(x=>x.id===e.qref.s);if(st&&!st.done){st.done=true;setTimeout(()=>{Store.saveProfile();toast("задача «"+st.t+"» закрыта в квесте"+(c.steps.every(x=>x.done)?". все задачи пройдены, нажми «пройден»":""));afterChange()},300)}}
     const i=S.entries.findIndex(x=>x.id===e.id);
     if(i>=0){const old=S.entries[i];
       const act=old.del&&!e.del?"restore":old.planned&&!e.planned?"done":old.date!==e.date?"move":"edit";
@@ -1742,7 +1763,7 @@ function planStepOn(cid,sid,date,back){
   const sk=P.active.includes(c.skill)?c.skill:P.active[0];if(!sk){toast("сначала выбери навыки");return}
   const ex=plannedOf("s",cid,sid);
   if(ex){if(ex.date===date){toast("уже стоит на этот день");if(back)back();else closeSheet();return}const n=clone(ex);n.date=date;Store.putEntry(n);toast("перенесла на "+dayWord(date))}
-  else{Store.putEntry({id:uid(),date,title:st.t,type:"create",primary:sk,secondary:[],planned:true,note:"этап квеста «"+c.title+"»",qref:{c:c.id,s:st.id}});toast("добавила на "+dayWord(date)+". отметишь, и этап закроется в квесте")}
+  else{Store.putEntry({id:uid(),date,title:st.t,type:"create",primary:sk,secondary:[],planned:true,note:"задача квеста «"+c.title+"»",qref:{c:c.id,s:st.id}});toast("добавила на "+dayWord(date)+". отметишь, и задача закроется в квесте")}
   afterChange();if(back)back();else closeSheet();
 }
 function planTqOn(qid,tid,date,back){
@@ -1805,45 +1826,110 @@ function questPips(c){
   if(c.period==="week")return`<div class="pips" aria-label="${timeLeft(c)}">${Array.from({length:7},(_,i)=>`<i class="${i<passed?"gone":i===passed?"now":""}"></i>`).join("")}</div>`;
   return`<div class="tbar" aria-hidden="true"><i style="width:${Math.round(passed/len*100)}%"></i></div>`;
 }
+
+/* ===== v79: подзадачи, материалы квеста, вопрос «сделано сегодня?» ===== */
+const _ic=p=>`<svg class="calic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+const CLIP_IC=_ic('<path d="M20 11.5l-7.6 7.6a4.5 4.5 0 0 1-6.4-6.4l8-8a3 3 0 0 1 4.3 4.3l-8 8a1.5 1.5 0 0 1-2.1-2.1l7.3-7.3"/>');
+const LIST_IC=_ic('<path d="M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/>');
+const BULB_IC=_ic('<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/>');
+const IMG_IC=_ic('<rect x="3.5" y="4.5" width="17" height="15" rx="3"/><circle cx="9" cy="10" r="1.6"/><path d="M4 17l5-4 4 3 3-2 4 3"/>');
+const LINK_IC=_ic('<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>');
+const subsOf=x=>Array.isArray(x&&x.subs)?x.subs:[];
+const subsCount=x=>{const a=subsOf(x);return a.length?a.filter(y=>y.done).length+"/"+a.length:""};
+const matCount=m=>m?((m.files||[]).length+(m.notes||[]).length+(m.cm||[]).length):0;
+const fixUrl=u=>{u=String(u||"").trim();if(!u)return"";if(!/^https?:\/\//i.test(u))u="https://"+u;try{new URL(u);return u}catch(x){return""}};
+/* вопрос при завершении: сегодня или другой день. onPick получает дату YYYY-MM-DD */
+function askWhen(title,note,onPick){
+  sheet(`<div class="sheet-h"><span></span><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
+  <h2 style="text-align:center;font-size:32px;margin-top:0">${esc(title)}</h2>
+  <p class="small muted" style="text-align:center;margin:0 0 14px">${esc(note)}</p>
+  <div class="stack" style="margin-top:0"><button class="btn accent wide" id="awYes">да, сегодня</button><button class="btn ghost wide" id="awNo">нет, другим днём</button></div>`,el=>{
+    el.querySelector("#awYes").onclick=()=>{closeSheet();onPick(today())};
+    el.querySelector("#awNo").onclick=()=>pickDay(onPick)});
+}
+function pickDay(onPick){
+  const t=today();let d=addDays(t,-1);
+  sheet(`<div class="sheet-h"><span></span><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
+  <h2 style="text-align:center;font-size:32px;margin-top:0">Когда это было?</h2>
+  <div id="awChips" style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap"><button class="chip" data-d="${addDays(t,-1)}" aria-pressed="true">вчера</button><button class="chip" data-d="${addDays(t,-2)}" aria-pressed="false">позавчера</button><button class="chip dash" id="awOther" aria-pressed="false">${CAL_IC} выбрать дату</button></div>
+  <input class="in-text" type="date" id="awDate" max="${t}" style="margin-top:10px;display:none" aria-label="дата">
+  <p class="small muted" style="text-align:center;margin:12px 0 14px">Опыт запишется в выбранный день и попадёт в список этого дня.</p>
+  <button class="btn accent wide" id="awOk">засчитать</button>`,el=>{
+    const chips=[...el.querySelectorAll("#awChips .chip[data-d]")],other=el.querySelector("#awOther"),inp=el.querySelector("#awDate");
+    chips.forEach(b=>b.onclick=()=>{d=b.dataset.d;chips.forEach(x=>x.setAttribute("aria-pressed",String(x===b)));other.setAttribute("aria-pressed","false");inp.style.display="none"});
+    other.onclick=()=>{chips.forEach(x=>x.setAttribute("aria-pressed","false"));other.setAttribute("aria-pressed","true");inp.style.display="block";if(inp.value)d=inp.value;inp.focus()};
+    inp.onchange=()=>{if(inp.value)d=inp.value};
+    el.querySelector("#awOk").onclick=()=>{if(d>t)d=t;closeSheet();onPick(d)}});
+}
+/* материалы квеста: файлы и ссылки, важные мысли, комментарии. kind: "p" личный, "t" командный */
+function matView(kind,id,mat,edit,cmts,q){
+  const files=mat.files||[],notes=mat.notes||[];const dt=x=>x?esc(fmtD(x)):"";
+  const del=(w,i)=>edit?`<button class="link" data-act="matDel" data-k="${kind}" data-id="${esc(id)}" data-w="${w}" data-i="${esc(i)}" aria-label="удалить">✕</button>`:"";
+  const fRow=f=>`<div class="mat-row"><span class="mat-ic">${f.k==="img"&&f.img&&f.img.url?`<img src="${esc(f.img.url)}" alt="">`:f.k==="img"?IMG_IC:LINK_IC}</span><div class="mat-t"><b>${f.u?`<a href="${esc(f.u)}" data-act="openUrl" data-url="${esc(f.u)}" style="color:inherit">${esc(f.t||f.u)}</a>`:esc(f.t||"фото")}</b><span class="small muted">${f.k==="img"?"фото":"ссылка"}${f.d?" · "+dt(f.d):""}${f.by?" · "+esc(f.by):""}</span></div>${del("f",f.id)}</div>`;
+  const nRow=n=>`<div class="thesis"><div class="tx">${esc(n.t)}<small>${n.d?dt(n.d):""}${n.by?" · "+esc(n.by):""}</small></div>${del("n",n.id)}</div>`;
+  const cRow=c=>{if(q){const m=tqMem(q,c.uid)||{uid:c.uid,name:"бывший участник"};const w=new Date(c.ts);return`<div class="cmt">${avatar(m,28)}<div style="min-width:0"><div class="small"><b>${esc(m.name)}</b> <span class="muted">${esc(fmtD(w.toISOString().slice(0,10)))} в ${w.toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"})}</span></div><div class="tx">${esc(c.text)}</div></div></div>`}
+    return`<div class="cmt"><div style="min-width:0;flex:1"><div class="small muted">${dt(c.d)}</div><div class="tx">${esc(c.t)}</div></div>${del("c",c.id)}</div>`};
+  const addFile=edit?`<details class="mat-add" style="margin-top:6px"><summary class="btn sm accent">${IC.plus} добавить</summary><form data-form="matFile" data-k="${kind}" data-id="${esc(id)}">
+    <div class="field" style="margin-top:6px"><label>название</label><input class="in-text" name="t" maxlength="120" placeholder="например, макет первого экрана"></div>
+    <div class="field"><label>ссылка</label><input class="in-text" name="u" inputmode="url" maxlength="500" placeholder="https://"></div>
+    <div class="row" style="margin-top:10px"><button class="btn sm accent" type="submit">добавить ссылку</button>${kind==="p"?`<label class="btn sm ghost" for="matImg" style="cursor:pointer">загрузить фото</label><input type="file" id="matImg" accept="image/*" hidden data-id="${esc(id)}">`:""}</div></form></details>`:"";
+  const cmts2=cmts||[];
+  return`<div class="card" style="margin-top:12px"><div class="row" style="justify-content:space-between"><b>файлы и ссылки${files.length?" · "+files.length:""}</b></div>
+  ${files.length?files.map(fRow).join(""):`<p class="small muted" style="margin:6px 0 0">${kind==="p"?"добавь ссылку или фото: макет, референс, скриншот":"добавь ссылку: макет, референс, документ"}</p>`}${addFile}</div>
+  <div class="card" style="margin-top:10px"><div class="row" style="justify-content:space-between"><b>${BULB_IC} важные мысли и тезисы</b></div>
+  ${notes.map(nRow).join("")||`<p class="small muted" style="margin:6px 0 0">сюда можно записать главное: вывод, решение, формулировку</p>`}
+  ${edit?`<form class="row" data-form="matNote" data-k="${kind}" data-id="${esc(id)}" style="margin-top:8px;flex-wrap:nowrap"><input class="in-text" name="t" maxlength="600" placeholder="новый тезис" style="padding:9px 10px" aria-label="новый тезис"><button class="btn sm" type="submit">добавить</button></form>`:""}</div>
+  <div class="card" style="margin-top:10px"><b>комментарии${cmts2.length?" · "+cmts2.length:""}</b>
+  ${cmts2.map(cRow).join("")||`<p class="small muted" style="margin:6px 0 0">${q?"пока тихо. напиши, бот перешлёт команде.":"заметки по ходу дела: что получилось, что мешает"}</p>`}
+  ${edit||q?`<form class="row" data-form="${q?"tqCmt":"matCm"}" data-k="${kind}" data-q="${esc(id)}" data-id="${q?"_q":esc(id)}" style="margin-top:8px;flex-wrap:nowrap"><input class="in-text" name="t" maxlength="1500" placeholder="комментарий к квесту" style="padding:9px 10px" aria-label="комментарий"><button class="btn sm accent" type="submit">отправить</button></form>`:""}</div>`;
+}
 function questCard(c){
   const Pd=PERIODS[c.period]||PERIODS.week;const st=c.status;const sk=skillById(c.skill);
   const steps=c.steps||[];const left=steps.filter(x=>!x.done).length;const lvl={day:1,week:2,month:3}[c.period]||2;
-  const hp=steps.length?`<div class="hp"><div class="hp-l"><span>осталось этапов</span><b class="num">${left} / ${steps.length}</b></div><div class="hp-bar">${steps.map(x=>`<i class="${x.done?"":"on"}"></i>`).join("")}</div></div>`:"";
+  const hp=steps.length?`<div class="hp"><div class="hp-l"><span>осталось задач</span><b class="num">${left} / ${steps.length}</b></div><div class="hp-bar">${steps.map(x=>`<i class="${x.done?"":"on"}"></i>`).join("")}</div></div>`:"";
   return`<div class="qcard q-${c.period} ${st!=="active"?"q-closed":""}">
     <div class="q-top"><span class="q-badge">${QNAME[c.period]||Pd.label}</span>${c.moved?`<span class="q-moved small">перенесён ×${c.moved}</span>`:""}${sk?`<span class="q-sk small">${sphIc(sphereOf(sk),13)}${esc(sk.name)}</span>`:""}</div>
     <div class="q-title">${esc(c.title)}</div>
     ${hp}
-    ${steps.length?`<div class="q-steps">${steps.map(x=>`<div class="q-srow"><button class="q-step ${x.done?"done":""}" data-act="qStep" data-id="${c.id}" data-s="${x.id}" aria-pressed="${!!x.done}" ${st!=="active"?"disabled":""}><span class="q-box">${x.done?IC.check:""}</span><span>${esc(x.t)}</span></button>${x.done||st!=="active"?"":calBtn(`data-act="qStepWhen" data-id="${c.id}" data-s="${x.id}"`,plannedOf("s",c.id,x.id))}</div>`).join("")}</div>`:""}
+    ${steps.length?`<div class="q-steps">${steps.map(x=>`<div class="q-srow"><button class="q-step ${x.done?"done":""}" data-act="qStep" data-id="${c.id}" data-s="${x.id}" aria-pressed="${!!x.done}" ${st!=="active"?"disabled":""}><span class="q-box">${x.done?IC.check:""}</span><span style="flex:1;min-width:0">${esc(x.t)}</span>${subsCount(x)?`<span class="small" style="opacity:.8;flex:none;margin-left:6px">${subsCount(x)}</span>`:""}</button>${x.done||st!=="active"?"":calBtn(`data-act="qStepWhen" data-id="${c.id}" data-s="${x.id}"`,plannedOf("s",c.id,x.id))}</div>`).join("")}</div>`:""}
     <div class="q-meta num"><span>${st==="active"?timeLeft(c):(st==="done"?"пройден "+fmtD(c.doneAt):"разобран "+fmtD(c.doneAt))}</span><span class="dot">·</span><b>+${c.xp} xp</b><span class="dot">·</span><span class="price">${IC.coin} ${c.coins}</span>${st==="active"?questPips(c):""}</div>
     ${c.note?`<div class="note">${esc(c.note)}</div>`:""}
-    <div class="row q-btns">${st==="active"?`<button class="btn q-main" data-act="qDone" data-id="${c.id}">${IC.check} пройден</button><button class="btn q-sec" data-act="qMove" data-id="${c.id}">перенести</button><button class="btn q-sec q-more" data-act="qMenu" data-id="${c.id}" aria-label="ещё: в чём суть, разбор">⋯</button>`:`<button class="btn q-sec" data-act="qInfo" data-id="${c.id}">в чём суть</button>`}</div>
+    <div class="row q-btns">${st==="active"?`<button class="btn q-main" data-act="qDone" data-id="${c.id}">${IC.check} пройден</button><button class="btn q-sec" data-act="qMat" data-id="${c.id}" style="white-space:nowrap;padding-inline:12px">${CLIP_IC} материалы${matCount(c.mat)?" "+matCount(c.mat):""}</button><button class="btn q-sec q-more" data-act="qMenu" data-id="${c.id}" aria-label="ещё: в чём суть, разбор">⋯</button>`:`<button class="btn q-sec" data-act="qInfo" data-id="${c.id}">в чём суть</button>`}</div>
   </div>`;
+}
+function qStepRow(c,x){
+  const act=c.status==="active";const subs=subsOf(x);const open=S.subOpen===x.id||subs.length>0;
+  const row=`<div class="goal-step"><button class="check ${x.done?"on":""}" data-act="qStep" data-id="${c.id}" data-s="${x.id}" aria-pressed="${!!x.done}">${x.done?IC.check:""}</button><span style="flex:1;min-width:0;${x.done?"text-decoration:line-through;opacity:.6":""}">${esc(x.t)}</span>${subs.length?`<span class="small muted num">${subsCount(x)}</span>`:""}${x.done||!act?"":calBtn(`data-act="qStepWhen" data-id="${c.id}" data-s="${x.id}"`,plannedOf("s",c.id,x.id))}${act?`<button class="link" data-act="qStepDel" data-id="${c.id}" data-s="${x.id}" aria-label="удалить задачу">✕</button>`:""}</div>`;
+  const sub=open?`<div class="sublist">${subs.map(u=>`<div class="goal-step"><button class="check ${u.done?"on":""}" data-act="qSub" data-id="${c.id}" data-s="${x.id}" data-u="${u.id}" aria-pressed="${!!u.done}" ${act?"":"disabled"}>${u.done?IC.check:""}</button><span style="flex:1;min-width:0;font-size:14px;${u.done?"text-decoration:line-through;opacity:.6":""}">${esc(u.t)}</span>${act?`<button class="link" data-act="qSubDel" data-id="${c.id}" data-s="${x.id}" data-u="${u.id}" aria-label="удалить подзадачу">✕</button>`:""}</div>`).join("")}
+    ${act?`<form class="row" data-form="qsub" data-id="${c.id}" data-s="${x.id}" style="margin:4px 0;flex-wrap:nowrap"><input class="in-text" name="t" placeholder="новая подзадача" style="padding:8px 10px;font-size:14px" aria-label="новая подзадача"><button class="btn sm" type="submit">+</button></form>`:""}</div>`
+    :(act&&!x.done?`<div style="margin:-2px 0 4px 36px"><button class="link small" data-act="qSubOpen" data-id="${c.id}" data-s="${x.id}">+ подзадача</button></div>`:"");
+  return row+sub;
 }
 function questSheet(id){
   const c=S.profile.challenges.find(x=>x.id===id);if(!c)return;const a=c.about||{};const sk=skillById(c.skill);
   const lv3={day:1,week:2,month:3}[c.period]||2;sheet(`<div class="sheet-h"><span class="pill">${QNAME[c.period]||"квест"}</span><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
   <h2 style="margin-top:10px">${esc(c.title)}</h2>
   <div class="row small" style="gap:10px;margin-top:-4px"><span class="q-stars" aria-label="сложность ${lv3} из 3" style="color:var(--accent)">${[1,2,3].map(i=>`<span class="${i<=lv3?"on":""}">${STAR}</span>`).join("")}</span>${sk?`<span class="muted">навык: ${esc(sk.name)}</span>`:""}</div>
-  ${c.about?aboutBlock(c.about):`<div class="card small">этот квест ты придумал{а|} сам{а|}. можно дописать пояснение для себя и разбить его на этапы.</div>`}
+  ${c.about?aboutBlock(c.about):`<div class="card small">этот квест ты придумал{а|} сам{а|}. можно дописать пояснение для себя и разбить его на задачи.</div>`}
   ${c.status==="active"?`<details style="margin-top:6px" ${c.about?"":"open"}><summary>${c.about?"изменить пояснение":"добавить пояснение"}</summary><form data-form="qabout" data-id="${c.id}">
     <div class="field"><label for="qaE">в чём суть</label><textarea class="in-text" id="qaE" name="e" style="min-height:60px">${esc(c.about&&c.about.essence||"")}</textarea></div>
     <div class="field"><label for="qaB">чем это полезно</label><textarea class="in-text" id="qaB" name="b" style="min-height:60px">${esc(c.about&&c.about.benefit||"")}</textarea></div>
     <button class="btn sm" type="submit" style="margin-top:8px">сохранить пояснение</button></form></details>`:""}
-  <div class="sec"><div class="sec-l"><span class="sel">этапы</span></div><span class="small muted">${sk?esc(sk.name):""}</span></div>
-  <div class="card" style="margin-top:12px">${(c.steps||[]).length?(c.steps||[]).map(x=>`<div class="goal-step"><button class="check ${x.done?"on":""}" data-act="qStep" data-id="${c.id}" data-s="${x.id}" aria-pressed="${!!x.done}">${x.done?IC.check:""}</button><span style="flex:1;min-width:0;${x.done?"text-decoration:line-through;opacity:.6":""}">${esc(x.t)}</span>${x.done||c.status!=="active"?"":calBtn(`data-act="qStepWhen" data-id="${c.id}" data-s="${x.id}"`,plannedOf("s",c.id,x.id))}<button class="link" data-act="qStepDel" data-id="${c.id}" data-s="${x.id}" aria-label="удалить этап">✕</button></div>`).join(""):`<p class="small muted" style="margin:0">этапов пока нет</p>`}
-  ${c.status==="active"?`<form class="row" data-form="qstep" data-id="${c.id}" style="margin-top:8px;flex-wrap:nowrap"><input class="in-text" name="t" placeholder="новый этап" style="padding:9px 10px" aria-label="новый этап"><button class="btn sm" type="submit">добавить</button></form>`:""}</div>
+  <div class="seg qtab-seg" role="group" aria-label="вкладки квеста"><button data-act="qsTab" data-id="${c.id}" data-v="tasks" aria-pressed="${S.qsTab!=="mat"}">задачи</button><button data-act="qsTab" data-id="${c.id}" data-v="mat" aria-pressed="${S.qsTab==="mat"}">материалы${matCount(c.mat)?" · "+matCount(c.mat):""}</button></div>
+  ${S.qsTab==="mat"?matView("p",c.id,c.mat||{},c.status==="active",(c.mat&&c.mat.cm)||[]):`<div class="card" style="margin-top:12px">${(c.steps||[]).length?(c.steps||[]).map(x=>qStepRow(c,x)).join(""):`<p class="small muted" style="margin:0">задач пока нет</p>`}
+  ${c.status==="active"?`<form class="row" data-form="qstep" data-id="${c.id}" style="margin-top:8px;flex-wrap:nowrap"><input class="in-text" name="t" placeholder="новая задача" style="padding:9px 10px" aria-label="новая задача"><button class="btn sm" type="submit">добавить</button></form>`:""}</div>`}
   <div class="row" style="margin-top:14px"><span class="small"><b class="num">+${c.xp} xp</b> и ${coinsW(c.coins)} за прохождение</span></div>
-  ${c.status==="active"&&Store.online()?`<div class="card" style="margin-top:14px"><b>сделать командным</b><p class="small muted" style="margin:6px 0 10px">позовёшь людей, этапы станут задачами с ответственными и дедлайнами, бот будет писать всей команде.</p><button class="btn accent wide" data-act="qToTeam" data-id="${c.id}">${IC.plus} сделать командным</button></div>`:""}
+  ${c.status==="active"&&Store.online()?`<div class="card" style="margin-top:14px"><b>сделать командным</b><p class="small muted" style="margin:6px 0 10px">позовёшь людей, задачи получат ответственных и дедлайны, бот будет писать всей команде.</p><button class="btn accent wide" data-act="qToTeam" data-id="${c.id}">${IC.plus} сделать командным</button></div>`:""}
   <div class="row" style="margin-top:14px"><button class="btn ghost" data-act="qDel" data-id="${c.id}">удалить квест</button></div>`);
 }
 /* личный квест → командный: этапы становятся задачами, дедлайн сохраняется */
 function questToTeam(id){
   const P=S.profile;const c=P.challenges.find(x=>x.id===id);if(!c)return;
-  confirmSheet("сделать квест командным?","этапы станут задачами команды (на тебе), дедлайн квеста сохранится. потом позовёшь людей и раздашь задачи. квест переедет из личных в командные.","сделать командным",async()=>{
+  confirmSheet("сделать квест командным?","задачи станут задачами команды (на тебе), подзадачи и тезисы поедут с ними, дедлайн квеста сохранится. потом позовёшь людей и раздашь задачи. квест переедет из личных в командные.","сделать командным",async()=>{
     const a=c.about||{};const qid=uid();
     try{
-      await TQ.call("save",{quest:{id:qid,title:c.title,about:[a.essence,a.benefit].filter(Boolean).join("\n\n"),deadline:c.due||"",stages:[]}});
-      for(const x of (c.steps||[]))await TQ.call("task",{qid,task:{id:uid(),title:x.t,whos:[TQ.me()],done:!!x.done,deadline:"",upd:Date.now()}});
+      await TQ.call("save",{quest:{id:qid,title:c.title,about:[a.essence,a.benefit].filter(Boolean).join("\n\n"),deadline:c.due||"",stages:[],notes:((c.mat&&c.mat.notes)||[]).map(n=>({id:n.id,t:n.t,d:n.d||"",by:""})),files:((c.mat&&c.mat.files)||[]).filter(f=>f.k==="link").map(f=>({id:f.id,k:"link",t:f.t,u:f.u,d:f.d||"",by:""}))}});
+      for(const x of (c.steps||[]))await TQ.call("task",{qid,task:{id:uid(),title:x.t,whos:[TQ.me()],done:!!x.done,deadline:"",subs:subsOf(x).map(u=>({id:u.id,t:u.t,done:!!u.done,who:0})),upd:Date.now()}});
       markGone(c.id);P.challenges=P.challenges.filter(x=>x.id!==c.id);Store.saveProfile();
       S.view="quests";S.qTab="team";render();window.scrollTo(0,0);tqSheet(qid);toast("квест стал командным, зови людей");
     }catch(x){toast("не получилось, проверь интернет и попробуй ещё раз")}
@@ -2499,11 +2585,12 @@ function tqTaskRow(q,t){
   const pl=t.done?null:plannedOf("t",q.id,t.id);const nc=(q.comments||[]).filter(c=>c.tid===t.id).length;
   return`<div class="tq-task ${t.done?"done":""}"><button class="check ${t.done?"on":""}" data-act="tqDone" data-q="${esc(q.id)}" data-id="${esc(t.id)}" aria-label="${t.done?"вернуть в работу":"отметить выполненной"}" aria-pressed="${t.done}">${t.done?IC.check||"✓":""}</button>
   <div class="bd" data-act="tqTask" data-q="${esc(q.id)}" data-id="${esc(t.id)}" role="button"><div class="ti">${esc(t.title)}</div>
-  <div class="tq-meta">${whoChips(q,t)}${dlChip(t.deadline,t.done)}${nc?`<span class="tq-cm">${CHAT_IC} ${nc}</span>`:""}${t.done?`<span class="tq-dn">${IC.check} сделано${t.doneBy&&tqMem(q,t.doneBy)&&!(whosOf(t).length===1&&whosOf(t)[0]===t.doneBy)?" · "+esc(tqMem(q,t.doneBy).name):""}</span>`:""}</div></div>${t.done?"":calBtn(`data-act="tqWhen" data-q="${esc(q.id)}" data-id="${esc(t.id)}"`,pl)}</div>`;
+  <div class="tq-meta">${whoChips(q,t)}${dlChip(t.deadline,t.done)}${subsCount(t)?`<span class="tq-cm">${LIST_IC} ${subsCount(t)}</span>`:""}${nc?`<span class="tq-cm">${CHAT_IC} ${nc}</span>`:""}${t.done?`<span class="tq-dn">${IC.check} сделано${t.doneBy&&tqMem(q,t.doneBy)&&!(whosOf(t).length===1&&whosOf(t)[0]===t.doneBy)?" · "+esc(tqMem(q,t.doneBy).name):""}</span>`:""}</div></div>${t.done?"":calBtn(`data-act="tqWhen" data-q="${esc(q.id)}" data-id="${esc(t.id)}"`,pl)}</div>`;
 }
 function tqSheet(qid,keep){
   const q=TQ.q(qid);if(!q){closeSheet();toast("квест не найден");return}
   TQ.open={q:qid};
+  if(S.tqTabQ!==qid){S.tqTabQ=qid;S.tqTab="tasks"}
   const p=tqProgress(q);const st=q.stages||[];
   const tasks=(q.tasks||[]).slice().sort((a,b)=>((a.deadline||"9999")<(b.deadline||"9999")?-1:(a.deadline||"9999")>(b.deadline||"9999")?1:(a.created||0)-(b.created||0)));
   const group=sid=>tasks.filter(t=>(t.stage||"")===sid&&(sid===""||st.some(x=>x.id===sid))||(sid===""&&t.stage&&!st.some(x=>x.id===t.stage)));
@@ -2512,19 +2599,18 @@ function tqSheet(qid,keep){
   sheet(`<div class="sheet-h"><h2 style="overflow-wrap:anywhere">${esc(q.title)}</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
   ${q.about?`<p style="margin:0 0 10px;white-space:pre-wrap">${esc(q.about)}</p>`:""}
   ${(()=>{const k=skillById((S.profile.tqSkill||{})[q.id]);return`<button class="tq-sk" data-act="tqSkPick" data-q="${esc(q.id)}">${k?`${sphIc(sphereOf(k),15)}<span>мой навык в квесте: <b>${esc(k.name)}</b> · ${esc(sphereById(sphereOf(k)).n)}</span><span class="link" style="margin-left:auto">изменить</span>`:`${sphIc("work",15)}<span>выбери свой навык: опыт за твои задачи пойдёт в него и в портрет героя</span><span class="link" style="margin-left:auto">выбрать</span>`}</button>`})()}
-  <div class="card"><div class="row" style="justify-content:space-between"><span class="small muted">${p.all?`готово ${p.dn} из ${p.all}`:"задач пока нет"}</span>${q.deadline?`<span class="small">дедлайн квеста: ${dlChip(q.deadline,p.all&&p.dn===p.all)}</span>`:""}</div>
+  <div class="seg qtab-seg" role="group" aria-label="вкладки квеста" style="margin-top:0"><button data-act="tqTab" data-q="${esc(q.id)}" data-v="tasks" aria-pressed="${S.tqTab!=="mat"}">задачи</button><button data-act="tqTab" data-q="${esc(q.id)}" data-v="mat" aria-pressed="${S.tqTab==="mat"}">материалы${(()=>{const n=(q.files||[]).length+(q.notes||[]).length+(q.comments||[]).filter(c=>c.tid==="_q").length;return n?" · "+n:""})()}</button></div>
+  ${S.tqTab==="mat"?matView("t",q.id,{files:q.files,notes:q.notes},true,(q.comments||[]).filter(c=>c.tid==="_q"),q):`<div class="card" style="margin-top:12px"><div class="row" style="justify-content:space-between"><span class="small muted">${p.all?`готово ${p.dn} из ${p.all}`:"задач пока нет"}</span>${q.deadline?`<span class="small">дедлайн квеста: ${dlChip(q.deadline,p.all&&p.dn===p.all)}</span>`:""}</div>
   <div class="prog" style="margin-top:8px"><i style="width:${p.pr}%"></i></div>${q.deadline?`<div style="margin-top:8px">${calLinks("квест: "+q.title,q.deadline,q.about)}</div>`:""}</div>
   <div class="card" style="margin-top:10px"><div class="row" style="justify-content:space-between"><b>команда · ${(q.members||[]).filter(m=>!m.bot).length}</b><button class="btn sm accent" data-act="tqInvite" data-q="${esc(q.id)}">позвать</button></div>
   ${(q.members||[]).map(m=>`<div class="mem">${avatar(m,32)}<span>${esc(m.name)}${m.uid===TQ.me()?' <span class="muted small">это ты</span>':m.bot?' <span class="muted small">помощник</span>':""}</span></div>`).join("")}</div>
   <div class="card" style="margin-top:10px"><div class="row" style="justify-content:space-between"><b>задачи</b><button class="btn sm accent" data-act="tqTask" data-q="${esc(q.id)}" data-id="">${IC.plus} задача</button></div>
   <div class="seg" role="group" aria-label="вид" style="margin-top:10px"><button data-act="tqView" data-id="list" data-q="${esc(q.id)}" aria-pressed="${S.tqView!=="gantt"}">список</button><button data-act="tqView" data-id="gantt" data-q="${esc(q.id)}" aria-pressed="${S.tqView==="gantt"}">таймлайн</button></div>
   ${S.tqView==="gantt"?`<div style="margin-top:8px"><button class="gxbtn" data-act="gFull" data-id="t:${esc(q.id)}" data-back="${esc(q.id)}">${GX_ICON}на весь экран</button></div>`:""}
-  ${S.tqView==="gantt"?ganttHTML([{rows:ganttRows(q)}],{dl:q.deadline||""}):free.map(t=>tqTaskRow(q,t)).join("")+st.map(stBlock).join("")}
-  ${!tasks.length?`<p class="small muted" style="margin:8px 0 0">добавь первую задачу: что сделать, кто отвечает и до какого числа.</p>`:""}</div>
-  <div class="card" style="margin-top:10px"><b>этапы</b>
-  <form class="row" data-form="tqStage" data-q="${esc(q.id)}" style="margin-top:10px;flex-wrap:nowrap;gap:6px"><input class="in-text" name="t" placeholder="этап, например «сценарий»" style="padding:9px 10px" aria-label="название этапа"><input class="in-text" type="date" name="d" style="padding:9px 8px;width:auto" aria-label="дедлайн этапа"><button class="btn sm" type="submit">+</button></form></div>
+  ${S.tqView==="gantt"?ganttHTML([{rows:ganttRows(q)}],{dl:q.deadline||""}):tasks.map(t=>tqTaskRow(q,t)).join("")}
+  ${!tasks.length?`<p class="small muted" style="margin:8px 0 0">добавь первую задачу: что сделать, кто отвечает и до какого числа.</p>`:""}</div>`}
   <button class="btn accent wide" style="margin-top:14px" data-act="close">готово</button>
-  <p class="small muted" style="margin:8px 0 0;text-align:center">задачи, этапы и отметки сохраняются сразу, команда получает их в боте</p>
+  <p class="small muted" style="margin:8px 0 0;text-align:center">задачи и отметки сохраняются сразу, команда получает их в боте</p>
   <div class="row" style="justify-content:center;gap:18px;margin-top:12px"><button class="link" data-act="tqEdit" data-q="${esc(q.id)}">изменить квест</button><button class="link" data-act="tqLeave" data-q="${esc(q.id)}" style="color:var(--muted)">выйти из квеста</button></div>`,el=>{el.dataset.tq=q.id;el.dataset.sig=JSON.stringify(q);el.addEventListener("input",()=>{el.dataset.dirty="1"});ganttScroll(el)});
 }
 function tqEditSheet(qid){
@@ -2532,7 +2618,7 @@ function tqEditSheet(qid){
   sheet(`<div class="sheet-h"><h2>${q?"квест":"новый командный квест"}</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
   <div class="field" style="margin-top:0"><label for="tqT">название</label><input class="in-text" id="tqT" maxlength="120" placeholder="например, запуск курса" value="${q?esc(q.title):""}"></div>
   <div class="field"><label for="tqA">суть и цель</label><textarea class="in-text" id="tqA" maxlength="1500" rows="3" placeholder="что хотим получить в итоге">${q?esc(q.about||""):""}</textarea></div>
-  <div class="field"><label for="tqD">дедлайн всего квеста</label><input class="in-text" type="date" id="tqD" value="${q?esc(q.deadline||""):""}"><span class="small muted">можно оставить пустым. промежуточные дедлайны добавишь этапами.</span></div>
+  <div class="field"><label for="tqD">дедлайн всего квеста</label><input class="in-text" type="date" id="tqD" value="${q?esc(q.deadline||""):""}"><span class="small muted">можно оставить пустым.</span></div>
   <div class="stack"><button class="btn accent wide" id="tqS">${q?"сохранить":"создать и позвать команду"}</button>${q&&q.owner===TQ.me()?`<button class="btn ghost wide" id="tqX">закрыть квест для всех</button>`:""}</div>`,el=>{
     el.querySelector("#tqS").onclick=async()=>{
       const title=el.querySelector("#tqT").value.trim();if(!title){toast("напиши название");el.querySelector("#tqT").focus();return}
@@ -2553,7 +2639,10 @@ function tqTaskSheet(qid,tid,keep){
   <div class="field"><label>ответственные</label><div class="pick" id="ttW">${(q.members||[]).map(m=>`<button type="button" data-u="${m.uid}" aria-pressed="${F.whos.includes(m.uid)}">${avatar(m,24)}${esc(m.name)}${m.uid===TQ.me()?" (я)":""}</button>`).join("")}<button type="button" data-u="0" aria-pressed="${!F.whos.length}" style="padding-left:12px">никто</button></div><span class="small muted">можно выбрать нескольких: нажми ещё раз, чтобы снять</span></div>
   <div class="row" style="gap:10px;flex-wrap:nowrap;align-items:flex-end"><div class="field" style="flex:1;min-width:0"><label for="ttB">начало</label><input class="in-text" type="date" id="ttB" value="${t?esc(t.start||""):today()}"></div><div class="field" style="flex:1;min-width:0"><label for="ttD">дедлайн</label><input class="in-text" type="date" id="ttD" value="${t?esc(t.deadline||""):""}"></div></div>
   ${t&&t.deadline?`<div style="margin-top:6px">${calLinks(t.title+" · "+q.title,t.deadline,t.essence)}</div>`:""}<div class="small muted" style="margin-top:4px">начало и дедлайн рисуют полосу задачи на таймлайне</div>
-  ${(q.stages||[]).length?`<div class="field"><label for="ttS">этап</label><select class="in-text" id="ttS"><option value="">без этапа</option>${q.stages.map(x=>`<option value="${esc(x.id)}" ${x.id===F.stage?"selected":""}>${esc(x.title)}${x.deadline?" · до "+esc(fmtD(x.deadline)):""}</option>`).join("")}</select></div>`:""}
+  <div class="card" style="margin-top:14px"><div class="row" style="justify-content:space-between"><b>подзадачи</b><span class="small muted num" id="ttSubN"></span></div>
+  <div id="ttSubs" style="margin-top:4px"></div>
+  <div class="row" style="margin-top:8px;flex-wrap:nowrap"><input class="in-text" id="ttSubIn" maxlength="160" placeholder="новая подзадача" style="padding:9px 10px" aria-label="новая подзадача"><button class="btn sm" type="button" id="ttSubAdd">добавить</button></div>
+  <div class="small muted" style="margin-top:6px">ответственного за подзадачу выбираешь нажатием на кружок справа: он меняется по кругу</div></div>
   <div class="stack"><button class="btn accent wide" id="ttSave">${t?"сохранить изменения":"добавить задачу"}</button>${t&&!t.done?`<button class="btn ghost wide" data-act="tqNudge" data-q="${esc(q.id)}" data-id="${esc(t.id)}">${IC.bell} напомнить в телеграме</button>`:""}${t&&!t.done?`<button class="btn ghost wide" data-act="tqWhen" data-q="${esc(q.id)}" data-id="${esc(t.id)}">${CAL_IC} ${plannedOf("t",q.id,t.id)?"в плане: "+esc(dayWord(plannedOf("t",q.id,t.id).date))+" · изменить":"поставить на день"}</button>`:""}${t?`<button class="btn ghost wide" data-act="tqDone" data-q="${esc(q.id)}" data-id="${esc(t.id)}">${t.done?"вернуть в работу":"✓ отметить выполненной"}</button>`:""}</div>
   <p class="small muted" style="margin:8px 0 0;text-align:center">${t?"после сохранения уведомление придёт тем, кто связан с задачей":"уведомление придёт ответственным, а если их нет — всей команде"}</p>
   ${t?`<div class="card" style="margin-top:14px"><b>комментарии${cm.length?" · "+cm.length:""}</b>
@@ -2561,12 +2650,23 @@ function tqTaskSheet(qid,tid,keep){
   <form class="row" data-form="tqCmt" data-q="${esc(q.id)}" data-id="${esc(t.id)}" style="margin-top:8px;flex-wrap:nowrap"><input class="in-text" name="t" maxlength="1500" placeholder="комментарий" style="padding:9px 10px" aria-label="комментарий"><button class="btn sm accent" type="submit">отправить</button></form></div>
   <button class="link" style="margin-top:14px;color:var(--muted)" data-act="tqTaskDel" data-q="${esc(q.id)}" data-id="${esc(t.id)}">удалить задачу</button>`:""}`,el=>{
     el.dataset.tq=q.id;el.dataset.sig=JSON.stringify(q);el.addEventListener("input",()=>{el.dataset.dirty="1"});
+    const SUBS=subsOf(t).map(x=>Object.assign({},x));const mems=(q.members||[]).filter(m=>!m.bot&&m.uid!==CLAUDE_UID);
+    const subBox=el.querySelector("#ttSubs"),subN=el.querySelector("#ttSubN"),subIn=el.querySelector("#ttSubIn");
+    const persist=()=>{if(!t)return;TQ.call("task",{qid:q.id,task:Object.assign({},t,{subs:SUBS})}).catch(()=>toast("не получилось сохранить подзадачи, проверь интернет"))};
+    const drawSubs=()=>{subN.textContent=SUBS.length?SUBS.filter(x=>x.done).length+" из "+SUBS.length:"";
+      subBox.innerHTML=SUBS.map(u=>{const m=u.who?tqMem(q,u.who):null;return`<div class="goal-step" data-u="${esc(u.id)}"><button type="button" class="check ${u.done?"on":""}" data-sub="t" aria-pressed="${!!u.done}" style="width:22px;height:22px;border-radius:7px">${u.done?IC.check:""}</button><span style="flex:1;min-width:0;font-size:14px;${u.done?"text-decoration:line-through;opacity:.6":""}">${esc(u.t)}</span><button type="button" class="subwho" data-sub="w" aria-label="ответственный за подзадачу">${m?avatar(m,22):'<span class="nobody">+</span>'}</button><button type="button" class="link" data-sub="x" aria-label="удалить подзадачу">✕</button></div>`}).join("")};
+    drawSubs();
+    subBox.addEventListener("click",ev=>{const b=ev.target.closest("[data-sub]");if(!b)return;const row=b.closest("[data-u]");const u=SUBS.find(x=>x.id===row.dataset.u);if(!u)return;const k=b.dataset.sub;
+      if(k==="t")u.done=!u.done;else if(k==="x")SUBS.splice(SUBS.indexOf(u),1);else{const ids=[0].concat(mems.map(m=>m.uid));u.who=ids[(ids.indexOf(u.who||0)+1)%ids.length]}
+      drawSubs();persist()});
+    const addSub=()=>{const v=subIn.value.trim();if(!v){subIn.focus();return}SUBS.push({id:uid(),t:v,done:false,who:0});subIn.value="";drawSubs();persist()};
+    el.querySelector("#ttSubAdd").onclick=addSub;subIn.addEventListener("keydown",ev=>{if(ev.key==="Enter"){ev.preventDefault();addSub()}});
     el.querySelectorAll("#ttW button").forEach(b=>b.onclick=()=>{const u=+b.dataset.u;F.whos=!u?[]:F.whos.includes(u)?F.whos.filter(x=>x!==u):F.whos.concat(u);el.querySelectorAll("#ttW button").forEach(x=>{const v=+x.dataset.u;x.setAttribute("aria-pressed",String(v?F.whos.includes(v):!F.whos.length))})});
     el.querySelector("#ttSave").onclick=async()=>{
       const title=el.querySelector("#ttT").value.trim();if(!title){toast("напиши, что сделать");el.querySelector("#ttT").focus();return}
       const sel=el.querySelector("#ttS");
       let st0=el.querySelector("#ttB").value||"",dl0=el.querySelector("#ttD").value||"";if(st0&&dl0&&st0>dl0){const x=st0;st0=dl0;dl0=x}
-      const nt=Object.assign({},t||{id:uid(),done:false},{title,essence:el.querySelector("#ttE").value.trim(),whos:F.whos.slice(),who:F.whos[0]||0,start:st0,deadline:dl0,stage:sel?sel.value:F.stage,upd:Date.now()});
+      const nt=Object.assign({},t||{id:uid(),done:false},{title,essence:el.querySelector("#ttE").value.trim(),whos:F.whos.slice(),who:F.whos[0]||0,start:st0,deadline:dl0,stage:sel?sel.value:F.stage,subs:SUBS,upd:Date.now()});
       const btn=el.querySelector("#ttSave");btn.disabled=true;
       try{await TQ.call("task",{qid:q.id,task:nt});toast(t?"сохранила, команда получит уведомление":"задача добавлена, команда получит уведомление");tqRepaint();tqSheet(q.id)}catch(x){btn.disabled=false;toast("не получилось сохранить, проверь интернет")}};
   });
@@ -2587,8 +2687,9 @@ async function tqDoneFromPlan(ref){
   t.done=true;t.doneBy=TQ.me();tqRepaint();
   try{await TQ.call("task",{qid:q.id,task:Object.assign({},t,{done:true,upd:Date.now()})});toast("задача «"+t.title+"» закрыта у всей команды");tqRepaint()}catch(x){t.done=false;tqRepaint();toast("не получилось отметить задачу в командном квесте, отметь её там")}
 }
-async function tqToggle(qid,tid){
+async function tqToggle(qid,tid,when){
   const q=TQ.q(qid);const t=q&&(q.tasks||[]).find(x=>x.id===tid);if(!t)return;
+  if(!t.done&&when===undefined){const back=TQ.open;askWhen("Это было сделано сегодня?","Если да, опыт за задачу засчитается за сегодня и появится в «сделано сегодня».",d=>{tqToggle(qid,tid,d).then(()=>{if(back){if(back.t)tqTaskSheet(back.q,back.t);else tqSheet(back.q)}})});return}
   const nt=Object.assign({},t,{done:!t.done,upd:Date.now()});
   t.done=nt.done;t.doneBy=nt.done?TQ.me():0;tqRepaint();
   try{
@@ -2596,7 +2697,7 @@ async function tqToggle(qid,tid){
     // опыт за командную задачу получает тот, кто её сделал
     const eid="tq_"+tid;const ex=S.entries.find(e=>e.id===eid);
     const tsk=(S.profile.tqSkill||{})[qid];const tsk1=tsk&&skillById(tsk)?tsk:null;
-    if(nt.done&&(!ex||ex.del)){Store.putEntry({id:eid,date:today(),type:"bonus",xp:20,title:"командный квест: "+t.title,primary:tsk1,secondary:[]});afterChange();if(tsk1)S.pulse={sid:sphereOf(skillById(tsk1)),t:Date.now()};toast(tsk1?"готово! +20 xp → "+skillById(tsk1).name+" · "+sphereById(sphereOf(skillById(tsk1))).n+" ↑":"готово! +20 xp. выбери в квесте свой навык, чтобы опыт шёл в портрет")}
+    if(nt.done&&(!ex||ex.del)){Store.putEntry({id:eid,date:when||today(),type:"bonus",xp:20,title:"командный квест: "+t.title,primary:tsk1,secondary:[]});afterChange();if(tsk1)S.pulse={sid:sphereOf(skillById(tsk1)),t:Date.now()};toast(tsk1?"готово! +20 xp → "+skillById(tsk1).name+" · "+sphereById(sphereOf(skillById(tsk1))).n+" ↑":"готово! +20 xp. выбери в квесте свой навык, чтобы опыт шёл в портрет")}
     else if(!nt.done&&ex&&!ex.del){Store.delEntry(eid);afterChange();toast("вернула в работу")}
     tqRepaint();
   }catch(x){t.done=!nt.done;tqRepaint();toast("не получилось, проверь интернет")}
@@ -2703,8 +2804,9 @@ function hintSheet(k){const[h,t]=HELP[k];sheet(`<span class="pill">подска�
    как добавить новость: допиши объект в NEWS (приложение) или в news.json рядом с index.html (без выпуска приложения).
    kind: "update" | "news". acts: до двух кнопок {l:"посмотреть"|"протестировать", go:"..."}.
    куда ведёт go: tab:home|path|skills|quests|rewards · path:feed · hint:<ключ из HELP> · add:plan · add:done */
-const APP_V="v78";
+const APP_V="v79";
 const NEWS=[
+  {id:"u79-materials",date:"2026-10-27",kind:"update",title:"в квестах появились подзадачи и материалы",text:"у задачи можно сделать подзадачи с галочками, а в командном квесте у каждой свой ответственный. у квеста есть вкладка «материалы»: файлы и ссылки, важные мысли, комментарии. этапы убрали, теперь просто задачи. а когда закрываешь квест или задачу, приложение спросит, сделано ли это сегодня.",go:"tab:quests"},
   {id:"u76-nudge",date:"2026-10-23",kind:"update",title:"можно напомнить о задаче в телеграме",text:"открой задачу в командном квесте и нажми «напомнить в телеграме»: ответственным или всей команде придёт сообщение с квестом, сутью задачи и дедлайном.",go:"tab:quests"},
   {id:"u70-events",date:"2026-10-23",kind:"update",title:"бот покажет, что случилось за 48 часов",text:"напиши боту /events или нажми «события за 48 часов» в /menu: можно посмотреть, что менялось в конкретном командном квесте, что было по твоим задачам и какие вышли обновления. ещё у клода в участниках теперь своя аватарка.",go:"tab:quests"},
   {id:"u69-whos",date:"2026-10-23",kind:"update",title:"у задачи может быть несколько ответственных",text:"в командном квесте в задаче теперь отмечаются сразу несколько человек: нажимай на имена, чтобы добавить или снять. в команде появился клод: на него тоже можно ставить задачи. уведомления в боте приходят тем, кто связан с задачей, и стали понятнее: квест, суть, кто поставил, дедлайн и ответственные. если новых задач набралось больше трёх, бот соберёт их в одно сообщение со списком.",acts:[{l:"посмотреть",go:"tab:quests"}]},
@@ -3036,8 +3138,9 @@ function planCard(){
   ${cur.length?`<div style="margin-top:6px">${cur.map(planRow).join("")}</div>`:`<p class="small muted" style="margin:10px 0 0">пока пусто</p>`}
   ${fut.length?`<div class="small muted" style="margin-top:8px">впереди: ${fut.length} ${plural(fut.length,"дело","дела","дел")}, ближайшее ${fut[0].date===addDays(t,1)?"завтра":fmtD(fut[0].date)}</div>`:""}
   ${routineStrip()}
-  ${(()=>{const dn=live().filter(e=>e.date===t&&!e.planned&&e.type!=="routine").sort((a,b)=>(b.ts||0)-(a.ts||0));if(!dn.length)return"";const xp=live().filter(e=>e.date===t&&!e.planned).reduce((a,e)=>a+xpOf(e),0);
-    return`<details class="donebox" id="todaySec" ${S.doneOpen?"open":""}><summary><span>сделано сегодня · ${dn.length}</span><b class="num" style="color:var(--accent-t)">+${xp} xp</b></summary>${dn.map(doneRow).join("")}</details>`})()}
+  ${(()=>{const dn=live().filter(e=>e.date===t&&!e.planned&&e.type!=="routine").sort((a,b)=>(b.ts||0)-(a.ts||0));const qd=P.challenges.filter(c=>c.status==="done"&&c.doneAt===t);if(!dn.length&&!qd.length)return"";const xp=live().filter(e=>e.date===t&&!e.planned).reduce((a,e)=>a+xpOf(e),0)+qd.reduce((a,c)=>a+c.xp,0);
+    const qRow=c=>`<div class="tk done"><span class="cb">${IC.check}</span><div class="tkb"><div class="t">${esc(c.title)}</div><div class="m">${esc(QNAME[c.period]||"квест")} · пройден</div></div><div class="xp num">+${c.xp} xp</div></div>`;
+    return`<details class="donebox" id="todaySec" ${S.doneOpen?"open":""}><summary><span>сделано сегодня · ${dn.length+qd.length}</span><b class="num" style="color:var(--accent-t)">+${xp} xp</b></summary>${qd.map(qRow).join("")}${dn.map(doneRow).join("")}</details>`})()}
   <div class="row" style="margin-top:12px;flex-wrap:nowrap"><button class="btn ghost" style="flex:1" data-act="add" data-plan="1" data-day="today">+ на сегодня</button><button class="btn ghost" style="flex:1" data-act="add" data-plan="1" data-day="tomorrow">+ другой день</button></div></section>`;
 }
 function vPlan(d){
@@ -3378,7 +3481,7 @@ function openStartLevels(onDone){
 /* ================= квесты ================= */
 function aboutBlock(a,steps){
   if(!a)return"";const who=a.by==="app"?"почему приложение предлагает это":a.by==="me"?"зачем мне это":"почему claude предложил именно это";
-  return`<div class="stack" style="margin:0 0 4px">${a.essence?`<div class="card"><div class="lbl">в чём суть</div><p style="margin:4px 0 0">${esc(a.essence)}</p></div>`:""}${a.benefit?`<div class="card"><div class="lbl">чем это полезно</div><p style="margin:4px 0 0">${esc(a.benefit)}</p></div>`:""}${a.reason?`<div class="card"><div class="lbl">${who}</div><p style="margin:4px 0 0">${esc(a.reason)}</p></div>`:""}${(steps||[]).length?`<div class="card"><div class="lbl">этапы</div><ol style="margin:6px 0 0;padding-left:20px">${steps.map(t=>`<li>${esc(t)}</li>`).join("")}</ol></div>`:""}</div>`;
+  return`<div class="stack" style="margin:0 0 4px">${a.essence?`<div class="card"><div class="lbl">в чём суть</div><p style="margin:4px 0 0">${esc(a.essence)}</p></div>`:""}${a.benefit?`<div class="card"><div class="lbl">чем это полезно</div><p style="margin:4px 0 0">${esc(a.benefit)}</p></div>`:""}${a.reason?`<div class="card"><div class="lbl">${who}</div><p style="margin:4px 0 0">${esc(a.reason)}</p></div>`:""}${(steps||[]).length?`<div class="card"><div class="lbl">задачи</div><ol style="margin:6px 0 0;padding-left:20px">${steps.map(t=>`<li>${esc(t)}</li>`).join("")}</ol></div>`:""}</div>`;
 }
 function newQuest(pre){
   pre=pre||{};let per=pre.period||"week";let sk=pre.skill||S.profile.active[0]||"";let about=pre.about||null;let fromIdea=null;
@@ -3666,11 +3769,19 @@ document.addEventListener("click",ev=>{
     case"pfilter":S.pathFilter=id||null;render();break;
     case"pfilterGo":S.view="path";S.pathMode="feed";S.pathFilter=id;render();window.scrollTo(0,0);break;
     case"recap":weeklyRecap();break;
-    case"qDone":{const c=P.challenges.find(x=>x.id===id);if(!c)break;c.status="done";c.doneAt=today();Store.saveProfile();toast("+"+c.xp+" xp · +"+coinsW(c.coins));afterChange();break}
-    case"qInfo":questSheet(id);break;
+    case"qDone":{const c=P.challenges.find(x=>x.id===id);if(!c)break;closeSheet();askWhen("Это было сделано сегодня?","Если да, +"+c.xp+" xp и "+c.coins+" "+plural(c.coins,"монета","монеты","монет")+" засчитаются за сегодня и появятся в «сделано сегодня».",d=>{c.status="done";c.doneAt=d;Store.saveProfile();toast("+"+c.xp+" xp · +"+coinsW(c.coins));afterChange()});break}
+    case"qInfo":S.qsTab="tasks";questSheet(id);break;
+    case"qMat":S.qsTab="mat";questSheet(id);break;
+    case"qsTab":S.qsTab=b.dataset.v;questSheet(id);break;
+    case"qSubOpen":S.subOpen=b.dataset.s;questSheet(id);break;
+    case"qSub":{const c=P.challenges.find(x=>x.id===id);const st=c&&(c.steps||[]).find(x=>x.id===b.dataset.s);const u=st&&subsOf(st).find(x=>x.id===b.dataset.u);if(!u||c.status!=="active")break;u.done=!u.done;Store.saveProfile();render();questSheet(id);break}
+    case"qSubDel":{const c=P.challenges.find(x=>x.id===id);const st=c&&(c.steps||[]).find(x=>x.id===b.dataset.s);if(!st)break;st.subs=subsOf(st).filter(x=>x.id!==b.dataset.u);Store.saveProfile();render();questSheet(id);break}
+    case"matDel":{const k=b.dataset.k,w=b.dataset.w,i=b.dataset.i;const key={f:"files",n:"notes",c:k==="p"?"cm":""}[w];
+      if(k==="p"){const c=P.challenges.find(x=>x.id===b.dataset.id);if(!c||!c.mat||!key)break;c.mat[key]=(c.mat[key]||[]).filter(x=>x.id!==i);Store.saveProfile();render();questSheet(c.id)}
+      else{const q=TQ.q(b.dataset.id);if(!q||!key)break;TQ.call("save",{quest:Object.assign({},q,{[key]:(q[key]||[]).filter(x=>x.id!==i)})}).then(()=>tqSheet(q.id)).catch(()=>toast("не получилось, проверь интернет"))}break}
     case"goalsMore":S.goalsAll=!S.goalsAll;render();break;
     case"achAll":S.achAll=!S.achAll;render();break;
-    case"qMenu":{const c=P.challenges.find(x=>x.id===id);if(!c)break;sheet(`<div class="sheet-h"><span class="pill">${esc(c.title.slice(0,40))}</span><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div><div class="stack"><button class="btn wide" data-act="qInfo" data-id="${c.id}">в чём суть</button><button class="btn wide" data-act="qReview" data-id="${c.id}">разбор</button>${Store.online()?`<button class="btn wide" data-act="qToTeam" data-id="${c.id}">сделать командным</button>`:""}</div>`);break}
+    case"qMenu":{const c=P.challenges.find(x=>x.id===id);if(!c)break;sheet(`<div class="sheet-h"><span class="pill">${esc(c.title.slice(0,40))}</span><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div><div class="stack"><button class="btn wide" data-act="qInfo" data-id="${c.id}">в чём суть</button><button class="btn wide" data-act="qMove" data-id="${c.id}">перенести</button><button class="btn wide" data-act="qReview" data-id="${c.id}">разбор</button>${Store.online()?`<button class="btn wide" data-act="qToTeam" data-id="${c.id}">сделать командным</button>`:""}</div>`);break}
     case"qToTeam":questToTeam(id);break;
     case"ranks":ranksSheet();break;
     case"skIcon":skIconSheet(id);break;
@@ -3697,10 +3808,10 @@ document.addEventListener("click",ev=>{
     case"qStepWhen":{const c=P.challenges.find(x=>x.id===id);const st=c&&(c.steps||[]).find(x=>x.id===b.dataset.s);if(!st)break;const bk=b.closest(".sheet")?()=>questSheet(id):null;const ex=plannedOf("s",id,st.id);
       whenSheet({title:st.t+" · "+c.title,cur:ex?ex.date:"",dl:c.due,onPick:d=>planStepOn(id,st.id,d,bk),onClear:()=>unplan(ex,bk)});break}
     case"qStep":{const c=P.challenges.find(x=>x.id===id);const st=c&&(c.steps||[]).find(x=>x.id===b.dataset.s);if(!st||c.status!=="active")break;st.done=!st.done;Store.saveProfile();
-      const inSheet=!!b.closest(".sheet");if(c.steps.every(x=>x.done)){toast(c.period==="month"?"все этапы квеста месяца пройдены! нажми «пройден», чтобы забрать награду":"все этапы пройдены, забирай награду");}else if(st.done)toast("этап пройден");
+      const inSheet=!!b.closest(".sheet");if(c.steps.every(x=>x.done)){toast(c.period==="month"?"все задачи квеста месяца пройдены! нажми «пройден», чтобы забрать награду":"все задачи пройдены, забирай награду");}else if(st.done)toast("задача пройдена");
       if(inSheet){render();questSheet(id)}else render();break}
     case"qStepDel":{const c=P.challenges.find(x=>x.id===id);if(!c)break;c.steps=(c.steps||[]).filter(x=>x.id!==b.dataset.s);Store.saveProfile();render();questSheet(id);break}
-    case"qMove":{const c=P.challenges.find(x=>x.id===id);if(!c)break;c.moved=(c.moved||0)+1;c.due=c.period==="day"?addDays(today(),1):c.period==="week"?endOfWeek(addDays(today(),7)):endOfMonth(addDays(endOfMonth(today()),1));Store.saveProfile();toast("перенесено до "+fmtD(c.due));render();break}
+    case"qMove":{const c=P.challenges.find(x=>x.id===id);if(!c)break;closeSheet();c.moved=(c.moved||0)+1;c.due=c.period==="day"?addDays(today(),1):c.period==="week"?endOfWeek(addDays(today(),7)):endOfMonth(addDays(endOfMonth(today()),1));Store.saveProfile();toast("перенесено до "+fmtD(c.due));render();break}
     case"qDel":{const c=P.challenges.find(x=>x.id===id);if(!c)break;closeSheet();confirmSheet("удалить квест?","«"+c.title+"»","удалить",()=>{markGone(id);P.challenges=P.challenges.filter(x=>x.id!==id);Store.saveProfile();afterChange()});break}
     case"qReview":{const c=P.challenges.find(x=>x.id===id);if(!c)break;
       sheet(`<h2>разбор квеста</h2><p class="small">«${esc(c.title)}»</p><div class="field"><label for="rvTxt">что помешало и что {поняла|понял}? за честный разбор +10 xp</label><textarea class="in-text" id="rvTxt"></textarea></div><div class="row" style="margin-top:14px"><button class="btn accent" id="rvSave">закрыть разбором</button><button class="btn ghost" data-act="close">отмена</button></div>`,el=>{
@@ -3776,6 +3887,7 @@ document.addEventListener("click",ev=>{
       whenSheet({title:t.title+" · "+q.title,cur:ex?ex.date:"",dl:t.deadline,onPick:d=>planTqOn(q.id,t.id,d,bk),onClear:()=>unplan(ex,bk)});break}
     case"calPick":{const qid=b.dataset.q;sheet(`<div class="sheet-h"><h2>в календарь</h2><button class="iconbtn" data-act="tqOpen" data-id="${esc(qid)}" aria-label="назад">✕</button></div><p class="small muted" style="margin:0 0 6px">${esc(b.dataset.t)} · ${esc(fmtD(b.dataset.d))}</p><div style="margin-top:8px">${calLinks(b.dataset.t,b.dataset.d,"")}</div><button class="btn ghost wide" style="margin-top:14px" data-act="tqOpen" data-id="${esc(qid)}">назад к квесту</button>`);break}
     case"qTab":if(b.dataset.go){S.view="quests";window.scrollTo(0,0)}S.qTab=id;try{localStorage.setItem("prk-qtab",id)}catch(x){}render();if(id==="team")TQ.load();break;
+    case"tqTab":S.tqTab=b.dataset.v;tqSheet(b.dataset.q);break;
     case"tqOpen":tqSheet(b.dataset.id);TQ.load();break;
     case"tqEdit":tqEditSheet(b.dataset.q);break;
     case"tqTask":tqTaskSheet(b.dataset.q,b.dataset.id);break;
@@ -3797,13 +3909,22 @@ document.addEventListener("click",ev=>{
 document.addEventListener("submit",ev=>{
   const f=ev.target;
   if(f.dataset.form==="qabout"){ev.preventDefault();const c=S.profile.challenges.find(x=>x.id===f.dataset.id);if(!c)return;c.about=Object.assign({},c.about||{by:"me",reason:""},{essence:f.e.value.trim(),benefit:f.b.value.trim()});Store.saveProfile();render();questSheet(c.id);toast("пояснение сохранено");return}
+  if(f.dataset.form==="qsub"){ev.preventDefault();const c=S.profile.challenges.find(x=>x.id===f.dataset.id);const st=c&&(c.steps||[]).find(x=>x.id===f.dataset.s);const t=f.t.value.trim();if(!st||!t){f.t.focus();return}st.subs=subsOf(st).concat({id:uid(),t,done:false});S.subOpen=st.id;Store.saveProfile();render();questSheet(c.id);return}
+  if(f.dataset.form==="matFile"){ev.preventDefault();const t=f.t.value.trim(),u=fixUrl(f.u.value);if(!u){toast("вставь ссылку");f.u.focus();return}const it={id:uid(),k:"link",t:t||u,u,d:today(),by:""};
+    if(f.dataset.k==="p"){const c=S.profile.challenges.find(x=>x.id===f.dataset.id);if(!c)return;c.mat=c.mat||{};c.mat.files=(c.mat.files||[]).concat(it);Store.saveProfile();render();questSheet(c.id);toast("добавлено")}
+    else{const q=TQ.q(f.dataset.id);if(!q)return;{const me=tqMem(q,TQ.me());it.by=me?me.name:""}TQ.call("save",{quest:Object.assign({},q,{files:(q.files||[]).concat(it)})}).then(()=>{tqSheet(q.id);toast("добавлено")}).catch(()=>toast("не получилось, проверь интернет"))}return}
+  if(f.dataset.form==="matNote"){ev.preventDefault();const t=f.t.value.trim();if(!t){f.t.focus();return}const it={id:uid(),t,d:today(),by:""};
+    if(f.dataset.k==="p"){const c=S.profile.challenges.find(x=>x.id===f.dataset.id);if(!c)return;c.mat=c.mat||{};c.mat.notes=(c.mat.notes||[]).concat(it);Store.saveProfile();render();questSheet(c.id);toast("записано")}
+    else{const q=TQ.q(f.dataset.id);if(!q)return;{const me=tqMem(q,TQ.me());it.by=me?me.name:""}TQ.call("save",{quest:Object.assign({},q,{notes:(q.notes||[]).concat(it)})}).then(()=>{tqSheet(q.id);toast("записано")}).catch(()=>toast("не получилось, проверь интернет"))}return}
+  if(f.dataset.form==="matCm"){ev.preventDefault();const t=f.t.value.trim();if(!t){f.t.focus();return}const c=S.profile.challenges.find(x=>x.id===f.dataset.id);if(!c)return;c.mat=c.mat||{};c.mat.cm=(c.mat.cm||[]).concat({id:uid(),t,d:today()});Store.saveProfile();render();questSheet(c.id);return}
   if(f.dataset.form==="qstep"){ev.preventDefault();const c=S.profile.challenges.find(x=>x.id===f.dataset.id);const t=f.t.value.trim();if(!c||!t){f.t.focus();return}c.steps=c.steps||[];c.steps.push({id:uid(),t,done:false});Store.saveProfile();render();questSheet(c.id);return}
-  if(f.dataset.form==="tqCmt"){ev.preventDefault();const t=f.t.value.trim();if(!t){f.t.focus();return}const btn=f.querySelector("button");btn.disabled=true;TQ.call("comment",{qid:f.dataset.q,tid:f.dataset.id,text:t}).then(()=>{tqTaskSheet(f.dataset.q,f.dataset.id);toast("отправила команде")}).catch(()=>{btn.disabled=false;toast("не получилось, проверь интернет")});return}
+  if(f.dataset.form==="tqCmt"){ev.preventDefault();const t=f.t.value.trim();if(!t){f.t.focus();return}const btn=f.querySelector("button");btn.disabled=true;TQ.call("comment",{qid:f.dataset.q,tid:f.dataset.id,text:t}).then(()=>{if(f.dataset.id==="_q")tqSheet(f.dataset.q);else tqTaskSheet(f.dataset.q,f.dataset.id);toast("отправила команде")}).catch(()=>{btn.disabled=false;toast("не получилось, проверь интернет")});return}
   if(f.dataset.form==="tqStage"){ev.preventDefault();const q=TQ.q(f.dataset.q);const t=f.t.value.trim();if(!q||!t){f.t.focus();return}const stages=(q.stages||[]).concat({id:uid(),title:t,deadline:f.d.value||"",done:false});TQ.call("save",{quest:Object.assign({},q,{stages})}).then(()=>{tqSheet(q.id);toast("этап добавлен")}).catch(()=>toast("не получилось, проверь интернет"));return}
   if(f.dataset.form!=="step")return;ev.preventDefault();
   const g=S.profile.goals.find(x=>x.id===f.dataset.g);const t=f.t.value.trim();if(!g||!t){f.t.focus();return}
   g.steps=g.steps||[];g.steps.push({id:uid(),t,done:false});Store.saveProfile();toast("шаг добавлен");afterChange();
 });
+document.addEventListener("change",async ev=>{const el=ev.target;if(el&&el.id==="matImg"&&el.files&&el.files[0]){const c=S.profile.challenges.find(x=>x.id===el.dataset.id);if(!c)return;toast("загружаю фото…");try{const img=await pickImage(el.files[0]);c.mat=c.mat||{};c.mat.files=(c.mat.files||[]).concat({id:uid(),k:"img",t:"",img,d:today()});Store.saveProfile();render();questSheet(c.id);toast("фото добавлено")}catch(x){toast("не получилось загрузить фото, попробуй другое")}}});
 document.addEventListener("change",ev=>{if(ev.target.id==="thenDate"){S.thenDate=ev.target.value||null;render()}});
 /* навык подставляется сам: если такое дело уже записывала, берём навык и тип оттуда */
 document.addEventListener("input",ev=>{

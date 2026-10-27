@@ -699,15 +699,19 @@ async function tqSend(env, uid, text, qid, nt) {
 const tqSeen = async (env, uid) => { if (env.USERS) await env.USERS.delete("tqn:" + uid); };
 // журнал событий командных квестов: из него бот собирает сводку «за 48 часов». who — связанные с задачей люди, чтобы найти «мои задачи»
 const tqLog = (env, qid, uid, txt, tid, who) => env.DB.prepare("INSERT INTO tqe (qid, ts, uid, tid, who, txt) VALUES (?1, ?2, ?3, ?4, ?5, ?6)").bind(qid, Date.now(), uid, tid || "", who && who.length ? "," + uniqIds(who).join(",") + "," : "", cut(txt, 400)).run();
+const ymd = x => /^\d{4}-\d{2}-\d{2}$/.test(x || "") ? x : "";
+const cleanNotes = a => (Array.isArray(a) ? a : []).slice(0, 40).filter(x => x && sid(x.id) && String(x.t || "").trim()).map(x => ({ id: x.id, t: cut(x.t, 600), d: ymd(x.d), by: cut(x.by || "", 60) }));
+const cleanFiles = a => (Array.isArray(a) ? a : []).slice(0, 40).filter(x => x && sid(x.id) && /^https?:\/\//i.test(String(x.u || ""))).map(x => ({ id: x.id, k: "link", t: cut(x.t || x.u, 120), u: String(x.u).slice(0, 500), d: ymd(x.d), by: cut(x.by || "", 60) }));
+const cleanSubs = a => (Array.isArray(a) ? a : []).slice(0, 40).filter(x => x && sid(x.id) && String(x.t || "").trim()).map(x => ({ id: x.id, t: cut(x.t, 160), done: !!x.done, who: Number(x.who) || 0 }));
 function cleanQuest(q, old) {
   const o = old || {};
   const stages = (Array.isArray(q.stages) ? q.stages : o.stages || []).slice(0, 20).filter(x => x && sid(x.id)).map(x => ({ id: x.id, title: cut(x.title, 120), deadline: /^\d{4}-\d{2}-\d{2}$/.test(x.deadline || "") ? x.deadline : "", done: !!x.done, r1: x.r1 || "", r0: x.r0 || "" }));
-  return { id: o.id || q.id, title: cut(q.title, 120) || o.title || "командный квест", about: String(q.about || "").slice(0, 1500), deadline: /^\d{4}-\d{2}-\d{2}$/.test(q.deadline || "") ? q.deadline : "", stages, created: o.created || Date.now(), upd: Date.now(), r1: o.r1 || "", r0: o.r0 || "" };
+  return { id: o.id || q.id, title: cut(q.title, 120) || o.title || "командный квест", about: String(q.about || "").slice(0, 1500), deadline: /^\d{4}-\d{2}-\d{2}$/.test(q.deadline || "") ? q.deadline : "", stages, created: o.created || Date.now(), upd: Date.now(), r1: o.r1 || "", r0: o.r0 || "", notes: cleanNotes(q.notes !== undefined ? q.notes : o.notes), files: cleanFiles(q.files !== undefined ? q.files : o.files) };
 }
 function cleanTask(t, old) {
   const o = old || {};
   const whos = uniqIds(Array.isArray(t.whos) ? t.whos : (t.who ? [t.who] : [])).slice(0, 20);
-  return { id: t.id, title: cut(t.title, 160) || o.title || "задача", essence: String(t.essence || "").slice(0, 2000), whos, who: whos.find(x => x > 0) || whos[0] || 0, start: /^\d{4}-\d{2}-\d{2}$/.test(t.start || "") ? t.start : "", deadline: /^\d{4}-\d{2}-\d{2}$/.test(t.deadline || "") ? t.deadline : "", stage: sid(t.stage) ? t.stage : "", done: !!t.done, doneBy: t.done ? (Number(t.doneBy) || o.doneBy || 0) : 0, doneAt: t.done ? (o.done ? o.doneAt : Date.now()) : 0, del: !!t.del, by: o.by || Number(t.by) || 0, created: o.created || Date.now(), upd: Number(t.upd) || Date.now(), r1: o.deadline === t.deadline ? (o.r1 || "") : "", r0: o.deadline === t.deadline ? (o.r0 || "") : "" };
+  return { id: t.id, title: cut(t.title, 160) || o.title || "задача", essence: String(t.essence || "").slice(0, 2000), whos, who: whos.find(x => x > 0) || whos[0] || 0, start: /^\d{4}-\d{2}-\d{2}$/.test(t.start || "") ? t.start : "", deadline: /^\d{4}-\d{2}-\d{2}$/.test(t.deadline || "") ? t.deadline : "", stage: sid(t.stage) ? t.stage : "", done: !!t.done, doneBy: t.done ? (Number(t.doneBy) || o.doneBy || 0) : 0, doneAt: t.done ? (o.done ? o.doneAt : Date.now()) : 0, del: !!t.del, by: o.by || Number(t.by) || 0, created: o.created || Date.now(), upd: Number(t.upd) || Date.now(), r1: o.deadline === t.deadline ? (o.r1 || "") : "", r0: o.deadline === t.deadline ? (o.r0 || "") : "", subs: cleanSubs(t.subs !== undefined ? t.subs : o.subs) };
 }
 async function tqMember(env, qid, uid) { return !!(await env.DB.prepare("SELECT 1 AS x FROM tqm WHERE qid = ?1 AND uid = ?2").bind(qid, uid).first()); }
 // владелице приходит копия всего, что ушло другим из-за её действий: видно, что и кому отправилось
@@ -827,10 +831,10 @@ async function tqOp(env, ctx, u, b) {
     const ms = await tqMembers(env, qid);
     const spoke = (await env.DB.prepare("SELECT DISTINCT uid FROM tqc WHERE qid = ?1 AND tid = ?2").bind(qid, tid).all()).results.map(x => x.uid);
     let rec = uniqIds([...whosOf(t), t.by, ...spoke]).filter(x => x > 0 && x !== u.id);
-    if (!rec.length) rec = ms.map(m => m.uid).filter(x => x !== u.id);
-    const msg = "✉️ " + (u.username ? "@" + u.username : u.name) + " говорит в квесте @" + (q.title || "без названия") + ":\n🪷 Суть задачи: " + (t.title || "") + "\n\n" + cut(text, 600);
+    if (!rec.length || tid === "_q") rec = ms.map(m => m.uid).filter(x => x > 0 && x !== u.id);
+    const msg = "✉️ " + (u.username ? "@" + u.username : u.name) + " говорит в квесте @" + (q.title || "без названия") + ":\n" + (tid === "_q" ? "💬 комментарий ко всему квесту" : "🪷 Суть задачи: " + (t.title || "")) + "\n\n" + cut(text, 600);
     later(tqNotifyTo(env, qid, rec, u.id, msg));
-    later(tqLog(env, qid, u.id, "✉️ " + u.name + " в задаче «" + (t.title || "") + "»: " + cut(text, 140), tid, [...whosOf(t), t.by, ...spoke]));
+    later(tqLog(env, qid, u.id, "✉️ " + u.name + (tid === "_q" ? " в квесте: " : " в задаче «" + (t.title || "") + "»: ") + cut(text, 140), tid, [...whosOf(t), t.by, ...spoke]));
     return { list: await tqList(env, u.id) };
   }
   if (op === "nudge") {
