@@ -843,6 +843,7 @@ img.av-bot{background:#D97757}
 .mat-add summary{list-style:none;cursor:pointer;display:inline-flex}
 .mat-add summary::-webkit-details-marker{display:none}
 .mat-add form{margin-top:8px}
+.nu-prev{background:#fff;color:#1b1f2a;border:1px solid rgba(86,104,197,.25);border-radius:16px;padding:10px;max-width:340px;overflow:hidden}.nu-img{display:block;width:100%;border-radius:10px;margin-bottom:8px}.nu-t{font-size:14px;line-height:1.4;overflow-wrap:anywhere}.nu-b{margin-top:8px;text-align:center;font-size:13px;font-weight:600;padding:7px;border-radius:10px;background:rgba(86,104,197,.14);color:#4453a8}
 .qtab-seg{margin-top:12px}
 </style>
 
@@ -2781,15 +2782,29 @@ function tqNudgeSheet(qid,tid){
   const me=TQ.me(),mem=u=>(q.members||[]).find(m=>m.uid===u);
   const who=whosOf(t).filter(u=>u>0&&u!==me).map(mem).filter(Boolean);
   const all=(q.members||[]).filter(m=>m.uid>0&&m.uid!==me);
+  const meM=mem(me);const myName=meM?meM.name:"ты";
+  const names=whosOf(t).map(u=>{const m=mem(u);return m?m.name:""}).filter(Boolean).join(", ")||"пока никто";
+  let IMG="";
   const send=async scope=>{
-    try{const j=await TQ.call("nudge",{qid,tid,scope});closeSheet();toast("напоминание отправлено: "+j.sent+" "+plural(j.sent,"человеку","людям","людям"))}
-    catch(x){const m=String(x.message||"");toast(m==="wait"?"об этой задаче уже напоминали пару минут назад":m==="nobody"?"некому напоминать":m==="offline"?"нет интернета":"не получилось отправить")}
+    const note=(document.getElementById("nuNote")||{value:""}).value.trim();
+    try{const j=await TQ.call("nudge",{qid,tid,scope,note,img:IMG||undefined});closeSheet();toast("напоминание отправлено: "+j.sent+" "+plural(j.sent,"человеку","людям","людям"))}
+    catch(x){const m=String(x.message||"");toast(m==="wait"?"об этой задаче уже напоминали пару минут назад":m==="nobody"?"некому напоминать":m==="offline"?"нет интернета":m==="img"?"картинка не подошла, попробуй другую":"не получилось отправить")}
   };
+  const prev=()=>{const note=(document.getElementById("nuNote")||{value:""}).value.trim();
+    return`${IMG?`<img class="nu-img" src="${esc(IMG)}" alt="мем">`:""}<div class="nu-t">🔔 ${esc(myName)} напоминает о задачке<br><br>🪧 Какой квест: ${esc(q.title)}<br>🪷 Суть задачи: ${esc(t.title)}<br>⌛️ Дедлайн: ${t.deadline?esc(t.deadline.slice(8,10)+"."+t.deadline.slice(5,7)):"без дедлайна"}<br>👥 Ответственные: ${esc(names)}${note?`<br><br>💬 ${esc(myName)} пишет: ${esc(note).replace(/\n/g,"<br>")}`:""}</div><div class="nu-b">открыть квест</div>`};
   sheet(`<div class="sheet-h"><button class="iconbtn" data-act="tqTask" data-q="${esc(qid)}" data-id="${esc(tid)}" aria-label="назад">←</button><h2 style="flex:1;margin-left:8px">напомнить</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
-  <p class="small muted" style="margin:0 0 14px">в телеграм придёт сообщение «твоё имя напоминает о задачке» с названием квеста, сутью и дедлайном.</p>
   <div class="card" style="margin-bottom:12px"><b>${esc(t.title)}</b><div class="small muted">квест «${esc(q.title)}»</div></div>
-  <div class="stack">${who.length?`<button class="btn accent wide" id="nuWho">${IC.bell} ответственным · ${who.map(m=>esc(m.name)).join(", ")}</button>`:`<p class="small muted" style="margin:0">у задачи нет ответственных, кроме тебя: можно напомнить всей команде.</p>`}
+  <div class="field" style="margin-top:0"><label for="nuNote">от себя, если хочешь</label><textarea class="in-text" id="nuNote" maxlength="400" rows="2" placeholder="например: ну что, ты там жива? 👀"></textarea></div>
+  <div class="row" style="gap:8px;margin:4px 0 12px"><label class="btn sm" for="nuImg" style="cursor:pointer">${IC.plus} добавить мем</label><input type="file" id="nuImg" accept="image/*" hidden><button class="btn sm ghost" id="nuImgX" style="display:none">убрать картинку</button></div>
+  <div class="small muted" style="margin-bottom:6px">так это придёт в телеграм</div>
+  <div class="nu-prev" id="nuPrev">${prev()}</div>
+  <div class="stack" style="margin-top:14px">${who.length?`<button class="btn accent wide" id="nuWho">${IC.bell} ответственным · ${who.map(m=>esc(m.name)).join(", ")}</button>`:`<p class="small muted" style="margin:0">у задачи нет ответственных, кроме тебя: можно напомнить всей команде.</p>`}
   ${all.length?`<button class="btn ghost wide" id="nuAll">всей команде · ${all.length}</button>`:""}</div>`,el=>{
+    const draw=()=>{el.querySelector("#nuPrev").innerHTML=prev();el.querySelector("#nuImgX").style.display=IMG?"":"none"};
+    el.querySelector("#nuNote").addEventListener("input",draw);
+    el.querySelector("#nuImg").addEventListener("change",async ev=>{const f=ev.target.files&&ev.target.files[0];ev.target.value="";if(!f)return;
+      try{const u0=await readURL(f);const im=await loadImg(u0);const k=Math.min(1,1000/Math.max(im.naturalWidth,im.naturalHeight));const c=document.createElement("canvas");c.width=Math.round(im.naturalWidth*k);c.height=Math.round(im.naturalHeight*k);const x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);IMG=c.toDataURL("image/jpeg",.82);draw()}catch(e){toast("не получилось открыть картинку")}});
+    el.querySelector("#nuImgX").onclick=()=>{IMG="";draw()};
     const a=el.querySelector("#nuWho");if(a)a.onclick=()=>send("who");
     const b=el.querySelector("#nuAll");if(b)b.onclick=()=>send("all");
   });
@@ -2804,8 +2819,9 @@ function hintSheet(k){const[h,t]=HELP[k];sheet(`<span class="pill">подска�
    как добавить новость: допиши объект в NEWS (приложение) или в news.json рядом с index.html (без выпуска приложения).
    kind: "update" | "news". acts: до двух кнопок {l:"посмотреть"|"протестировать", go:"..."}.
    куда ведёт go: tab:home|path|skills|quests|rewards · path:feed · hint:<ключ из HELP> · add:plan · add:done */
-const APP_V="v79";
+const APP_V="v80";
 const NEWS=[
+  {id:"u80-nudge",date:"2026-10-27",kind:"update",title:"в напоминании можно приложить мем и слова от себя",text:"когда напоминаешь о задаче в команде, можно дописать пару слов и добавить картинку. перед отправкой видно, как сообщение придёт в телеграм.",go:"tab:quests"},
   {id:"u79-materials",date:"2026-10-27",kind:"update",title:"в квестах появились подзадачи и материалы",text:"у задачи можно сделать подзадачи с галочками, а в командном квесте у каждой свой ответственный. у квеста есть вкладка «материалы»: файлы и ссылки, важные мысли, комментарии. этапы убрали, теперь просто задачи. а когда закрываешь квест или задачу, приложение спросит, сделано ли это сегодня.",go:"tab:quests"},
   {id:"u76-nudge",date:"2026-10-23",kind:"update",title:"можно напомнить о задаче в телеграме",text:"открой задачу в командном квесте и нажми «напомнить в телеграме»: ответственным или всей команде придёт сообщение с квестом, сутью задачи и дедлайном.",go:"tab:quests"},
   {id:"u70-events",date:"2026-10-23",kind:"update",title:"бот покажет, что случилось за 48 часов",text:"напиши боту /events или нажми «события за 48 часов» в /menu: можно посмотреть, что менялось в конкретном командном квесте, что было по твоим задачам и какие вышли обновления. ещё у клода в участниках теперь своя аватарка.",go:"tab:quests"},

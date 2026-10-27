@@ -1,7 +1,7 @@
 // бот прокачки: приветствие на /start, напоминания и синхронизация данных приложения между устройствами.
 // токен в секрете BOT_TOKEN, настройки напоминаний в KV USERS, данные приложения в базе D1 (привязка DB).
 const APP = "https://prokachka.pages.dev";
-const BOT_V = "v31"; // версия бота: видно по адресу /v, чтобы проверить, что выложилась свежая
+const BOT_V = "v32"; // версия бота: видно по адресу /v, чтобы проверить, что выложилась свежая
 const OWNER = 424765559; // telegram id владельца: ему приложение показывает статистику
 const HELLO = [
   "о, наконец-то ты тут! рад тебя видеть! скорее жми кнопку, давай превратим жизнь в игру",
@@ -715,6 +715,22 @@ function cleanTask(t, old) {
 }
 async function tqMember(env, qid, uid) { return !!(await env.DB.prepare("SELECT 1 AS x FROM tqm WHERE qid = ?1 AND uid = ?2").bind(qid, uid).first()); }
 // владелице приходит копия всего, что ушло другим из-за её действий: видно, что и кому отправилось
+// картинка из приложения: data-url jpeg/png/webp до ~1,5 МБ -> байты
+function memeBytes(d) {
+  const m = /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+\/=]+)$/.exec(String(d || ""));
+  if (!m || m[2].length > 2000000) return null;
+  try { const bin = atob(m[2]); const a = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i); return { type: m[1], bytes: a }; } catch (e) { return null; }
+}
+async function tqSendPhoto(env, uid, meme, caption, qid) {
+  const fd = new FormData();
+  fd.append("chat_id", String(uid));
+  fd.append("photo", new Blob([meme.bytes], { type: meme.type }), "meme." + meme.type.split("/")[1]);
+  const short = caption.length <= 1000;
+  if (short) { fd.append("caption", caption); fd.append("reply_markup", JSON.stringify(tqBtn(qid))); }
+  const r = await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendPhoto`, { method: "POST", body: fd }).then(x => x.json()).catch(() => ({ ok: false }));
+  if (!short) await tg(env, "sendMessage", { chat_id: uid, text: caption.slice(0, 4000), reply_markup: tqBtn(qid) });
+  return r.ok;
+}
 async function tqEcho(env, qid, from, uids, text) {
   if (from !== OWNER) return;
   const ids = uniqIds(uids).filter(x => x !== from && x > 0);
@@ -851,9 +867,12 @@ async function tqOp(env, ctx, u, b) {
     const rec = uniqIds(all ? ms.map(m => m.uid) : whosOf(t)).filter(x => x > 0 && x !== u.id);
     if (!rec.length) return { error: "nobody" };
     const names = whosOf(t).map(x => memName(ms, x)).filter(Boolean).join(", ");
-    const text = "🔔 " + u.name + " напоминает о задачке\n\n🪧 Какой квест: " + (q.title || "без названия") + "\n🪷 Суть задачи: " + (t.title || "") + "\n⌛️ Дедлайн: " + (t.deadline ? ddmm(t.deadline) : "без дедлайна") + "\n👥 Ответственные: " + (names || "пока никто");
-    for (const uid of rec) await tqSend(env, uid, text, qid);
-    await tqEcho(env, qid, u.id, rec, text);
+    const note = String(b.note || "").trim().slice(0, 400);
+    const meme = b.img ? memeBytes(b.img) : null;
+    if (b.img && !meme) return { error: "img" };
+    const text = "🔔 " + u.name + " напоминает о задачке\n\n🪧 Какой квест: " + (q.title || "без названия") + "\n🪷 Суть задачи: " + (t.title || "") + "\n⌛️ Дедлайн: " + (t.deadline ? ddmm(t.deadline) : "без дедлайна") + "\n👥 Ответственные: " + (names || "пока никто") + (note ? "\n\n💬 " + u.name + " пишет: " + note : "");
+    for (const uid of rec) { if (meme) { if (!await tqSendPhoto(env, uid, meme, text, qid)) await tqSend(env, uid, text, qid); } else await tqSend(env, uid, text, qid); }
+    await tqEcho(env, qid, u.id, rec, text + (meme ? "\n🖼 с картинкой" : ""));
     if (env.USERS) await env.USERS.put(key, "1", { expirationTtl: 120 });
     later(tqLog(env, qid, u.id, "🔔 " + u.name + " " + V("напомнил", "напомнила") + " о задаче «" + (t.title || "") + "»" + (all ? " всей команде" : ""), tid, [...whosOf(t), t.by]));
     return { sent: rec.length };
