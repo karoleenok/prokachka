@@ -1,7 +1,7 @@
 // бот прокачки: приветствие на /start, напоминания и синхронизация данных приложения между устройствами.
 // токен в секрете BOT_TOKEN, настройки напоминаний в KV USERS, данные приложения в базе D1 (привязка DB).
 const APP = "https://prokachka.pages.dev";
-const BOT_V = "v33"; // версия бота: видно по адресу /v, чтобы проверить, что выложилась свежая
+const BOT_V = "v34"; // версия бота: видно по адресу /v, чтобы проверить, что выложилась свежая
 const OWNER = 424765559; // telegram id владельца: ему приложение показывает статистику
 const HELLO = [
   "о, наконец-то ты тут! рад тебя видеть! скорее жми кнопку, давай превратим жизнь в игру",
@@ -700,7 +700,8 @@ const tqSeen = async (env, uid) => { if (env.USERS) await env.USERS.delete("tqn:
 // журнал событий командных квестов: из него бот собирает сводку «за 48 часов». who — связанные с задачей люди, чтобы найти «мои задачи»
 const tqLog = (env, qid, uid, txt, tid, who) => env.DB.prepare("INSERT INTO tqe (qid, ts, uid, tid, who, txt) VALUES (?1, ?2, ?3, ?4, ?5, ?6)").bind(qid, Date.now(), uid, tid || "", who && who.length ? "," + uniqIds(who).join(",") + "," : "", cut(txt, 400)).run();
 const ymd = x => /^\d{4}-\d{2}-\d{2}$/.test(x || "") ? x : "";
-const cleanNotes = a => (Array.isArray(a) ? a : []).slice(0, 40).filter(x => x && sid(x.id) && String(x.t || "").trim()).map(x => ({ id: x.id, t: cut(x.t, 600), d: ymd(x.d), by: cut(x.by || "", 60) }));
+const cleanRe = a => (Array.isArray(a) ? a : []).slice(0, 60).filter(x => x && sid(x.id) && String(x.t || "").trim()).map(x => ({ id: x.id, t: cut(x.t, 600), ts: Number(x.ts) || 0, uid: Number(x.uid) || 0, by: cut(x.by || "", 60) }));
+const cleanNotes = a => (Array.isArray(a) ? a : []).slice(0, 40).filter(x => x && sid(x.id) && String(x.t || "").trim()).map(x => ({ id: x.id, h: cut(x.h || "", 120), t: cut(x.t, 1500), d: ymd(x.d), by: cut(x.by || "", 60), uid: Number(x.uid) || 0, ed: ymd(x.ed), eb: cut(x.eb || "", 60), re: cleanRe(x.re) }));
 const cleanFiles = a => (Array.isArray(a) ? a : []).slice(0, 40).filter(x => x && sid(x.id) && /^https?:\/\//i.test(String(x.u || ""))).map(x => ({ id: x.id, k: "link", t: cut(x.t || x.u, 120), u: String(x.u).slice(0, 500), d: ymd(x.d), by: cut(x.by || "", 60) }));
 const cleanSubs = a => (Array.isArray(a) ? a : []).slice(0, 40).filter(x => x && sid(x.id) && String(x.t || "").trim()).map(x => ({ id: x.id, t: cut(x.t, 160), done: !!x.done, who: Number(x.who) || 0 }));
 function cleanQuest(q, old) {
