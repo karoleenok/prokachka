@@ -1,7 +1,7 @@
 // бот прокачки: приветствие на /start, напоминания и синхронизация данных приложения между устройствами.
 // токен в секрете BOT_TOKEN, настройки напоминаний в KV USERS, данные приложения в базе D1 (привязка DB).
 const APP = "https://prokachka.pages.dev";
-const BOT_V = "v34"; // версия бота: видно по адресу /v, чтобы проверить, что выложилась свежая
+const BOT_V = "v35"; // версия бота: видно по адресу /v, чтобы проверить, что выложилась свежая
 const OWNER = 424765559; // telegram id владельца: ему приложение показывает статистику
 const HELLO = [
   "о, наконец-то ты тут! рад тебя видеть! скорее жми кнопку, давай превратим жизнь в игру",
@@ -799,6 +799,20 @@ async function tqOp(env, ctx, u, b) {
         data.stages.forEach(st => { const os = (old.stages || []).find(x => x.id === st.id); if (!os) ev.push("" + V("добавил", "добавила") + " этап «" + st.title + "»" + (st.deadline ? " до " + ddmm(st.deadline) : "")); else if (!os.done && st.done) ev.push("" + V("закрыл", "закрыла") + " этап «" + st.title + "» ✅"); else if (os.deadline !== st.deadline && st.deadline) ev.push("" + V("перенёс", "перенесла") + " этап «" + st.title + "» на " + ddmm(st.deadline)); });
       }
       if (ev.length) { later(tqNotify(env, q.id, u.id, u.name + " " + ev.join(", ") + "\nквест «" + data.title + "»")); later(tqLog(env, q.id, u.id, "🪧 " + u.name + " " + ev.join(", "))); }
+      // новый тезис в материалах: всем участникам, кроме автора, с кнопкой прямо к тезису
+      if (!q.del) {
+        const fresh = (data.notes || []).filter(n => !(old.notes || []).some(o => o.id === n.id)).slice(0, 3);
+        if (fresh.length) later((async () => {
+          const ms = await tqMembers(env, q.id);
+          const rec = uniqIds(ms.map(m => m.uid)).filter(x => x > 0 && x !== u.id);
+          for (const n of fresh) {
+            const text = ("💡 " + u.name + " " + V("добавил", "добавила") + " тезис в квесте «" + (data.title || "без названия") + "»\n\n" + (n.h ? "📌 " + n.h + "\n" : "") + cut(n.t, 700)).slice(0, 4000);
+            const kb = { inline_keyboard: [[{ text: "открыть тезис", web_app: { url: APP + "#tq=" + q.id + "&n=" + n.id } }]] };
+            for (const uid of rec) await tg(env, "sendMessage", { chat_id: uid, text, reply_markup: kb });
+            await tqLog(env, q.id, u.id, "💡 " + u.name + " " + V("добавил", "добавила") + " тезис" + (n.h ? " «" + n.h + "»" : ""));
+          }
+        })());
+      }
     }
     return { list: await tqList(env, u.id) };
   }

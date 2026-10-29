@@ -856,6 +856,7 @@ img.av-bot{background:#D97757}
 .th-hi{display:block;width:100%;font:inherit;font-weight:700;font-size:15px;border:0;padding:2px 0;color:var(--ink);background:transparent;outline:none}
 .th-ti{display:block;width:100%;font:inherit;font-size:15px;line-height:1.45;border:0;padding:2px 0;margin-top:4px;color:var(--ink);background:transparent;resize:vertical;outline:none}
 .th-hi::placeholder,.th-ti::placeholder{color:var(--muted);font-weight:500}
+.th-flash{box-shadow:0 0 0 3px #5668C5;transition:box-shadow .4s}
 .th-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
 .th-tag{display:inline-block;font-size:11px;font-weight:600;color:var(--accent-t);background:color-mix(in srgb,var(--accent) 14%,transparent);border-radius:6px;padding:2px 6px;margin-bottom:6px}
 .thesis{background:var(--soft);color:#171C24;border-radius:14px;padding:10px 12px;margin-top:8px;display:flex;gap:8px;align-items:flex-start}
@@ -1896,7 +1897,7 @@ function matView(kind,id,mat,edit,cmts,q){
   const nRow=n=>{
     if(edit&&S.noteEdit===n.id)return`<form class="th-f on" data-form="noteSave" data-k="${kind}" data-id="${esc(id)}" data-n="${esc(n.id)}"><span class="th-tag">изменить тезис</span><input class="th-hi" name="h" maxlength="120" placeholder="тема, если нужна" value="${esc(n.h||"")}" aria-label="тема"><textarea class="th-ti" name="t" maxlength="1500" rows="4" aria-label="тезис">${esc(n.t)}</textarea><div class="th-btns"><button class="btn sm ghost" type="button" data-act="noteEdX" data-k="${kind}" data-id="${esc(id)}">отмена</button><button class="btn sm accent" type="submit">сохранить</button></div></form>`;
     const m=who(n.uid,n.by);const re=n.re||[];
-    return`<div class="th"><div class="th-h">${m?avatar(m,22)+`<b>${esc(m.name)}</b>`:""}<span>${m?"· ":""}${n.d?dt(n.d):""}${n.ed?" · изменено":""}</span>${edit?`<span class="th-sp"><button class="th-ib" data-act="noteEd" data-k="${kind}" data-id="${esc(id)}" data-n="${esc(n.id)}" aria-label="изменить тезис">${TH_ED}</button><button class="th-ib" data-act="matDel" data-k="${kind}" data-id="${esc(id)}" data-w="n" data-i="${esc(n.id)}" aria-label="удалить тезис">✕</button></span>`:""}</div>
+    return`<div class="th" data-note="${esc(n.id)}"><div class="th-h">${m?avatar(m,22)+`<b>${esc(m.name)}</b>`:""}<span>${m?"· ":""}${n.d?dt(n.d):""}${n.ed?" · изменено":""}</span>${edit?`<span class="th-sp"><button class="th-ib" data-act="noteEd" data-k="${kind}" data-id="${esc(id)}" data-n="${esc(n.id)}" aria-label="изменить тезис">${TH_ED}</button><button class="th-ib" data-act="matDel" data-k="${kind}" data-id="${esc(id)}" data-w="n" data-i="${esc(n.id)}" aria-label="удалить тезис">✕</button></span>`:""}</div>
     ${n.h?`<div class="th-t">${esc(n.h)}</div>`:""}<div class="th-x">${esc(n.t)}</div>
     ${q&&re.length?`<div class="th-r">${re.map(r=>{const rm=who(r.uid,r.by);return`<div class="th-ri">${avatar(rm,22)}<div class="th-rb"><small><b>${esc(rm.name)}</b> · ${r.ts?tm(r.ts):""}</small>${esc(r.t)}</div></div>`}).join("")}</div>`:""}
     ${q?`<form class="th-in" data-form="noteRe" data-id="${esc(id)}" data-n="${esc(n.id)}"><input name="t" maxlength="600" placeholder="ответить" aria-label="ответить на тезис"><button class="th-send" type="submit" aria-label="отправить ответ">${TH_SEND}</button></form>`:""}</div>`};
@@ -2712,8 +2713,10 @@ async function tqFromLink(){
   if(m){try{history.replaceState(null,"",location.pathname+location.search)}catch(x){}
     try{const j=await TQ.call("join",{code:m[1]});if(j.joined){S.view="quests";render();const q=TQ.q(j.joined);toast(q?"ты в квесте «"+q.title+"»":"ты в квесте");tqSheet(j.joined)}}catch(x){toast("не получилось присоединиться: ссылка устарела или квест закрыли")}
     return}
-  m=/(?:^|&)tq=([\w-]{1,40})/.exec(h);
-  if(m&&TQ.q(m[1])){try{history.replaceState(null,"",location.pathname+location.search)}catch(x){}S.view="quests";render();tqSheet(m[1])}
+  m=/(?:^|&)tq=([\w-]{1,40})/.exec(h);const mn=/(?:^|&)n=([\w-]{1,40})/.exec(h);
+  if(m&&TQ.q(m[1])){try{history.replaceState(null,"",location.pathname+location.search)}catch(x){}S.view="quests";render();
+    if(mn){S.tqTabQ=m[1];S.tqTab="mat"}tqSheet(m[1]);
+    if(mn)setTimeout(()=>{const el=document.querySelector(`#layer [data-note="${CSS.escape(mn[1])}"]`);if(el){el.scrollIntoView({block:"center",behavior:"smooth"});el.classList.add("th-flash");setTimeout(()=>el.classList.remove("th-flash"),2200)}else toast("тезис уже удалили")},350)}
 }
 async function tqDoneFromPlan(ref){
   const q=TQ.q(ref.q);const t=q&&(q.tasks||[]).find(x=>x.id===ref.t);if(!t||t.done)return;
@@ -2851,8 +2854,9 @@ function hintSheet(k){const[h,t]=HELP[k];sheet(`<span class="pill">подска�
    как добавить новость: допиши объект в NEWS (приложение) или в news.json рядом с index.html (без выпуска приложения).
    kind: "update" | "news". acts: до двух кнопок {l:"посмотреть"|"протестировать", go:"..."}.
    куда ведёт go: tab:home|path|skills|quests|rewards · path:feed · hint:<ключ из HELP> · add:plan · add:done */
-const APP_V="v82";
+const APP_V="v83";
 const NEWS=[
+  {id:"u83-thesis-tg",date:"2026-10-29",kind:"update",title:"о новом тезисе команда узнает в телеграме",text:"когда кто-то добавляет тезис в материалы командного квеста, остальным участникам приходит сообщение с темой и текстом. кнопка «открыть тезис» ведёт прямо к нему.",go:"tab:quests"},
   {id:"u82-thesis",date:"2026-10-29",kind:"update",title:"у тезисов появились тема, правка и ответы",text:"в «материалах» квеста у тезиса можно указать тему, она выделится жирным. тезис можно изменить после отправки, а в командном квесте на него можно ответить: видно, кто и когда написал.",go:"tab:quests"},
   {id:"u81-src",date:"2026-10-29",kind:"update",title:"на главной видно, из какого квеста задача",text:"если поставить задачу квеста на день, в «на сегодня» под ней появится цветная плашка с названием квеста и сколько уже сделано. нажми на плашку, и откроется сам квест.",go:"tab:home"},
   {id:"u80-nudge",date:"2026-10-27",kind:"update",title:"в напоминании можно приложить мем и слова от себя",text:"когда напоминаешь о задаче в команде, можно дописать пару слов и добавить картинку. перед отправкой видно, как сообщение придёт в телеграм.",go:"tab:quests"},
