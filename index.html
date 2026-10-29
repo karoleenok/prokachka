@@ -182,6 +182,12 @@ button{cursor:pointer;border:0;background:none;-webkit-tap-highlight-color:trans
 .tk.done .t{text-decoration:line-through;opacity:.55}
 .tk .tkb{min-width:0;flex:1;cursor:pointer}.tk .t{font-weight:500;font-size:15px;overflow-wrap:anywhere}.tk .m{font-size:12px;color:var(--muted);margin-top:2px}
 .tk .xp{font-size:12px;color:var(--muted);white-space:nowrap}
+.src-m{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:5px}
+.src-chip{display:inline-flex;align-items:center;gap:5px;max-width:100%;padding:3px 9px 3px 8px;border-radius:999px;border:0;cursor:pointer;font:inherit;font-size:12px;font-weight:600;background:color-mix(in srgb,var(--qc) 16%,transparent);color:color-mix(in srgb,var(--qc) 72%,var(--ink))}
+.src-chip svg{flex:none}.src-n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:170px}.src-c{white-space:nowrap;font-weight:500;opacity:.85}
+.src-who{display:inline-flex;align-items:center;gap:5px}.src-s{display:inline-flex;align-items:center;gap:3px}
+.tk.done .src-chip{opacity:.6}
+
 .warnrow{display:flex;align-items:center;gap:10px;background:var(--chip);border-radius:12px;padding:9px 12px;margin-top:12px;font-size:13px}
 .warnrow button{margin-left:auto;border:0;background:var(--accent);color:#fff;border-radius:999px;padding:6px 12px;font:inherit;font-size:12px;font-weight:600;cursor:pointer}
 .pl-h{display:flex;justify-content:space-between;align-items:baseline;margin-top:14px}.pl-h b{font-size:15px}.pl-h span{font-size:12px;color:var(--muted)}
@@ -2819,8 +2825,9 @@ function hintSheet(k){const[h,t]=HELP[k];sheet(`<span class="pill">подска�
    как добавить новость: допиши объект в NEWS (приложение) или в news.json рядом с index.html (без выпуска приложения).
    kind: "update" | "news". acts: до двух кнопок {l:"посмотреть"|"протестировать", go:"..."}.
    куда ведёт go: tab:home|path|skills|quests|rewards · path:feed · hint:<ключ из HELP> · add:plan · add:done */
-const APP_V="v80";
+const APP_V="v81";
 const NEWS=[
+  {id:"u81-src",date:"2026-10-29",kind:"update",title:"на главной видно, из какого квеста задача",text:"если поставить задачу квеста на день, в «на сегодня» под ней появится цветная плашка с названием квеста и сколько уже сделано. нажми на плашку, и откроется сам квест.",go:"tab:home"},
   {id:"u80-nudge",date:"2026-10-27",kind:"update",title:"в напоминании можно приложить мем и слова от себя",text:"когда напоминаешь о задаче в команде, можно дописать пару слов и добавить картинку. перед отправкой видно, как сообщение придёт в телеграм.",go:"tab:quests"},
   {id:"u79-materials",date:"2026-10-27",kind:"update",title:"в квестах появились подзадачи и материалы",text:"у задачи можно сделать подзадачи с галочками, а в командном квесте у каждой свой ответственный. у квеста есть вкладка «материалы»: файлы и ссылки, важные мысли, комментарии. этапы убрали, теперь просто задачи. а когда закрываешь квест или задачу, приложение спросит, сделано ли это сегодня.",go:"tab:quests"},
   {id:"u76-nudge",date:"2026-10-23",kind:"update",title:"можно напомнить о задаче в телеграме",text:"открой задачу в командном квесте и нажми «напомнить в телеграме»: ответственным или всей команде придёт сообщение с квестом, сутью задачи и дедлайном.",go:"tab:quests"},
@@ -3135,9 +3142,24 @@ const wkStart=d=>addDays(d,-((parseD(d).getDay()+6)%7));
 const dayShort=d=>WD[parseD(d).getDay()]+" "+parseD(d).getDate();
 const dayFull=d=>{const x=parseD(d);return WDF[x.getDay()]+", "+x.getDate()+" "+MON[x.getMonth()]};
 const dayWord=d=>d===today()?"сегодня":d===addDays(today(),1)?"завтра":dayShort(d);
+/* откуда задача на день: личный квест (qref) или командный (tref). цвет квеста стабильный, от id */
+const SRC_U='<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.3 3.3-5.5 6.5-5.5s5.9 2.2 6.5 5.5"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.8c1.9.7 3.2 2.6 3.5 5.2"/></svg>';
+const SRC_F='<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg>';
+const SRC_L='<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6l2 2 3-3M4 13l2 2 3-3M12 7h8M12 14h8M12 20h8"/></svg>';
+const srcColor=id=>{let h=0;for(const ch of String(id||""))h=(h*31+ch.charCodeAt(0))>>>0;return AVC[h%AVC.length]};
+function planSrc(e){
+  if(e.qref){const c=(S.profile.challenges||[]).find(x=>x.id===e.qref.c);if(!c)return null;const ss=c.steps||[];const st=ss.find(x=>x.id===e.qref.s);
+    return{n:c.title,ic:SRC_F,col:srcColor(c.id),cnt:ss.length?ss.filter(x=>x.done).length+" из "+ss.length:"",subs:st?subsCount(st):"",who:"",act:`data-act="qInfo" data-id="${esc(c.id)}"`,lbl:"мой квест"}}
+  if(e.tref){const q=TQ.q(e.tref.q);const nm=q?q.title:((String(e.note||"").match(/«(.+)»/)||[])[1]||"командный квест");
+    const t=q&&(q.tasks||[]).find(x=>x.id===e.tref.t);const p=q?tqProgress(q):null;
+    const ws=t?whosOf(t).filter(u=>u>0&&u!==TQ.me()).map(u=>(q.members||[]).find(m=>m.uid===u)).filter(Boolean):[];
+    return{n:nm,ic:SRC_U,col:srcColor(e.tref.q),cnt:p&&p.all?p.dn+" из "+p.all:"",subs:t?subsCount(t):"",who:ws.length?`<span class="src-who">${avatar(ws[0],16)}${esc(ws[0].name)}${ws.length>1?" +"+(ws.length-1):""}</span>`:"",act:`data-act="tqOpen" data-id="${esc(e.tref.q)}"`,lbl:"командный квест"}}
+  return null;
+}
+const srcLine=(r,od,e)=>`<div class="m src-m"><button class="src-chip" ${r.act} style="--qc:${r.col}" aria-label="${esc(r.lbl)} «${esc(r.n)}», открыть">${r.ic}<span class="src-n">${esc(String(r.n).split(/\s*[:—–]\s*/)[0]||r.n)}</span>${r.cnt?`<span class="src-c">· ${r.cnt}</span>`:""}</button>${r.who}${r.subs?`<span class="src-s">${SRC_L} ${r.subs.replace("/"," из ")}</span>`:""}${od?`<span>с ${fmtD(e.date)}</span>`:""}</div>`;
 function planRow(e){
-  const x=xpOf(e);const sk=skillById(e.primary);const od=e.date<today();
-  return`<div class="tk"><button class="cb" data-act="markDone" data-id="${e.id}" aria-label="отметить: сделал{а|}"></button><div class="tkb" data-act="editEntry" data-id="${e.id}"><div class="t">${esc(e.title)}</div><div class="m">${sk?`<span class="m-sph">${sphIc(sphereOf(sk),12)}</span>`:""}${esc(sk?sk.name:"")}${od?" · с "+fmtD(e.date):""}</div></div><div class="xp num">+${x} xp</div></div>`;
+  const x=xpOf(e);const sk=skillById(e.primary);const od=e.date<today();const src=planSrc(e);
+  return`<div class="tk"><button class="cb" data-act="markDone" data-id="${e.id}" aria-label="отметить: сделал{а|}"></button><div class="tkb" data-act="editEntry" data-id="${e.id}"><div class="t">${esc(e.title)}</div>${src?srcLine(src,od,e):`<div class="m">${sk?`<span class="m-sph">${sphIc(sphereOf(sk),12)}</span>`:""}${esc(sk?sk.name:"")}${od?" · с "+fmtD(e.date):""}</div>`}</div><div class="xp num">+${x} xp</div></div>`;
 }
 function doneRow(e){
   const sk=skillById(e.primary);
