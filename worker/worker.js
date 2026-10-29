@@ -1,7 +1,7 @@
 // бот прокачки: приветствие на /start, напоминания и синхронизация данных приложения между устройствами.
 // токен в секрете BOT_TOKEN, настройки напоминаний в KV USERS, данные приложения в базе D1 (привязка DB).
 const APP = "https://prokachka.pages.dev";
-const BOT_V = "v39"; // версия бота: видно по адресу /v, чтобы проверить, что выложилась свежая
+const BOT_V = "v40"; // версия бота: видно по адресу /v, чтобы проверить, что выложилась свежая
 const OWNER = 424765559; // telegram id владельца: ему приложение показывает статистику
 const HELLO = [
   "о, наконец-то ты тут! рад тебя видеть! скорее жми кнопку, давай превратим жизнь в игру",
@@ -664,6 +664,11 @@ const verifyKb = { inline_keyboard: [[{ text: "✅ синхронизирова�
 const rnd = n => [...crypto.getRandomValues(new Uint8Array(n))].map(b => "abcdefghijkmnpqrstuvwxyz23456789"[b % 32]).join("");
 const pj = t => { try { return JSON.parse(t); } catch (e) { return null; } };
 const ddmm = d => /^\d{4}-\d{2}-\d{2}$/.test(d || "") ? d.slice(8, 10) + "." + d.slice(5, 7) : "";
+const h = s => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+const MON3 = ["янв", "фев", "мар", "апр", "мая", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"];
+const dmon = d => /^\d{4}-\d{2}-\d{2}$/.test(d || "") ? Number(d.slice(8, 10)) + " " + MON3[Number(d.slice(5, 7)) - 1] : "";
+const pbar = (dn, all) => { const n = Math.min(all, 10) || 1, f = Math.round(dn / (all || 1) * n); return "▰".repeat(f) + "▱".repeat(n - f); };
+const tqBtnT = (qid, tid, label) => ({ inline_keyboard: [[{ text: label || "открыть задачу", web_app: { url: APP + "#tq=" + qid + (tid && tid !== "_q" ? "&t=" + tid : "") } }]] });
 const tqBtn = qid => ({ inline_keyboard: [[{ text: "открыть квест", web_app: { url: APP + "#tq=" + qid } }]] });
 // клод — участник-помощник: ему можно поручать задачи, но уведомления в телеграм ему не уходят
 const CLAUDE_UID = -1, CLAUDE_NAME = "клод";
@@ -677,55 +682,59 @@ const tqMembers = async (env, qid) => (await env.DB.prepare("SELECT uid, name FR
 // первые три уже отправленных удаляем, дальше один и тот же пост тихо обновляется. line — короткая строка для сводки
 const TQ_FOLD_KB = { inline_keyboard: [[{ text: "открыть", callback_data: "tqb:open" }]] };
 const pl3 = (n, a, b, c) => { const m = n % 10, h = n % 100; return m === 1 && h !== 11 ? a : m >= 2 && m <= 4 && (h < 12 || h > 14) ? b : c; };
-function tqFoldText(h) {
-  const k = h.items.length, qs = new Set(h.items.map(i => i.q)).size;
-  return (qs > 1 ? "оп-оп, твои сокомандники активничают в квестах и завесили всю доску объявлений 📌" : "оп-оп, твой сокомандник активничает внутри квеста и завесил всю доску объявлений 📌") +
-    "\n\nза последний час накопилось " + k + " " + pl3(k, "обновление", "обновления", "обновлений") + ". хочешь посмотреть новости?";
+function tqFoldText(hh) {
+  const k = hh.items.length, qs = new Set(hh.items.map(i => i.q)).size;
+  const qt = hh.items[hh.items.length - 1].qt || "";
+  return "<b>📌 " + (qs > 1 ? "оп-оп, твои сокомандники активничают в квестах и завесили всю доску объявлений" : "оп-оп, твой сокомандник активничает внутри квеста и завесил всю доску объявлений") + "</b>\n\n" +
+    "за последний час — " + k + " " + pl3(k, "обновление", "обновления", "обновлений") + (qs > 1 ? " в " + qs + " " + pl3(qs, "квесте", "квестах", "квестах") : qt ? " в «" + h(qt) + "»" : "") + ". хочешь посмотреть новости?";
 }
-async function tqSend(env, uid, text, qid, line, kb) {
+async function tqSend(env, uid, text, qid, line, kb, qtitle) {
   if (!(uid > 0)) return;
   text = text.slice(0, 4000); kb = kb || tqBtn(qid);
-  if (!env.USERS) { await tg(env, "sendMessage", { chat_id: uid, text, reply_markup: kb }); return; }
+  if (!env.USERS) { await tg(env, "sendMessage", { chat_id: uid, text, parse_mode: "HTML", reply_markup: kb }); return; }
   const key = "tqh:" + uid, now = Date.now();
-  let h = await env.USERS.get(key, "json");
-  if (!h || now - (h.s || 0) > 3600000) h = { s: now, n: 0, ids: [], items: [], sum: 0 };
-  h.n++;
-  h.items.push({ q: qid, l: cut(line || text.split("\n").find(x => x.trim()) || "", 180) });
-  if (h.items.length > 80) h.items = h.items.slice(-80);
-  if (h.n <= 3) {
-    const r = await tg(env, "sendMessage", { chat_id: uid, text, reply_markup: kb });
-    if (r.ok && r.result) h.ids.push(r.result.message_id);
+  let st = await env.USERS.get(key, "json");
+  if (!st || now - (st.s || 0) > 3600000) st = { s: now, n: 0, ids: [], items: [], sum: 0 };
+  st.n++;
+  st.items.push({ q: qid, qt: cut(qtitle || "", 80), l: cut(line || text.replace(/<[^>]+>/g, "").split("\n").find(x => x.trim()) || "", 180) });
+  if (st.items.length > 80) st.items = st.items.slice(-80);
+  if (st.n <= 2) {
+    const r = await tg(env, "sendMessage", { chat_id: uid, text, parse_mode: "HTML", reply_markup: kb });
+    if (r.ok && r.result) st.ids.push(r.result.message_id);
   } else {
-    for (const id of h.ids) await tg(env, "deleteMessage", { chat_id: uid, message_id: id });
-    h.ids = [];
-    const body = { chat_id: uid, text: tqFoldText(h), reply_markup: TQ_FOLD_KB };
-    if (h.sum) { const r = await tg(env, "editMessageText", Object.assign({ message_id: h.sum }, body)); if (!r.ok && !/not modified/.test(r.description || "")) h.sum = 0; }
-    if (!h.sum) { const r = await tg(env, "sendMessage", body); if (r.ok && r.result) h.sum = r.result.message_id; }
+    for (const id of st.ids) await tg(env, "deleteMessage", { chat_id: uid, message_id: id });
+    st.ids = [];
+    const body = { chat_id: uid, text: tqFoldText(st), parse_mode: "HTML", reply_markup: TQ_FOLD_KB };
+    if (st.sum) { const r = await tg(env, "editMessageText", Object.assign({ message_id: st.sum }, body)); if (!r.ok && !/not modified/.test(r.description || "")) st.sum = 0; }
+    if (!st.sum) { const r = await tg(env, "sendMessage", body); if (r.ok && r.result) st.sum = r.result.message_id; }
   }
-  await env.USERS.put(key, JSON.stringify(h), { expirationTtl: 7200 });
+  await env.USERS.put(key, JSON.stringify(st), { expirationTtl: 7200 });
 }
 // нажали «открыть» в свёрнутом посте: присылаем сводку по квестам нумерованным списком
 async function tqFoldOpen(env, uid, chat, mid) {
   const key = "tqh:" + uid;
-  const h = await env.USERS.get(key, "json");
-  if (!h || !h.items || !h.items.length) { await tg(env, "editMessageText", { chat_id: chat, message_id: mid, text: "новостей больше нет: всё уже прочитано" }); return; }
-  const by = new Map(); h.items.forEach(it => { if (!by.has(it.q)) by.set(it.q, []); by.get(it.q).push(it.l); });
-  const L = ["🗞 новости из квестов за последний час", ""], btn = [];
+  const st = await env.USERS.get(key, "json");
+  if (!st || !st.items || !st.items.length) { await tg(env, "editMessageText", { chat_id: chat, message_id: mid, text: "новостей больше нет: всё уже прочитано" }); return; }
+  const by = new Map(); st.items.forEach(it => { if (!by.has(it.q)) by.set(it.q, []); by.get(it.q).push(it.l); });
+  const total = st.items.length;
+  const L = ["<b>🗞 новости за час</b>", "<i>" + total + " " + pl3(total, "обновление", "обновления", "обновлений") + " · " + by.size + " " + pl3(by.size, "квест", "квеста", "квестов") + "</i>", ""], btn = [];
   for (const [qid, ls] of by) {
     let qt = "квест"; try { const qr = env.DB ? await env.DB.prepare("SELECT data FROM tq WHERE id = ?1").bind(qid).first() : null; qt = (pj(qr && qr.data) || {}).title || "квест"; } catch (e) {}
-    L.push("🪧 «" + qt + "»");
+    L.push("<b>🪧 " + h(qt) + "</b>");
     const seen = []; ls.forEach(l => { const x = seen.find(s => s.l === l); if (x) x.n++; else seen.push({ l, n: 1 }); });
-    seen.forEach((s, i) => L.push((i + 1) + ". " + s.l + (s.n > 1 ? " (×" + s.n + ")" : "")));
-    L.push("");
+    const cap = by.size > 2 ? 8 : 15;
+    L.push("<blockquote expandable>" + seen.slice(0, cap).map((s, i) => (i + 1) + ". " + h(cut(s.l, 140)) + (s.n > 1 ? " (×" + s.n + ")" : "")).join("\n") + (seen.length > cap ? "\n…и ещё " + (seen.length - cap) : "") + "</blockquote>");
     if (btn.length < 4) btn.push([{ text: "открыть «" + cut(qt, 28) + "»", web_app: { url: APP + "#tq=" + qid } }]);
   }
   await tg(env, "deleteMessage", { chat_id: chat, message_id: mid });
-  await tg(env, "sendMessage", { chat_id: chat, text: L.join("\n").trim().slice(0, 4000), reply_markup: { inline_keyboard: btn } });
-  h.items = []; h.sum = 0; h.ids = [];
-  await env.USERS.put(key, JSON.stringify(h), { expirationTtl: 7200 });
+  let txt = L.join("\n").trim();
+  while (txt.length > 4000 && L.length > 4) { L.splice(L.length - 2, 2); txt = L.join("\n").trim() + "\n…"; }
+  await tg(env, "sendMessage", { chat_id: chat, text: txt, parse_mode: "HTML", reply_markup: { inline_keyboard: btn } });
+  st.items = []; st.sum = 0; st.ids = [];
+  await env.USERS.put(key, JSON.stringify(st), { expirationTtl: 7200 });
 }
 // человек открыл приложение: копилку новых задач начинаем заново
-const tqSeen = async (env, uid) => { if (env.USERS) { await env.USERS.delete("tqn:" + uid); await env.USERS.delete("tqh:" + uid); } };
+const tqSeen = async (env, uid) => { if (env.USERS) await env.USERS.delete("tqn:" + uid); };
 // журнал событий командных квестов: из него бот собирает сводку «за 48 часов». who — связанные с задачей люди, чтобы найти «мои задачи»
 const tqLog = (env, qid, uid, txt, tid, who) => env.DB.prepare("INSERT INTO tqe (qid, ts, uid, tid, who, txt) VALUES (?1, ?2, ?3, ?4, ?5, ?6)").bind(qid, Date.now(), uid, tid || "", who && who.length ? "," + uniqIds(who).join(",") + "," : "", cut(txt, 400)).run();
 const ymd = x => /^\d{4}-\d{2}-\d{2}$/.test(x || "") ? x : "";
@@ -751,35 +760,36 @@ function memeBytes(d) {
   if (!m || m[2].length > 2000000) return null;
   try { const bin = atob(m[2]); const a = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i); return { type: m[1], bytes: a }; } catch (e) { return null; }
 }
-async function tqSendPhoto(env, uid, meme, caption, qid) {
+async function tqSendPhoto(env, uid, meme, caption, qid, kb) {
+  kb = kb || tqBtn(qid);
   const fd = new FormData();
   fd.append("chat_id", String(uid));
   fd.append("photo", new Blob([meme.bytes], { type: meme.type }), "meme." + meme.type.split("/")[1]);
   const short = caption.length <= 1000;
-  if (short) { fd.append("caption", caption); fd.append("reply_markup", JSON.stringify(tqBtn(qid))); }
+  if (short) { fd.append("caption", caption); fd.append("parse_mode", "HTML"); fd.append("reply_markup", JSON.stringify(kb)); }
   const r = await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendPhoto`, { method: "POST", body: fd }).then(x => x.json()).catch(() => ({ ok: false }));
-  if (!short) await tg(env, "sendMessage", { chat_id: uid, text: caption.slice(0, 4000), reply_markup: tqBtn(qid) });
+  if (!short) await tg(env, "sendMessage", { chat_id: uid, text: caption.slice(0, 4000), parse_mode: "HTML", reply_markup: kb });
   return r.ok;
 }
-async function tqEcho(env, qid, from, uids, text, meme, line) {
+async function tqEcho(env, qid, from, uids, text, meme, line, kb, qtitle) {
   if (from !== OWNER) return;
   const ids = uniqIds(uids).filter(x => x !== from && x > 0);
   if (!ids.length) return;
   const ms = await tqMembers(env, qid);
   const names = ids.map(x => memName(ms, x) || "участник").join(", ");
-  const msg = "📤 ушло: " + names + "\n\n" + text;
-  if (meme && await tqSendPhoto(env, from, meme, msg, qid)) return;
-  await tqSend(env, from, msg, qid, "📤 ушло (" + names + "): " + (line || text.split("\n").find(x => x.trim()) || ""));
+  const msg = text + "\n\n<i>📤 ушло: " + h(names) + "</i>";
+  if (meme && await tqSendPhoto(env, from, meme, msg, qid, kb)) return;
+  await tqSend(env, from, msg, qid, "📤 " + (line || text.replace(/<[^>]+>/g, "").split("\n").find(x => x.trim()) || "") + " → " + names, kb, qtitle);
 }
-async function tqNotify(env, qid, exceptUid, text, line) {
+async function tqNotify(env, qid, exceptUid, text, line, qtitle) {
   const ms = (await env.DB.prepare("SELECT uid FROM tqm WHERE qid = ?1").bind(qid).all()).results;
-  for (const m of ms) if (m.uid !== exceptUid) await tqSend(env, m.uid, text, qid, line);
-  await tqEcho(env, qid, exceptUid, ms.map(m => m.uid), text, null, line);
+  for (const m of ms) if (m.uid !== exceptUid) await tqSend(env, m.uid, text, qid, line, null, qtitle);
+  await tqEcho(env, qid, exceptUid, ms.map(m => m.uid), text, null, line, null, qtitle);
 }
 // уведомление только тем, кто связан с задачей: ответственные, автор, участники обсуждения
-async function tqNotifyTo(env, qid, uids, exceptUid, text, line) {
-  for (const uid of uniqIds(uids)) if (uid !== exceptUid) await tqSend(env, uid, text, qid, line);
-  await tqEcho(env, qid, exceptUid, uids, text, null, line);
+async function tqNotifyTo(env, qid, uids, exceptUid, text, line, kb, qtitle) {
+  for (const uid of uniqIds(uids)) if (uid !== exceptUid) await tqSend(env, uid, text, qid, line, kb, qtitle);
+  await tqEcho(env, qid, exceptUid, uids, text, null, line, kb, qtitle);
 }
 async function tqList(env, uid) {
   const qs = (await env.DB.prepare("SELECT q.id, q.code, q.owner, q.data FROM tq q JOIN tqm m ON m.qid = q.id WHERE m.uid = ?1").bind(uid).all()).results;
@@ -827,7 +837,7 @@ async function tqOp(env, ctx, u, b) {
         if (old.deadline !== data.deadline && data.deadline) ev.push("" + V("поставил", "поставила") + " дедлайн квеста: " + ddmm(data.deadline));
         data.stages.forEach(st => { const os = (old.stages || []).find(x => x.id === st.id); if (!os) ev.push("" + V("добавил", "добавила") + " этап «" + st.title + "»" + (st.deadline ? " до " + ddmm(st.deadline) : "")); else if (!os.done && st.done) ev.push("" + V("закрыл", "закрыла") + " этап «" + st.title + "» ✅"); else if (os.deadline !== st.deadline && st.deadline) ev.push("" + V("перенёс", "перенесла") + " этап «" + st.title + "» на " + ddmm(st.deadline)); });
       }
-      if (ev.length) { later(tqNotify(env, q.id, u.id, u.name + " " + ev.join(", ") + "\nквест «" + data.title + "»", "🪧 " + u.name + " " + ev.join(", "))); later(tqLog(env, q.id, u.id, "🪧 " + u.name + " " + ev.join(", "))); }
+      if (ev.length) { later(tqNotify(env, q.id, u.id, "<b>🪧 " + h(u.name + " " + ev.join(", ")) + "</b>\n<i>" + h(data.title) + "</i>", "🪧 " + u.name + " " + ev.join(", "), data.title)); later(tqLog(env, q.id, u.id, "🪧 " + u.name + " " + ev.join(", "))); }
       // новый тезис в материалах: всем участникам, кроме автора, с кнопкой прямо к тезису
       if (!q.del) {
         const fresh = (data.notes || []).filter(n => !(old.notes || []).some(o => o.id === n.id)).slice(0, 3);
@@ -835,9 +845,9 @@ async function tqOp(env, ctx, u, b) {
           const ms = await tqMembers(env, q.id);
           const rec = uniqIds(ms.map(m => m.uid)).filter(x => x > 0); // автору тоже: так видно, что ушло команде
           for (const n of fresh) {
-            const text = ("💡 " + u.name + " " + V("добавил", "добавила") + " тезис в квесте «" + (data.title || "без названия") + "»\n\n" + (n.h ? "✏️ " + n.h + "\n" : "") + cut(n.t, 700)).slice(0, 4000);
+            const text = "<b>💡 " + h(u.name) + " " + V("добавил", "добавила") + " тезис</b>\n<i>" + h(data.title || "без названия") + "</i>\n\n" + (n.h ? "<b>✏️ " + h(n.h) + "</b>\n" : "") + "<blockquote expandable>" + h(String(n.t).slice(0, 1500)) + "</blockquote>";
             const kb = { inline_keyboard: [[{ text: "открыть тезис", web_app: { url: APP + "#tq=" + q.id + "&n=" + n.id } }]] };
-            for (const uid of rec) await tqSend(env, uid, text, q.id, "💡 " + u.name + " " + V("добавил", "добавила") + " тезис" + (n.h ? " «" + n.h + "»" : ": " + cut(n.t, 80)), kb);
+            for (const uid of rec) await tqSend(env, uid, text, q.id, "💡 " + u.name + " " + V("добавил", "добавила") + " тезис" + (n.h ? " «" + n.h + "»" : ": " + cut(n.t, 80)), kb, data.title);
             await tqLog(env, q.id, u.id, "💡 " + u.name + " " + V("добавил", "добавила") + " тезис" + (n.h ? " «" + n.h + "»" : ""));
           }
         })());
@@ -860,28 +870,25 @@ async function tqOp(env, ctx, u, b) {
     const dn = all.filter(x => x.done).length;
     const ms = await tqMembers(env, qid);
     const names = ids => ids.map(x => memName(ms, x)).filter(Boolean).join(", ");
-    // карточка задачи: кто поставил, суть, дедлайн, ответственные — каждое своей строкой
-    const card = tail => ["🪧 Какой квест: " + (q.title || "без названия"),
-      "🪷 Суть задачи: " + data.title,
-      "👤 Поставил(а): " + (memName(ms, data.by) || u.name),
-      "⌛️ Дедлайн: " + (data.deadline ? ddmm(data.deadline) : "без дедлайна"),
-      "👥 Ответственные: " + (names(data.whos) || "пока никто")].join("\n") + (tail ? "\n\n" + tail : "");
+    // карточка задачи: действие жирным, квест курсивом, суть в цитате, дедлайн и ответственные одной строкой
+    const card = (hd, tail) => "<b>" + h(hd) + "</b>\n<i>" + h(q.title || "без названия") + "</i>\n<blockquote>" + h(data.title) + "</blockquote>\n" +
+      (data.deadline ? "⌛️ до " + dmon(data.deadline) : "⌛️ без дедлайна") + "  ·  👥 " + h(names(data.whos) || "пока никто") + (tail ? "\n" + tail : "");
     const was = old ? whosOf(old) : [];
     let head = "";
-    if (!old) head = "➕ новая задача";
+    if (!old) head = "➕ " + u.name + " " + V("поставил", "поставила") + " задачу";
     else if (data.del && !old.del) head = "🗑 " + u.name + " " + V("удалил", "удалила") + " задачу";
     else if (data.done && !old.done) head = "✅ " + u.name + " " + V("закрыл", "закрыла") + " задачу";
     else if (!data.done && old.done) head = "↩️ " + u.name + " " + V("вернул", "вернула") + " задачу в работу";
     else if (data.whos.join() !== was.join()) head = "👥 " + u.name + " " + V("поменял", "поменяла") + " ответственных";
     else if (data.deadline !== old.deadline) head = "⌛️ " + u.name + " " + V("поменял", "поменяла") + " дедлайн";
     else if (data.title !== old.title || data.essence !== old.essence) head = "✏️ " + u.name + " " + V("изменил", "изменила") + " задачу";
-    const logLine = head ? (old ? head : "➕ " + u.name + " " + V("добавил", "добавила") + " задачу") + " «" + data.title + "»" + (head.startsWith("⌛️") && data.deadline ? " на " + ddmm(data.deadline) : "") + (head.startsWith("👥") ? ": " + (names(data.whos) || "никто") : "") : "";
+    const logLine = head ? head + " «" + data.title + "»" + (head.startsWith("⌛️") && data.deadline ? " на " + ddmm(data.deadline) : "") + (head.startsWith("👥") ? ": " + (names(data.whos) || "никто") : "") : "";
     if (head) later(tqLog(env, qid, u.id, logLine, data.id, [...data.whos, ...was, data.by]));
     if (head) {
-      const tail = (data.done && !old.done) ? "готово " + dn + " из " + all.length : "";
+      const tail = (data.done && !(old && old.done)) ? "готово " + dn + " из " + all.length + "  ·  " + pbar(dn, all.length) : "";
       let rec = uniqIds([...data.whos, ...was, data.by]).filter(x => x > 0 && x !== u.id);
       if (!rec.length && !data.whos.filter(x => x > 0).length) rec = ms.map(m => m.uid).filter(x => x !== u.id);
-      later(tqNotifyTo(env, qid, rec, u.id, head + "\n\n" + card(tail), logLine + (tail ? " · " + tail : "")));
+      later(tqNotifyTo(env, qid, rec, u.id, card(head, tail), logLine + (data.done && !(old && old.done) ? " · готово " + dn + " из " + all.length : ""), data.del ? tqBtn(qid) : tqBtnT(qid, data.id), q.title));
     }
     return { list: await tqList(env, u.id) };
   }
@@ -895,8 +902,8 @@ async function tqOp(env, ctx, u, b) {
     const spoke = (await env.DB.prepare("SELECT DISTINCT uid FROM tqc WHERE qid = ?1 AND tid = ?2").bind(qid, tid).all()).results.map(x => x.uid);
     let rec = uniqIds([...whosOf(t), t.by, ...spoke]).filter(x => x > 0 && x !== u.id);
     if (!rec.length || tid === "_q") rec = ms.map(m => m.uid).filter(x => x > 0 && x !== u.id);
-    const msg = "✉️ " + (u.username ? "@" + u.username : u.name) + " говорит в квесте @" + (q.title || "без названия") + ":\n" + (tid === "_q" ? "💬 комментарий ко всему квесту" : "🪷 Суть задачи: " + (t.title || "")) + "\n\n" + cut(text, 600);
-    later(tqNotifyTo(env, qid, rec, u.id, msg, "✉️ " + u.name + (tid === "_q" ? ": " : " в задаче «" + (t.title || "") + "»: ") + cut(text, 120)));
+    const msg = "<b>💬 " + h(u.name) + " " + V("написал", "написала") + "</b>\n<i>" + h(q.title || "без названия") + " · " + (tid === "_q" ? "комментарий к квесту" : "задача «" + h(t.title || "") + "»") + "</i>\n<blockquote expandable>" + h(String(text).slice(0, 1500)) + "</blockquote>";
+    later(tqNotifyTo(env, qid, rec, u.id, msg, "💬 " + u.name + (tid === "_q" ? ": " : " в задаче «" + (t.title || "") + "»: ") + cut(text, 120), tqBtnT(qid, tid, "ответить в прокачке"), q.title));
     later(tqLog(env, qid, u.id, "✉️ " + u.name + (tid === "_q" ? " в квесте: " : " в задаче «" + (t.title || "") + "»: ") + cut(text, 140), tid, [...whosOf(t), t.by, ...spoke]));
     return { list: await tqList(env, u.id) };
   }
@@ -917,9 +924,10 @@ async function tqOp(env, ctx, u, b) {
     const note = String(b.note || "").trim().slice(0, 400);
     const meme = b.img ? memeBytes(b.img) : null;
     if (b.img && !meme) return { error: "img" };
-    const text = "🔔 " + u.name + " напоминает о задачке\n\n🪧 Какой квест: " + (q.title || "без названия") + "\n🪷 Суть задачи: " + (t.title || "") + "\n⌛️ Дедлайн: " + (t.deadline ? ddmm(t.deadline) : "без дедлайна") + "\n👥 Ответственные: " + (names || "пока никто") + (note ? "\n\n💬 " + u.name + " пишет: " + note : "");
-    for (const uid of rec) { if (meme) { if (!await tqSendPhoto(env, uid, meme, text, qid)) await tg(env, "sendMessage", { chat_id: uid, text: text.slice(0, 4000), reply_markup: tqBtn(qid) }); } else await tg(env, "sendMessage", { chat_id: uid, text: text.slice(0, 4000), reply_markup: tqBtn(qid) }); }
-    await tqEcho(env, qid, u.id, rec, text, meme);
+    const text = "<b>🔔 " + h(u.name) + " напоминает о задачке</b>\n<i>" + h(q.title || "без названия") + "</i>\n<blockquote>" + h(t.title || "") + "</blockquote>\n" + (t.deadline ? "⌛️ до " + dmon(t.deadline) : "⌛️ без дедлайна") + "  ·  👥 " + h(names || "пока никто") + (note ? "\n\n💬 <i>" + h(note) + "</i>" : "");
+    const nkb = tqBtnT(qid, tid);
+    for (const uid of rec) { if (meme) { if (!await tqSendPhoto(env, uid, meme, text, qid, nkb)) await tg(env, "sendMessage", { chat_id: uid, text, parse_mode: "HTML", reply_markup: nkb }); } else await tg(env, "sendMessage", { chat_id: uid, text, parse_mode: "HTML", reply_markup: nkb }); }
+    await tqEcho(env, qid, u.id, rec, text, meme, "🔔 " + u.name + " " + V("напомнил", "напомнила") + " о задаче «" + (t.title || "") + "»", nkb, q.title);
     if (env.USERS) await env.USERS.put(key, "1", { expirationTtl: 120 });
     later(tqLog(env, qid, u.id, "🔔 " + u.name + " " + V("напомнил", "напомнила") + " о задаче «" + (t.title || "") + "»" + (all ? " всей команде" : ""), tid, [...whosOf(t), t.by]));
     return { sent: rec.length };
@@ -931,7 +939,7 @@ async function tqOp(env, ctx, u, b) {
     const was = await tqMember(env, q.id, u.id);
     if (!was) {
       await env.DB.prepare("INSERT OR IGNORE INTO tqm (qid, uid, name, photo, joined) VALUES (?1, ?2, ?3, ?4, ?5)").bind(q.id, u.id, u.name, u.photo, Date.now()).run();
-      later(tqNotify(env, q.id, u.id, "🙌 " + u.name + " " + V("присоединился", "присоединилась") + " к квесту «" + ((pj(q.data) || {}).title || "") + "»", "🙌 " + u.name + " " + V("присоединился", "присоединилась")));
+      later(tqNotify(env, q.id, u.id, "<b>🙌 " + h(u.name) + " " + V("присоединился", "присоединилась") + " к квесту</b>\n<i>" + h((pj(q.data) || {}).title || "") + "</i>", "🙌 " + u.name + " " + V("присоединился", "присоединилась"), (pj(q.data) || {}).title || ""));
       later(tqLog(env, q.id, u.id, "🙌 " + u.name + " " + V("присоединился", "присоединилась") + " к квесту"));
     }
     return { joined: q.id, list: await tqList(env, u.id) };
@@ -939,7 +947,7 @@ async function tqOp(env, ctx, u, b) {
   if (op === "leave") {
     if (!sid(b.qid)) return { error: "bad" };
     await env.DB.prepare("DELETE FROM tqm WHERE qid = ?1 AND uid = ?2").bind(b.qid, u.id).run();
-    later(tqNotify(env, b.qid, u.id, "👋 " + u.name + " " + V("вышел", "вышла") + " из квеста"));
+    later(tqNotify(env, b.qid, u.id, "<b>👋 " + h(u.name) + " " + V("вышел", "вышла") + " из квеста</b>"));
     later(tqLog(env, b.qid, u.id, "👋 " + u.name + " " + V("вышел", "вышла") + " из квеста"));
     return { list: await tqList(env, u.id) };
   }
@@ -1056,7 +1064,7 @@ async function tqRemind(env) {
     }
     for (const m of ms) {
       const L = msgs.concat(mine.get(m.uid) || []);
-      if (L.length) await tg(env, "sendMessage", { chat_id: m.uid, text: ("квест «" + q.title + "»\n" + L.join("\n")).slice(0, 4000), reply_markup: tqBtn(q.id) });
+      if (L.length) await tg(env, "sendMessage", { chat_id: m.uid, text: ("<b>⏰ дедлайны</b>\n<i>" + h(q.title) + "</i>\n<blockquote>" + h(L.join("\n")) + "</blockquote>").slice(0, 4000), parse_mode: "HTML", reply_markup: tqBtn(q.id) });
     }
   }
 }
@@ -1212,7 +1220,7 @@ export default {
       const name = cut(String(fd.get("name") || f.name || "файл"), 80) || "файл";
       const out = new FormData();
       out.append("chat_id", String(u.id)); out.append("document", f, name); out.append("disable_notification", "true");
-      out.append("caption", "📎 " + (qt ? "файл для квеста «" + qt + "»" : "файл для квеста") + "\nхранится здесь, чтобы открываться из прокачки. лучше не удаляй это сообщение");
+      out.append("caption", "📎 " + (qt ? "файл для квеста «" + qt + "»" : "файл для квеста") + "\nхранится здесь, чтобы открываться из прокачки. не удаляй");
       const r = await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendDocument`, { method: "POST", body: out }).then(x => x.json()).catch(() => ({ ok: false }));
       const res = r.ok && r.result;
       const doc = res && (res.document || res.video || res.audio || res.animation || (res.photo && res.photo[res.photo.length - 1]));

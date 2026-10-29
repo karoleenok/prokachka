@@ -872,7 +872,8 @@ button.mat-ic{border:0;padding:0;cursor:pointer}.mat-ext{font-size:11px;font-wei
 .mat-add summary{list-style:none;cursor:pointer;display:inline-flex}
 .mat-add summary::-webkit-details-marker{display:none}
 .mat-add form{margin-top:8px}
-.nu-prev{background:#fff;color:#1b1f2a;border:1px solid rgba(86,104,197,.25);border-radius:16px;padding:10px;max-width:340px;overflow:hidden}.nu-img{display:block;width:100%;border-radius:10px;margin-bottom:8px}.nu-t{font-size:14px;line-height:1.4;overflow-wrap:anywhere}.nu-b{margin-top:8px;text-align:center;font-size:13px;font-weight:600;padding:7px;border-radius:10px;background:rgba(86,104,197,.14);color:#4453a8}
+.nu-prev{background:#fff;color:#1b1f2a;border:1px solid rgba(86,104,197,.25);border-radius:16px;padding:10px;max-width:340px;overflow:hidden}.nu-img{display:block;width:100%;border-radius:10px;margin-bottom:8px}.nu-t{font-size:14px;line-height:1.4;overflow-wrap:anywhere}.nu-q{border-left:3px solid #6AB2F2;background:rgba(106,178,242,.12);border-radius:4px 8px 8px 4px;padding:4px 8px;margin:6px 0 4px}
+.nu-b{margin-top:8px;text-align:center;font-size:13px;font-weight:600;padding:7px;border-radius:10px;background:rgba(86,104,197,.14);color:#4453a8}
 .qtab-seg{margin-top:12px}
 </style>
 
@@ -2727,9 +2728,9 @@ async function tqFromLink(){
   if(m){try{history.replaceState(null,"",location.pathname+location.search)}catch(x){}
     try{const j=await TQ.call("join",{code:m[1]});if(j.joined){S.view="quests";render();const q=TQ.q(j.joined);toast(q?"ты в квесте «"+q.title+"»":"ты в квесте");tqSheet(j.joined)}}catch(x){toast("не получилось присоединиться: ссылка устарела или квест закрыли")}
     return}
-  m=/(?:^|&)tq=([\w-]{1,40})/.exec(h);const mn=/(?:^|&)n=([\w-]{1,40})/.exec(h);
+  m=/(?:^|&)tq=([\w-]{1,40})/.exec(h);const mn=/(?:^|&)n=([\w-]{1,40})/.exec(h);const mt=/(?:^|&)t=([\w-]{1,40})/.exec(h);
   if(m&&TQ.q(m[1])){try{history.replaceState(null,"",location.pathname+location.search)}catch(x){}S.view="quests";render();
-    if(mn){S.tqTabQ=m[1];S.tqTab="mat"}tqSheet(m[1]);
+    if(mn){S.tqTabQ=m[1];S.tqTab="mat"}if(mt&&(TQ.q(m[1]).tasks||[]).some(x=>x.id===mt[1]))tqTaskSheet(m[1],mt[1]);else tqSheet(m[1]);
     if(mn)setTimeout(()=>{const el=document.querySelector(`#layer [data-note="${CSS.escape(mn[1])}"]`);if(el){el.scrollIntoView({block:"center",behavior:"smooth"});el.classList.add("th-flash");setTimeout(()=>el.classList.remove("th-flash"),2200)}else toast("тезис уже удалили")},350)}
 }
 async function tqDoneFromPlan(ref){
@@ -2839,8 +2840,9 @@ function tqNudgeSheet(qid,tid){
     try{const j=await TQ.call("nudge",{qid,tid,scope,note,img:IMG||undefined});closeSheet();toast("напоминание отправлено: "+j.sent+" "+plural(j.sent,"человеку","людям","людям"))}
     catch(x){const m=String(x.message||"");toast(m==="wait"?"об этой задаче уже напоминали пару минут назад":m==="nobody"?"некому напоминать":m==="offline"?"нет интернета":m==="img"?"картинка не подошла, попробуй другую":"не получилось отправить")}
   };
+  const MON3=["янв","фев","мар","апр","мая","июн","июл","авг","сен","окт","ноя","дек"];const dmon=d=>d?Number(d.slice(8,10))+" "+MON3[Number(d.slice(5,7))-1]:"";
   const prev=()=>{const note=(document.getElementById("nuNote")||{value:""}).value.trim();
-    return`${IMG?`<img class="nu-img" src="${esc(IMG)}" alt="мем">`:""}<div class="nu-t">🔔 ${esc(myName)} напоминает о задачке<br><br>🪧 Какой квест: ${esc(q.title)}<br>🪷 Суть задачи: ${esc(t.title)}<br>⌛️ Дедлайн: ${t.deadline?esc(t.deadline.slice(8,10)+"."+t.deadline.slice(5,7)):"без дедлайна"}<br>👥 Ответственные: ${esc(names)}${note?`<br><br>💬 ${esc(myName)} пишет: ${esc(note).replace(/\n/g,"<br>")}`:""}</div><div class="nu-b">открыть квест</div>`};
+    return`${IMG?`<img class="nu-img" src="${esc(IMG)}" alt="мем">`:""}<div class="nu-t"><b>🔔 ${esc(myName)} напоминает о задачке</b><br><i>${esc(q.title)}</i><div class="nu-q">${esc(t.title)}</div>${t.deadline?"⌛️ до "+esc(dmon(t.deadline)):"⌛️ без дедлайна"}  ·  👥 ${esc(names)}${note?`<br><br>💬 <i>${esc(note).replace(/\n/g,"<br>")}</i>`:""}</div><div class="nu-b">открыть задачу</div>`};
   sheet(`<div class="sheet-h"><button class="iconbtn" data-act="tqTask" data-q="${esc(qid)}" data-id="${esc(tid)}" aria-label="назад">←</button><h2 style="flex:1;margin-left:8px">напомнить</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
   <div class="card" style="margin-bottom:12px"><b>${esc(t.title)}</b><div class="small muted">квест «${esc(q.title)}»</div></div>
   <div class="field" style="margin-top:0"><label for="nuNote">от себя, если хочешь</label><textarea class="in-text" id="nuNote" maxlength="400" rows="2" placeholder="например: ну что, ты там жива? 👀"></textarea></div>
@@ -2868,8 +2870,9 @@ function hintSheet(k){const[h,t]=HELP[k];sheet(`<span class="pill">подска�
    как добавить новость: допиши объект в NEWS (приложение) или в news.json рядом с index.html (без выпуска приложения).
    kind: "update" | "news". acts: до двух кнопок {l:"посмотреть"|"протестировать", go:"..."}.
    куда ведёт go: tab:home|path|skills|quests|rewards · path:feed · hint:<ключ из HELP> · add:plan · add:done */
-const APP_V="v85";
+const APP_V="v86";
 const NEWS=[
+  {id:"u86-tg-look",date:"2026-10-29",kind:"update",title:"сообщения бота стали аккуратнее",text:"уведомления из квестов теперь короче: действие жирным, квест курсивом, суть в цитате. кнопка ведёт прямо к задаче или тезису. а если новостей много, они сворачиваются в один пост со сводкой.",go:"tab:quests"},
   {id:"u85-files",date:"2026-10-29",kind:"update",title:"в материалы квеста можно загружать файлы",text:"кроме ссылок теперь можно прикрепить картинку, pdf, html или документ до 20 МБ. у фото видно превью, любой файл открывается одним нажатием.",go:"tab:quests"},
   {id:"u84-whos",date:"2026-10-29",kind:"update",title:"у подзадачи может быть несколько ответственных",text:"нажми на кружок справа от подзадачи и отметь всех, кто за неё отвечает. на таймлайне у задачи теперь видны все ответственные, а не только первый.",go:"tab:quests"},
   {id:"u83-thesis-tg",date:"2026-10-29",kind:"update",title:"о новом тезисе команда узнает в телеграме",text:"когда кто-то добавляет тезис в материалы командного квеста, остальным участникам приходит сообщение с темой и текстом. кнопка «открыть тезис» ведёт прямо к нему.",go:"tab:quests"},
