@@ -87,6 +87,19 @@ button{cursor:pointer;border:0;background:none;-webkit-tap-highlight-color:trans
 .nt-b{flex:1;min-width:0}.nt-t{font-weight:600;font-size:14.5px;line-height:1.3;overflow-wrap:anywhere}.nt-m{font-size:12.5px;color:var(--muted);margin-top:3px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .nt-tag{font-size:11px;font-weight:700;border-radius:6px;padding:2px 6px}.ntc.late .nt-tag{background:#FDE7E7;color:#C2362F}.ntc.soon .nt-tag{background:#FFF1DE;color:#B4630E}
 .nt-time{font-size:12px;color:var(--muted);white-space:nowrap;padding-left:6px}.nt-dot{position:absolute;right:14px;bottom:14px;width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.bd-ban{display:flex;gap:12px;align-items:center;background:var(--card);border-radius:20px;padding:14px 14px 14px 16px;margin-top:12px;box-shadow:inset 0 0 0 2px var(--accent);width:100%;border:0;text-align:left;cursor:pointer;font:inherit;color:inherit}
+.bd-ban .ic{width:44px;height:44px;border-radius:14px;background:#fff;border:1px solid #E3E7ED;box-shadow:0 2px 6px rgba(23,28,36,.08);display:grid;place-items:center;flex:none;font-size:22px;line-height:1}
+.bd-ban b{display:block;font-size:16px}.bd-ban small{display:block;color:var(--muted);font-size:13px;margin-top:2px}.bd-ban .go{margin-left:auto;background:var(--accent);color:#fff;border-radius:12px;padding:9px 12px;font-weight:600;font-size:13.5px;white-space:nowrap}
+.bd-sum{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 4px}.bd-sum span{background:#fff;color:#171C24;border-radius:999px;padding:6px 11px;font-size:13px;font-weight:600}
+.bd-sec{font-size:12px;font-weight:700;color:#9aa6b8;margin:16px 2px 6px;display:flex;justify-content:space-between}
+.bd-row{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line)}.bd-row:first-child{border-top:0;padding-top:2px}
+.bd-ic{width:34px;height:34px;border-radius:11px;background:#fff;border:1px solid #E3E7ED;box-shadow:0 2px 6px rgba(23,28,36,.08);display:grid;place-items:center;flex:none;font-size:17px;line-height:1}
+.bd-t{font-weight:600;font-size:14.5px;line-height:1.3;overflow-wrap:anywhere}.bd-m{font-size:12.5px;color:var(--muted);margin-top:2px}
+.bd-a{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}.bd-a button{font:inherit;font-size:12.5px;font-weight:600;border-radius:10px;padding:6px 10px;background:var(--chip);color:var(--ink);border:0;cursor:pointer}.bd-a button.p{background:var(--accent);color:#fff}
+.bd-file{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}.bd-file::-webkit-scrollbar{display:none}
+.bd-f{width:86px;flex:none;border:0;background:none;padding:0;text-align:left;cursor:pointer;font:inherit;color:inherit}.bd-f .th{height:64px;border-radius:12px;background:#E7EBFF;display:grid;place-items:center;font-weight:800;color:#4350A8;font-size:12px;overflow:hidden;text-transform:uppercase}.bd-f .th img{width:100%;height:100%;object-fit:cover}.bd-f small{display:block;font-size:11.5px;color:var(--muted);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bd-done{position:sticky;bottom:0;margin:16px -4px 0;padding:12px 4px 4px;background:linear-gradient(to bottom,transparent,var(--bg) 35%)}
+.bd-arch{display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:14px}.bd-arch small{color:var(--muted)}
 .nw{display:flex;flex-direction:column;gap:6px}
 .nw.fresh{border-color:var(--accent)}
 .nw-h{display:flex;align-items:center;gap:6px;flex-wrap:nowrap}
@@ -1771,7 +1784,7 @@ function vHome(d){
   ${noSkills?`<div class="card" style="margin-top:12px"><b>сначала выбери, что качаешь</b><p class="small muted" style="margin:6px 0 10px">пока навыки не выбраны, опыт некуда начислять.</p><button class="btn accent" data-act="skillCat">выбрать навыки</button></div>`:""}
   <div class="addrow" id="addRow"><button class="btn accent" data-act="add" id="addBtn">${IC.plus} записать действие</button><button class="btn ghost" data-act="add" data-plan="1" data-day="tomorrow">запланировать</button></div>
 
-  ${planCard()}
+  ${boardBanner()}${planCard()}
   ${piggyCard(d)}`;
 }
 
@@ -2880,8 +2893,9 @@ function hintSheet(k){const[h,t]=HELP[k];sheet(`<span class="pill">подска�
    как добавить новость: допиши объект в NEWS (приложение) или в news.json рядом с index.html (без выпуска приложения).
    kind: "update" | "news". acts: до двух кнопок {l:"посмотреть"|"протестировать", go:"..."}.
    куда ведёт go: tab:home|path|skills|quests|rewards · path:feed · hint:<ключ из HELP> · add:plan · add:done */
-const APP_V="v88";
+const APP_V="v89";
 const NEWS=[
+  {id:"u89-board",date:"2026-10-29",kind:"update",title:"доска объявлений: всё для тебя в одном месте",text:"когда в квестах накопилось хотя бы три новости для тебя, на главной появляется доска объявлений: задачи, которые тебе поставили, новые файлы и тезисы, обсуждения. задачи можно сразу поставить на день или перенести. разобралась — жми «просмотрено», доска уйдёт в архив.",go:"tab:home"},
   {id:"u87-notif",date:"2026-10-29",kind:"update",title:"в колокольчике появились уведомления",text:"теперь здесь два раздела: уведомления и обновления прокачки. в уведомлениях видно просроченные задачи, дедлайны на завтра, события из квестов и технические сообщения. их можно отфильтровать, а нажатие открывает нужную задачу.",go:"tab:home"},
   {id:"u86-tg-look",date:"2026-10-29",kind:"update",title:"сообщения бота стали аккуратнее",text:"уведомления из квестов теперь короче: действие жирным, квест курсивом, суть в цитате. кнопка ведёт прямо к задаче или тезису. а если новостей много, они сворачиваются в один пост со сводкой.",go:"tab:quests"},
   {id:"u85-files",date:"2026-10-29",kind:"update",title:"в материалы квеста можно загружать файлы",text:"кроме ссылок теперь можно прикрепить картинку, pdf, html или документ до 20 МБ. у фото видно превью, любой файл открывается одним нажатием.",go:"tab:quests"},
@@ -2930,6 +2944,49 @@ function newsGo(go){
   else if(k==="hint"&&HELP[v])hintSheet(v);
   else if(k==="add"){openEntry(null,{plan:v==="plan",date:v==="plan"?addDays(today(),1):undefined});if(v==="plan")toast("попробуй: выбери день и тип, подписи в форме поменяются")}
 }
+
+/* доска объявлений: всё, что касается тебя, в одном месте, пока не нажмёшь «просмотрено» */
+const BD_LS="prk-bd-seen",BD_ARCH="prk-bd-arch";
+const bdSeen=()=>{const s=new Set(lsGet(BD_LS,[]));((S.profile&&S.profile.bdSeen)||[]).forEach(x=>s.add(String(x)));return s};
+function bdItems(){
+  const me=TQ.me(),seen=bdSeen(),t=today(),wk=addDays(t,-7),out={tasks:[],files:[],notes:[],cm:[]};if(!me)return out;
+  const myName=n=>{const q=(TQ.list||[]).find(x=>(x.members||[]).some(m=>m.uid===me));const m=q&&tqMem(q,me);return m&&m.name===n};
+  (TQ.list||[]).forEach(q=>{
+    (q.tasks||[]).forEach(x=>{if(x.done||x.del)return;const ws=whosOf(x);if(!ws.includes(me))return;
+      if(x.deadline&&x.deadline<t){const id="o:"+q.id+":"+x.id+":"+x.deadline;if(!seen.has(id))out.tasks.push({id,late:1,q,x});return}
+      if(x.by&&x.by!==me&&dOf(x.created||0)>=wk){const id="t:"+q.id+":"+x.id;if(!seen.has(id))out.tasks.push({id,q,x})}});
+    (q.files||[]).forEach(f=>{if((f.d||"")<wk||myName(f.by))return;const id="f:"+q.id+":"+f.id;if(!seen.has(id))out.files.push({id,q,f})});
+    (q.notes||[]).forEach(n=>{if((n.d||"")<wk||(n.uid?n.uid===me:myName(n.by)))return;const id="n:"+q.id+":"+n.id;if(!seen.has(id))out.notes.push({id,q,n})});
+    const byT={};(q.comments||[]).forEach(c=>{if(c.uid===me||!c.ts||c.ts<Date.now()-7*864e5)return;const id="c:"+q.id+":"+c.tid+":"+c.ts;if(seen.has(id))return;(byT[c.tid]=byT[c.tid]||[]).push({id,c})});
+    Object.entries(byT).forEach(([tid,L])=>{L.sort((a,b)=>b.c.ts-a.c.ts);out.cm.push({ids:L.map(z=>z.id),q,tid,c:L[0].c,more:L.length-1})});
+  });
+  return out;
+}
+const bdCount=b=>b.tasks.length+b.files.length+b.notes.length+b.cm.reduce((a,x)=>a+x.ids.length,0);
+function boardBanner(){let b;try{b=bdItems()}catch(x){return""}const n=bdCount(b);if(n<3)return"";
+  const parts=[b.tasks.length?b.tasks.length+" "+plural(b.tasks.length,"задача","задачи","задач")+" тебе":"",b.files.length?b.files.length+" "+plural(b.files.length,"файл","файла","файлов"):"",b.notes.length?b.notes.length+" "+plural(b.notes.length,"тезис","тезиса","тезисов"):"",b.cm.length?b.cm.reduce((a,x)=>a+x.ids.length,0)+" "+plural(b.cm.reduce((a,x)=>a+x.ids.length,0),"сообщение","сообщения","сообщений"):""].filter(Boolean);
+  return`<button class="bd-ban" data-act="board"><span class="ic">📋</span><span><b>доска объявлений</b><small>${esc(parts.join(" · "))}</small></span><span class="go">открыть</span></button>`}
+function boardSheet(){
+  const b=bdItems();const n=bdCount(b);const extOf=t=>((String(t||"").match(/\.([a-z0-9]{1,5})$/i)||[])[1]||"");
+  const nm=(q,u)=>{const m=tqMem(q,u);return m?m.name:""};
+  const tRow=z=>{const x=z.x,q=z.q;return`<div class="bd-row"><span class="bd-ic">${z.late?"🫠":"✏️"}</span><div style="flex:1;min-width:0"><div class="bd-t">${esc(x.title)}</div><div class="bd-m">${esc(q.title)}${z.late?" · просрочено с "+esc(fmtD(x.deadline)):(x.by?" · от "+esc(nm(q,x.by)):"")+(x.deadline?" · до "+esc(fmtD(x.deadline)):" · без дедлайна")}</div>
+    <div class="bd-a">${z.late?`<button class="p" data-act="bdMove" data-q="${esc(q.id)}" data-id="${esc(x.id)}">перенести</button>`:plannedOf("t",q.id,x.id)?`<button disabled>в плане: ${esc(dayWord(plannedOf("t",q.id,x.id).date))}</button>`:`<button class="p" data-act="bdToday" data-q="${esc(q.id)}" data-id="${esc(x.id)}">на сегодня</button><button data-act="bdDay" data-q="${esc(q.id)}" data-id="${esc(x.id)}">на другой день</button>`}<button data-act="bdTask" data-q="${esc(q.id)}" data-id="${esc(x.id)}">открыть</button></div></div></div>`};
+  const fTile=z=>{const f=z.f;const e=extOf(f.t);const isImg=f.k==="img"&&f.u;return`<button class="bd-f" data-act="openUrl" data-url="${esc(f.u||"")}"><div class="th">${isImg?`<img src="${esc(f.u)}" alt="" loading="lazy">`:f.k==="link"?"ссылка":esc(e||"файл")}</div><small>${esc(f.t||f.u)}</small></button>`};
+  const nRow=z=>`<div class="bd-row"><span class="bd-ic">💡</span><div style="flex:1;min-width:0"><div class="bd-t">${esc(z.n.h||String(z.n.t).slice(0,80))}</div><div class="bd-m">тезис ${esc(z.n.by||"")} · ${esc(z.q.title)}${(z.n.re||[]).length?" · "+z.n.re.length+" "+plural(z.n.re.length,"ответ","ответа","ответов"):""}</div><div class="bd-a"><button data-act="bdMat" data-q="${esc(z.q.id)}">открыть материалы</button></div></div></div>`;
+  const cRow=z=>{const task=z.tid!=="_q"&&(z.q.tasks||[]).find(x=>x.id===z.tid);return`<div class="bd-row"><span class="bd-ic">💬</span><div style="flex:1;min-width:0"><div class="bd-t">${esc(nm(z.q,z.c.uid)||"участник")}: ${esc(String(z.c.text).slice(0,120))}</div><div class="bd-m">${esc(z.q.title)} · ${task?"задача «"+esc(task.title)+"»":"комментарий к квесту"}${z.more?" · +"+z.more+" "+plural(z.more,"сообщение","сообщения","сообщений"):""}</div><div class="bd-a"><button data-act="${task?"bdTask":"bdMat"}" data-q="${esc(z.q.id)}" data-id="${esc(task?task.id:"")}">ответить</button></div></div></div>`};
+  const arch=lsGet(BD_ARCH,[]);
+  const sum=[b.tasks.length?"✏️ "+b.tasks.length+" "+plural(b.tasks.length,"задача","задачи","задач")+" тебе":"",b.files.length?"📎 "+b.files.length+" "+plural(b.files.length,"файл","файла","файлов"):"",b.notes.length?"💡 "+b.notes.length+" "+plural(b.notes.length,"тезис","тезиса","тезисов"):"",b.cm.length?"💬 "+b.cm.reduce((a,x)=>a+x.ids.length,0):""].filter(Boolean);
+  sheet(`<div class="sheet-h"><h2>доска объявлений</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
+  ${n?`<p class="small muted" style="margin:-4px 0 12px">всё, что касается тебя в квестах за неделю. разбери и нажми «просмотрено», доска уйдёт в архив.</p><div class="bd-sum">${sum.map(x=>`<span>${esc(x)}</span>`).join("")}</div>
+  ${b.tasks.length?`<div class="bd-sec"><span>тебе поставили</span><span>${b.tasks.length}</span></div><div class="card">${b.tasks.map(tRow).join("")}</div>`:""}
+  ${b.files.length||b.notes.length?`<div class="bd-sec"><span>новые материалы</span><span>${b.files.length+b.notes.length}</span></div><div class="card">${b.files.length?`<div class="bd-file">${b.files.map(fTile).join("")}</div>`:""}${b.notes.map(nRow).join("")}</div>`:""}
+  ${b.cm.length?`<div class="bd-sec"><span>обсуждают</span><span>${b.cm.reduce((a,x)=>a+x.ids.length,0)}</span></div><div class="card">${b.cm.map(cRow).join("")}</div>`:""}
+  <div class="bd-done"><button class="btn accent wide" data-act="bdSeen">☑️ просмотрено</button></div>`:`<div class="card nw-empty"><b>доска чистая</b><p class="small muted" style="margin:6px 0 0">всё разобрано. новое появится здесь, как только команда что-то поставит или загрузит.</p></div>`}
+  ${arch.length?`<div class="bd-sec" style="margin-top:18px"><span>прошлые доски</span></div>${arch.slice(0,7).map(a=>`<div class="card bd-arch" style="display:block"><b style="font-size:14px">📋 ${esc(fmtD(a.d))} · ${a.n} ${plural(a.n,"пункт","пункта","пунктов")} · просмотрено</b>${a.s?`<small style="display:block;margin-top:2px">${esc(a.s)}</small>`:""}</div>`).join("")}`:""}`);
+}
+function bdMarkSeen(){const b=bdItems();const ids=[...b.tasks.map(x=>x.id),...b.files.map(x=>x.id),...b.notes.map(x=>x.id),...b.cm.flatMap(x=>x.ids)];if(!ids.length)return;
+  const s=bdSeen();ids.forEach(i=>s.add(i));const arr=[...s].slice(-600);lsSet(BD_LS,arr);if(S.profile){S.profile.bdSeen=arr;try{Store.saveProfile()}catch(x){}}
+  const A=lsGet(BD_ARCH,[]);const pw=(n,a,b2,c)=>n?n+" "+plural(n,a,b2,c):"";A.unshift({d:today(),n:ids.length,s:[pw(b.tasks.length,"задача","задачи","задач"),pw(b.files.length,"файл","файла","файлов"),pw(b.notes.length,"тезис","тезиса","тезисов"),pw(b.cm.length,"обсуждение","обсуждения","обсуждений")].filter(Boolean).join(" · ")});lsSet(BD_ARCH,A.slice(0,30))}
 /* уведомления: дедлайны (свои и командные), события квестов из бота, техническое (версии и сбои) */
 const NT_LS="prk-nt-read",TECH_LS="prk-tech";
 const NTI={late:"🫠",soon:"🗓️",q:"🎯",tech:"⚙️",add:"✏️",cm:"💬",th:"💡",done:"☑️"};
@@ -2975,7 +3032,8 @@ function newsSheet(){
   const urgent=sel.filter(x=>x.f==="late"||x.f==="soon").sort((a,b)=>(a.f===b.f?0:a.f==="late"?-1:1));
   const rest=sel.filter(x=>x.f!=="late"&&x.f!=="soon").sort((a,b)=>b.ts-a.ts);
   const grp={};rest.forEach(x=>{const k=new Date(x.ts).toISOString().slice(0,10);const g=k===today()?"сегодня":k===addDays(today(),-1)?"вчера":"раньше";(grp[g]=grp[g]||[]).push(x)});
-  const ntHTML=`<div class="nt-f">${[["all","все"],["q",NTI.q+" квесты"],["late",NTI.late+" просрочено"],["soon",NTI.soon+" завтра"],["tech",NTI.tech+" техническое"]].map(([k,l])=>`<button class="chip" data-act="ntF" data-v="${k}" aria-pressed="${F===k}">${l}<i>${cnt(k)}</i></button>`).join("")}</div>
+  const bdN=(()=>{try{return bdCount(bdItems())}catch(x){return 0}})();
+  const ntHTML=`${bdN?`<button class="bd-ban" data-act="board" style="margin:0 0 12px"><span class="ic">📋</span><span><b>доска объявлений</b><small>${bdN} ${plural(bdN,"новость","новости","новостей")} для тебя в одном месте</small></span><span class="go">открыть</span></button>`:""}<div class="nt-f">${[["all","все"],["q",NTI.q+" квесты"],["late",NTI.late+" просрочено"],["soon",NTI.soon+" завтра"],["tech",NTI.tech+" техническое"]].map(([k,l])=>`<button class="chip" data-act="ntF" data-v="${k}" aria-pressed="${F===k}">${l}<i>${cnt(k)}</i></button>`).join("")}</div>
     ${sel.length?`${urgent.length?`<div class="nt-day">требует внимания</div>${urgent.map(row).join("")}`:""}${["сегодня","вчера","раньше"].filter(g=>grp[g]).map(g=>`<div class="nt-day">${g}</div>${grp[g].map(row).join("")}`).join("")}
     ${unN?`<button class="btn ghost wide" style="margin-top:14px" data-act="ntAll">отметить всё прочитанным</button>`:""}`:`<div class="card nw-empty"><b>пока тихо</b><p class="small muted" style="margin:6px 0 0">${F==="all"?"здесь будут дедлайны, события из квестов и технические сообщения.":"в этом разделе сейчас ничего нет."}</p></div>`}`;
   sheet(`<div class="sheet-h"><h2>новости и обновления</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
@@ -4020,6 +4078,13 @@ document.addEventListener("click",ev=>{
     case"auAbout":aboutPage();break;
     case"news":S.ntTab="";newsSheet();break;
     case"ntTab":S.ntTab=b.dataset.v;newsSheet();break;
+    case"board":boardSheet();TQ.load();break;
+    case"bdSeen":bdMarkSeen();closeSheet();render();toast("доска просмотрена и ушла в архив");break;
+    case"bdToday":planTqOn(b.dataset.q,b.dataset.id,today(),()=>boardSheet());break;
+    case"bdDay":{const q=TQ.q(b.dataset.q);const t=q&&(q.tasks||[]).find(x=>x.id===b.dataset.id);if(!t)break;whenSheet({title:t.title+" · "+q.title,cur:"",dl:t.deadline,onPick:d=>planTqOn(q.id,t.id,d,()=>boardSheet())});break}
+    case"bdMove":{const q=TQ.q(b.dataset.q);const t=q&&(q.tasks||[]).find(x=>x.id===b.dataset.id);if(!t)break;whenSheet({title:"новый дедлайн · "+t.title,cur:"",dl:"",onPick:async d=>{try{await TQ.call("task",{qid:q.id,task:Object.assign({},t,{deadline:d,upd:Date.now()})});toast("дедлайн перенесён на "+dayWord(d))}catch(x){toast("не получилось перенести, проверь интернет")}boardSheet()}});break}
+    case"bdTask":if(b.dataset.id){tqTaskSheet(b.dataset.q,b.dataset.id)}else{S.tqTabQ=b.dataset.q;S.tqTab="mat";tqSheet(b.dataset.q)}break;
+    case"bdMat":S.tqTabQ=b.dataset.q;S.tqTab="mat";tqSheet(b.dataset.q);break;
     case"ntF":S.ntF=b.dataset.v;newsSheet();break;
     case"ntAll":ntMark(ntItems().map(x=>x.id));newsSheet();break;
     case"ntOpen":{const it=ntItems().find(x=>x.id===b.dataset.id);if(!it)break;ntMark([it.id]);if(it.go)ntGo(it.go);else newsSheet();break}
