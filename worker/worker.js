@@ -1,7 +1,7 @@
 // бот прокачки: приветствие на /start, напоминания и синхронизация данных приложения между устройствами.
 // токен в секрете BOT_TOKEN, настройки напоминаний в KV USERS, данные приложения в базе D1 (привязка DB).
 const APP = "https://prokachka.pages.dev";
-const BOT_V = "v36"; // версия бота: видно по адресу /v, чтобы проверить, что выложилась свежая
+const BOT_V = "v37"; // версия бота: видно по адресу /v, чтобы проверить, что выложилась свежая
 const OWNER = 424765559; // telegram id владельца: ему приложение показывает статистику
 const HELLO = [
   "о, наконец-то ты тут! рад тебя видеть! скорее жми кнопку, давай превратим жизнь в игру",
@@ -703,7 +703,7 @@ const ymd = x => /^\d{4}-\d{2}-\d{2}$/.test(x || "") ? x : "";
 const cleanRe = a => (Array.isArray(a) ? a : []).slice(0, 60).filter(x => x && sid(x.id) && String(x.t || "").trim()).map(x => ({ id: x.id, t: cut(x.t, 600), ts: Number(x.ts) || 0, uid: Number(x.uid) || 0, by: cut(x.by || "", 60) }));
 const cleanNotes = a => (Array.isArray(a) ? a : []).slice(0, 40).filter(x => x && sid(x.id) && String(x.t || "").trim()).map(x => ({ id: x.id, h: cut(x.h || "", 120), t: cut(x.t, 1500), d: ymd(x.d), by: cut(x.by || "", 60), uid: Number(x.uid) || 0, ed: ymd(x.ed), eb: cut(x.eb || "", 60), re: cleanRe(x.re) }));
 const cleanFiles = a => (Array.isArray(a) ? a : []).slice(0, 40).filter(x => x && sid(x.id) && /^https?:\/\//i.test(String(x.u || ""))).map(x => ({ id: x.id, k: "link", t: cut(x.t || x.u, 120), u: String(x.u).slice(0, 500), d: ymd(x.d), by: cut(x.by || "", 60) }));
-const cleanSubs = a => (Array.isArray(a) ? a : []).slice(0, 40).filter(x => x && sid(x.id) && String(x.t || "").trim()).map(x => ({ id: x.id, t: cut(x.t, 160), done: !!x.done, who: Number(x.who) || 0 }));
+const cleanSubs = a => (Array.isArray(a) ? a : []).slice(0, 40).filter(x => x && sid(x.id) && String(x.t || "").trim()).map(x => { const whos = uniqIds(Array.isArray(x.whos) ? x.whos : (x.who ? [x.who] : [])).filter(v => v).slice(0, 10); return { id: x.id, t: cut(x.t, 160), done: !!x.done, whos, who: whos[0] || 0 }; });
 function cleanQuest(q, old) {
   const o = old || {};
   const stages = (Array.isArray(q.stages) ? q.stages : o.stages || []).slice(0, 20).filter(x => x && sid(x.id)).map(x => ({ id: x.id, title: cut(x.title, 120), deadline: /^\d{4}-\d{2}-\d{2}$/.test(x.deadline || "") ? x.deadline : "", done: !!x.done, r1: x.r1 || "", r0: x.r0 || "" }));
