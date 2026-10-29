@@ -804,7 +804,7 @@ async function tqOp(env, ctx, u, b) {
         const fresh = (data.notes || []).filter(n => !(old.notes || []).some(o => o.id === n.id)).slice(0, 3);
         if (fresh.length) later((async () => {
           const ms = await tqMembers(env, q.id);
-          const rec = uniqIds(ms.map(m => m.uid)).filter(x => x > 0 && x !== u.id);
+          const rec = uniqIds(ms.map(m => m.uid)).filter(x => x > 0); // автору тоже: так видно, что ушло команде
           for (const n of fresh) {
             const text = ("💡 " + u.name + " " + V("добавил", "добавила") + " тезис в квесте «" + (data.title || "без названия") + "»\n\n" + (n.h ? "📌 " + n.h + "\n" : "") + cut(n.t, 700)).slice(0, 4000);
             const kb = { inline_keyboard: [[{ text: "открыть тезис", web_app: { url: APP + "#tq=" + q.id + "&n=" + n.id } }]] };
