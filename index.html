@@ -77,6 +77,16 @@ button{cursor:pointer;border:0;background:none;-webkit-tap-highlight-color:trans
 .nbadge{position:absolute;top:-5px;right:-5px;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--accent);color:var(--accent-ink);font-size:11px;font-weight:700;line-height:18px;text-align:center;box-shadow:0 0 0 2px var(--bg);pointer-events:none}
 .nbadge[hidden]{display:none}
 .nw-list{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+.nt-seg{margin:0 0 12px}.nt-seg button{white-space:nowrap;font-size:13px;padding:9px 4px}.nt-seg b{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:#E5484D;color:#fff;font-size:11px;margin-left:5px;vertical-align:1px}
+.nt-f{display:flex;gap:6px;overflow-x:auto;margin:0 -2px 12px;padding:0 2px;scrollbar-width:none}.nt-f::-webkit-scrollbar{display:none}
+.nt-f .chip{white-space:nowrap;flex:none;padding:7px 12px}.nt-f .chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}.nt-f .chip i{font-style:normal;opacity:.7;margin-left:4px}
+.nt-day{font-size:12px;font-weight:600;color:#9aa6b8;margin:14px 2px 6px}
+.card.ntc{display:flex;gap:12px;align-items:flex-start;border-radius:18px;padding:12px 14px;margin-top:8px;position:relative;width:100%;text-align:left;border:0;cursor:pointer;font:inherit}
+.ntc.late{box-shadow:inset 3px 0 0 #E5484D}.ntc.soon{box-shadow:inset 3px 0 0 #F0A256}
+.nt-ic{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;font-size:19px;flex:none;background:#fff;border:1px solid #E3E7ED;box-shadow:0 2px 6px rgba(23,28,36,.08);line-height:1}
+.nt-b{flex:1;min-width:0}.nt-t{font-weight:600;font-size:14.5px;line-height:1.3;overflow-wrap:anywhere}.nt-m{font-size:12.5px;color:var(--muted);margin-top:3px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.nt-tag{font-size:11px;font-weight:700;border-radius:6px;padding:2px 6px}.ntc.late .nt-tag{background:#FDE7E7;color:#C2362F}.ntc.soon .nt-tag{background:#FFF1DE;color:#B4630E}
+.nt-time{font-size:12px;color:var(--muted);white-space:nowrap;padding-left:6px}.nt-dot{position:absolute;right:14px;bottom:14px;width:8px;height:8px;border-radius:50%;background:var(--accent)}
 .nw{display:flex;flex-direction:column;gap:6px}
 .nw.fresh{border-color:var(--accent)}
 .nw-h{display:flex;align-items:center;gap:6px;flex-wrap:nowrap}
@@ -2826,7 +2836,7 @@ function sheet(html,onMount){
 }
 function closeSheet(){try{TQ.open=null}catch(x){}$("#layer").innerHTML="";document.body.style.overflow="";tgBack()}
 function tgBack(){if(!TG||!TG.BackButton)return;try{$("#layer").innerHTML?TG.BackButton.show():TG.BackButton.hide()}catch(x){}}
-let toastT;function toast(msg){let t=document.querySelector(".toast");if(!t){t=document.createElement("div");t.className="toast";t.setAttribute("role","status");document.body.appendChild(t)}t.textContent=gx(msg);try{TG&&TG.HapticFeedback&&TG.HapticFeedback.impactOccurred("light")}catch(x){}if(T){t.style.top="calc(64px + env(safe-area-inset-top,0px))";t.style.bottom="auto"}else{t.style.top="";t.style.bottom=""}clearTimeout(toastT);toastT=setTimeout(()=>t.remove(),2600)}
+let toastT;function toast(msg){try{if(/^(не получилось|нет интернета|не загрузил|ошибка)/i.test(String(msg)))techLog("сбой: "+String(msg))}catch(x){}let t=document.querySelector(".toast");if(!t){t=document.createElement("div");t.className="toast";t.setAttribute("role","status");document.body.appendChild(t)}t.textContent=gx(msg);try{TG&&TG.HapticFeedback&&TG.HapticFeedback.impactOccurred("light")}catch(x){}if(T){t.style.top="calc(64px + env(safe-area-inset-top,0px))";t.style.bottom="auto"}else{t.style.top="";t.style.bottom=""}clearTimeout(toastT);toastT=setTimeout(()=>t.remove(),2600)}
 function tqNudgeSheet(qid,tid){
   const q=TQ.q(qid);const t=q&&(q.tasks||[]).find(x=>x.id===tid);if(!t)return;
   const me=TQ.me(),mem=u=>(q.members||[]).find(m=>m.uid===u);
@@ -2870,8 +2880,9 @@ function hintSheet(k){const[h,t]=HELP[k];sheet(`<span class="pill">подска�
    как добавить новость: допиши объект в NEWS (приложение) или в news.json рядом с index.html (без выпуска приложения).
    kind: "update" | "news". acts: до двух кнопок {l:"посмотреть"|"протестировать", go:"..."}.
    куда ведёт go: tab:home|path|skills|quests|rewards · path:feed · hint:<ключ из HELP> · add:plan · add:done */
-const APP_V="v86";
+const APP_V="v87";
 const NEWS=[
+  {id:"u87-notif",date:"2026-10-29",kind:"update",title:"в колокольчике появились уведомления",text:"теперь здесь два раздела: уведомления и обновления прокачки. в уведомлениях видно просроченные задачи, дедлайны на завтра, события из квестов и технические сообщения. их можно отфильтровать, а нажатие открывает нужную задачу.",go:"tab:home"},
   {id:"u86-tg-look",date:"2026-10-29",kind:"update",title:"сообщения бота стали аккуратнее",text:"уведомления из квестов теперь короче: действие жирным, квест курсивом, суть в цитате. кнопка ведёт прямо к задаче или тезису. а если новостей много, они сворачиваются в один пост со сводкой.",go:"tab:quests"},
   {id:"u85-files",date:"2026-10-29",kind:"update",title:"в материалы квеста можно загружать файлы",text:"кроме ссылок теперь можно прикрепить картинку, pdf, html или документ до 20 МБ. у фото видно превью, любой файл открывается одним нажатием.",go:"tab:quests"},
   {id:"u84-whos",date:"2026-10-29",kind:"update",title:"у подзадачи может быть несколько ответственных",text:"нажми на кружок справа от подзадачи и отметь всех, кто за неё отвечает. на таймлайне у задачи теперь видны все ответственные, а не только первый.",go:"tab:quests"},
@@ -2903,7 +2914,7 @@ function newsMark(ids){
   const arr=[...r].slice(-200);lsSet(NEWS_LS,arr);const P=S.profile;if(P){P.newsRead=arr;try{Store.saveProfile()}catch(x){}}paintNews();
 }
 function paintNews(){
-  const b=$("#newsBadge");if(!b)return;const n=newsUnread().length;
+  const b=$("#newsBadge");if(!b)return;let n=newsUnread().length;try{n+=ntUnread().length}catch(x){}
   b.hidden=!n;b.textContent=n>9?"9+":String(n);
   const btn=$("#newsBtn");if(btn)btn.setAttribute("aria-label",n?"новости и обновления, новых: "+n:"новости и обновления");
 }
@@ -2919,17 +2930,60 @@ function newsGo(go){
   else if(k==="hint"&&HELP[v])hintSheet(v);
   else if(k==="add"){openEntry(null,{plan:v==="plan",date:v==="plan"?addDays(today(),1):undefined});if(v==="plan")toast("попробуй: выбери день и тип, подписи в форме поменяются")}
 }
+/* уведомления: дедлайны (свои и командные), события квестов из бота, техническое (версии и сбои) */
+const NT_LS="prk-nt-read",TECH_LS="prk-tech";
+const NTI={late:"🌚",soon:"☄️",q:"🗺️",tech:"🛸",add:"🪄",cm:"🦜",th:"🔮",done:"🦄"};
+let NT_EV=[],NT_EVT=0;
+function techLog(t,id){const L=lsGet(TECH_LS,[]);const k=id||("e"+Date.now());if(L.some(x=>x.id===k))return;L.unshift({id:k,t:String(t).slice(0,140),ts:Date.now()});lsSet(TECH_LS,L.slice(0,30));try{paintNews()}catch(x){}}
+function techVersion(){const v=lsGet("prk-lastv","");if(v&&v!==APP_V){const n=NEWS.find(x=>x.kind==="update");techLog("прокачка обновилась до "+APP_V+(n?": "+n.title:""),"v:"+APP_V)}if(v!==APP_V)lsSet("prk-lastv",APP_V)}
+const ntRead=()=>{const s=new Set(lsGet(NT_LS,[]));((S.profile&&S.profile.ntRead)||[]).forEach(x=>s.add(String(x)));return s};
+function ntMark(ids){const r=ntRead();const n=r.size;ids.forEach(i=>r.add(String(i)));if(r.size===n)return;const arr=[...r].slice(-400);lsSet(NT_LS,arr);if(S.profile){S.profile.ntRead=arr;try{Store.saveProfile()}catch(x){}}paintNews()}
+async function ntLoad(force){if(!force&&Date.now()-NT_EVT<60000)return;if(!(TG&&TG.initData)||!Store.online())return;NT_EVT=Date.now();try{const j=await TQ.call("events");if(Array.isArray(j.events)){NT_EV=j.events;paintNews()}}catch(x){}}
+function ntKindOf(t){const c=String(t||"");if(/^(➕|🪄)/.test(c))return"add";if(/^(✅|🦄)/.test(c))return"done";if(/^(✉️|💬|🦜)/.test(c))return"cm";if(/^(💡|🔮)/.test(c))return"th";return"q"}
+function ntItems(){
+  const out=[];const t=today(),tm=addDays(t,1),me=TQ.me();
+  const dayDiff=d=>Math.round((parseD(t)-parseD(d))/864e5);
+  const dl=(id,title,dline,meta,go)=>{if(!dline)return;if(dline<t){const n=dayDiff(dline);out.push({id:"dl:"+id+":"+dline,f:"late",ic:NTI.late,t:title,tag:n===1?"просрочено на день":"просрочено на "+n+" "+plural(n,"день","дня","дней"),m:meta,time:fmtD(dline),ts:0,go})}
+    else if(dline===tm)out.push({id:"dl:"+id+":"+dline,f:"soon",ic:NTI.soon,t:title,tag:"дедлайн завтра",m:meta,time:fmtD(dline),ts:0,go})};
+  (TQ.list||[]).forEach(q=>(q.tasks||[]).forEach(x=>{if(x.done||x.del)return;const ws=whosOf(x);if(!(ws.includes(me)||(!ws.length&&x.by===me)))return;
+    const names=ws.map(u=>u===me?"ты":(tqMem(q,u)||{}).name).filter(Boolean);dl(q.id+":"+x.id,x.title,x.deadline,esc(q.title)+(names.length?" · "+esc(names.join(" и ")):""),{k:"t",q:q.id,t:x.id})}));
+  (S.profile.challenges||[]).forEach(c=>{if(c.status==="active")dl("p:"+c.id,c.title,c.due,"мой квест",{k:"p",c:c.id})});
+  NT_EV.forEach(e=>{const q=TQ.q(e.q);const k=ntKindOf(e.t);const txt=String(e.t).replace(/^\S+\s/,"");const task=q&&e.tid&&e.tid!=="_q"?(q.tasks||[]).find(x=>x.id===e.tid):null;
+    out.push({id:"ev:"+e.q+":"+e.ts+":"+e.uid,f:"q",ic:NTI[k]||NTI.q,t:txt,m:esc(q?q.title:"квест")+(task&&!txt.includes(task.title)?" · задача «"+esc(task.title)+"»":"")+(e.me?" · касается тебя":""),ts:e.ts,go:{k:task?"t":k==="th"?"m":"q",q:e.q,t:task?task.id:""}})});
+  lsGet(TECH_LS,[]).forEach(x=>out.push({id:"tech:"+x.id,f:"tech",ic:NTI.tech,t:x.t,m:/^сбой/.test(x.t)?"если повторяется, напиши в поддержку":"техническое",ts:x.ts,go:/^v:/.test(x.id)?{k:"upd"}:null}));
+  return out;
+}
+const ntUnread=()=>{const r=ntRead();return ntItems().filter(x=>!r.has(x.id))};
+function ntGo(go){if(!go)return;if(go.k==="upd"){S.ntTab="upd";newsSheet();return}closeSheet();
+  if(go.k==="t"&&TQ.q(go.q)){S.view="quests";render();tqTaskSheet(go.q,go.t)}
+  else if(go.k==="m"&&TQ.q(go.q)){S.view="quests";render();S.tqTabQ=go.q;S.tqTab="mat";tqSheet(go.q)}
+  else if(go.k==="q"&&TQ.q(go.q)){S.view="quests";render();tqSheet(go.q)}
+  else if(go.k==="p"){S.view="quests";render();questSheet(go.c)}}
 function newsSheet(){
   const list=newsAll();const read=newsRead();const fresh=new Set(list.filter(n=>!read.has(String(n.id))).map(n=>String(n.id)));
+  const items=ntItems();const nr=ntRead();const unN=items.filter(x=>!nr.has(x.id)).length;
+  if(!S.ntTab)S.ntTab=unN||!fresh.size?"nt":"upd";const tab=S.ntTab;const F=S.ntF||"all";
   const dt=s=>/^\d{4}-\d{2}-\d{2}$/.test(String(s||""))?fmtD(s):"";
   const card=n=>{const id=String(n.id);const acts=(Array.isArray(n.acts)?n.acts:[]).filter(a=>a&&a.l&&NEWS_GO.includes(String(a.go||"").split(":")[0])).slice(0,2);
     return`<div class="card nw ${fresh.has(id)?"fresh":""}"><div class="nw-h"><span class="pill">${n.kind==="update"?"обновление":"новость"}</span>${fresh.has(id)?'<span class="tag good">новое</span>':""}<span class="small muted nw-d">${esc(dt(n.date))}</span></div>
     <div class="nw-t">${esc(n.title)}</div>${n.text?`<div class="small muted nw-x">${esc(n.text)}</div>`:""}
     ${acts.length?`<div class="nw-a">${acts.map(a=>`<button class="btn sm ${/тест/.test(a.l)?"accent":"ghost"}" data-act="newsGo" data-n="${esc(id)}" data-go="${esc(a.go)}">${esc(String(a.l).slice(0,24))}</button>`).join("")}</div>`:""}</div>`};
+  const hhmm=ts=>{const d=new Date(ts);const k=d.toISOString().slice(0,10);return k===today()?d.toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"}):k===addDays(today(),-1)?"вчера":fmtD(k)};
+  const row=x=>`<button class="card ntc ${x.f==="late"?"late":x.f==="soon"?"soon":""}" data-act="ntOpen" data-id="${esc(x.id)}"><span class="nt-ic">${x.ic}</span><span class="nt-b"><span class="nt-t" style="display:block">${esc(x.t)}</span><span class="nt-m">${x.tag?`<span class="nt-tag">${esc(x.tag)}</span>`:""}${x.m}</span></span><span class="nt-time">${x.ts?hhmm(x.ts):esc(x.time||"")}</span>${nr.has(x.id)?"":'<span class="nt-dot"></span>'}</button>`;
+  const cnt=k=>k==="all"?items.length:items.filter(x=>x.f===k).length;
+  const sel=items.filter(x=>F==="all"||x.f===F);
+  const urgent=sel.filter(x=>x.f==="late"||x.f==="soon").sort((a,b)=>(a.f===b.f?0:a.f==="late"?-1:1));
+  const rest=sel.filter(x=>x.f!=="late"&&x.f!=="soon").sort((a,b)=>b.ts-a.ts);
+  const grp={};rest.forEach(x=>{const k=new Date(x.ts).toISOString().slice(0,10);const g=k===today()?"сегодня":k===addDays(today(),-1)?"вчера":"раньше";(grp[g]=grp[g]||[]).push(x)});
+  const ntHTML=`<div class="nt-f">${[["all","все"],["q",NTI.q+" квесты"],["late",NTI.late+" просрочено"],["soon",NTI.soon+" завтра"],["tech",NTI.tech+" техническое"]].map(([k,l])=>`<button class="chip" data-act="ntF" data-v="${k}" aria-pressed="${F===k}">${l}<i>${cnt(k)}</i></button>`).join("")}</div>
+    ${sel.length?`${urgent.length?`<div class="nt-day">требует внимания</div>${urgent.map(row).join("")}`:""}${["сегодня","вчера","раньше"].filter(g=>grp[g]).map(g=>`<div class="nt-day">${g}</div>${grp[g].map(row).join("")}`).join("")}
+    ${unN?`<button class="btn ghost wide" style="margin-top:14px" data-act="ntAll">отметить всё прочитанным</button>`:""}`:`<div class="card nw-empty"><b>пока тихо</b><p class="small muted" style="margin:6px 0 0">${F==="all"?"здесь будут дедлайны, события из квестов и технические сообщения.":"в этом разделе сейчас ничего нет."}</p></div>`}`;
   sheet(`<div class="sheet-h"><h2>новости и обновления</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
-  ${list.length?`<div class="nw-list">${list.map(card).join("")}</div>`:`<div class="card nw-empty"><b>пока тихо</b><p class="small muted" style="margin:6px 0 0">как только появится что-то новое, здесь загорится счётчик.</p></div>`}
+  <div class="seg nt-seg" role="tablist"><button data-act="ntTab" data-v="nt" aria-pressed="${tab==="nt"}">уведомления${unN?`<b>${unN>99?"99+":unN}</b>`:""}</button><button data-act="ntTab" data-v="upd" aria-pressed="${tab==="upd"}">обновления прокачки${fresh.size&&tab!=="upd"?`<b>${fresh.size}</b>`:""}</button></div>
+  ${tab==="nt"?ntHTML:list.length?`<div class="nw-list">${list.map(card).join("")}</div>`:`<div class="card nw-empty"><b>пока тихо</b><p class="small muted" style="margin:6px 0 0">как только появится что-то новое, здесь загорится счётчик.</p></div>`}
   <p class="small muted" style="margin:14px 0 0;text-align:center">версия приложения ${APP_V}</p>`);
-  newsMark([...fresh]);
+  if(tab==="upd")newsMark([...fresh]);
+  if(tab==="nt"&&Date.now()-NT_EVT>60000)ntLoad(true).then(()=>{const sh=$("#layer .sheet");if(sh&&S.ntTab==="nt"&&$("#layer .nt-seg"))newsSheet()});
 }
 function showLevelUp(c){
   const el=document.createElement("div");el.className="lvlup";el.setAttribute("role","dialog");
@@ -3964,7 +4018,11 @@ document.addEventListener("click",ev=>{
     case"introGo":introGo();break;
     case"help":helpSheet();break;
     case"auAbout":aboutPage();break;
-    case"news":newsSheet();break;
+    case"news":S.ntTab="";newsSheet();break;
+    case"ntTab":S.ntTab=b.dataset.v;newsSheet();break;
+    case"ntF":S.ntF=b.dataset.v;newsSheet();break;
+    case"ntAll":ntMark(ntItems().map(x=>x.id));newsSheet();break;
+    case"ntOpen":{const it=ntItems().find(x=>x.id===b.dataset.id);if(!it)break;ntMark([it.id]);if(it.go)ntGo(it.go);else newsSheet();break}
     case"newsGo":newsMark([b.dataset.n]);newsGo(b.dataset.go);break;
     case"rules":rulesSheet();break;
     case"sync":syncSheet();break;
@@ -4055,7 +4113,8 @@ applyTheme();
 setTimeout(()=>pushSync(true),5000);
 setTimeout(ownerLoad,2500);
 setTimeout(newsLoad,1500);
-{let nT=0;document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&Date.now()-nT>300000){nT=Date.now();newsLoad()}})}
+{let nT=0;document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&Date.now()-nT>300000){nT=Date.now();newsLoad();ntLoad(true)}})}
+try{techVersion()}catch(x){}setTimeout(()=>{ntLoad(true)},5000);
 try{if(TG&&TG.requestWriteAccess&&!localStorage.getItem("prk-wa")){localStorage.setItem("prk-wa","1");setTimeout(()=>{try{TG.requestWriteAccess(()=>{})}catch(x){}},6000)}}catch(x){}
 const loc=Store.loadLocal();
 S.profile=loc.p?normalize(loc.p):defaultProfile();
