@@ -2880,7 +2880,7 @@ function hintSheet(k){const[h,t]=HELP[k];sheet(`<span class="pill">подска�
    как добавить новость: допиши объект в NEWS (приложение) или в news.json рядом с index.html (без выпуска приложения).
    kind: "update" | "news". acts: до двух кнопок {l:"посмотреть"|"протестировать", go:"..."}.
    куда ведёт go: tab:home|path|skills|quests|rewards · path:feed · hint:<ключ из HELP> · add:plan · add:done */
-const APP_V="v87";
+const APP_V="v88";
 const NEWS=[
   {id:"u87-notif",date:"2026-10-29",kind:"update",title:"в колокольчике появились уведомления",text:"теперь здесь два раздела: уведомления и обновления прокачки. в уведомлениях видно просроченные задачи, дедлайны на завтра, события из квестов и технические сообщения. их можно отфильтровать, а нажатие открывает нужную задачу.",go:"tab:home"},
   {id:"u86-tg-look",date:"2026-10-29",kind:"update",title:"сообщения бота стали аккуратнее",text:"уведомления из квестов теперь короче: действие жирным, квест курсивом, суть в цитате. кнопка ведёт прямо к задаче или тезису. а если новостей много, они сворачиваются в один пост со сводкой.",go:"tab:quests"},
@@ -2932,14 +2932,14 @@ function newsGo(go){
 }
 /* уведомления: дедлайны (свои и командные), события квестов из бота, техническое (версии и сбои) */
 const NT_LS="prk-nt-read",TECH_LS="prk-tech";
-const NTI={late:"🌚",soon:"☄️",q:"🗺️",tech:"🛸",add:"🪄",cm:"🦜",th:"🔮",done:"🦄"};
+const NTI={late:"🫠",soon:"🗓️",q:"🎯",tech:"⚙️",add:"✏️",cm:"💬",th:"💡",done:"☑️"};
 let NT_EV=[],NT_EVT=0;
 function techLog(t,id){const L=lsGet(TECH_LS,[]);const k=id||("e"+Date.now());if(L.some(x=>x.id===k))return;L.unshift({id:k,t:String(t).slice(0,140),ts:Date.now()});lsSet(TECH_LS,L.slice(0,30));try{paintNews()}catch(x){}}
 function techVersion(){const v=lsGet("prk-lastv","");if(v&&v!==APP_V){const n=NEWS.find(x=>x.kind==="update");techLog("прокачка обновилась до "+APP_V+(n?": "+n.title:""),"v:"+APP_V)}if(v!==APP_V)lsSet("prk-lastv",APP_V)}
 const ntRead=()=>{const s=new Set(lsGet(NT_LS,[]));((S.profile&&S.profile.ntRead)||[]).forEach(x=>s.add(String(x)));return s};
 function ntMark(ids){const r=ntRead();const n=r.size;ids.forEach(i=>r.add(String(i)));if(r.size===n)return;const arr=[...r].slice(-400);lsSet(NT_LS,arr);if(S.profile){S.profile.ntRead=arr;try{Store.saveProfile()}catch(x){}}paintNews()}
 async function ntLoad(force){if(!force&&Date.now()-NT_EVT<60000)return;if(!(TG&&TG.initData)||!Store.online())return;NT_EVT=Date.now();try{const j=await TQ.call("events");if(Array.isArray(j.events)){NT_EV=j.events;paintNews()}}catch(x){}}
-function ntKindOf(t){const c=String(t||"");if(/^(➕|🪄)/.test(c))return"add";if(/^(✅|🦄)/.test(c))return"done";if(/^(✉️|💬|🦜)/.test(c))return"cm";if(/^(💡|🔮)/.test(c))return"th";return"q"}
+function ntKindOf(t){const c=String(t||"");if(/^(➕|🪄|✏️)/u.test(c)&&/(поставил|добавил)[а]? задачу/.test(c))return"add";if(/^(✅|🦄|☑️)/u.test(c))return"done";if(/^(✉️|💬|🦜)/u.test(c))return"cm";if(/^(💡|🔮)/u.test(c))return"th";return"q"}
 function ntItems(){
   const out=[];const t=today(),tm=addDays(t,1),me=TQ.me();
   const dayDiff=d=>Math.round((parseD(t)-parseD(d))/864e5);
