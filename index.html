@@ -864,6 +864,7 @@ img.av-bot{background:#D97757}
 .th-flash{box-shadow:0 0 0 3px #5668C5;transition:box-shadow .4s}
 .th-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
 .th-tag{display:inline-block;font-size:11px;font-weight:600;color:var(--accent-t);background:color-mix(in srgb,var(--accent) 14%,transparent);border-radius:6px;padding:2px 6px;margin-bottom:6px}
+button.mat-ic{border:0;padding:0;cursor:pointer}.mat-ext{font-size:11px;font-weight:700;text-transform:uppercase;color:var(--accent-t);letter-spacing:.02em}
 .thesis{background:var(--soft);color:#171C24;border-radius:14px;padding:10px 12px;margin-top:8px;display:flex;gap:8px;align-items:flex-start}
 .thesis .tx{flex:1;min-width:0;white-space:pre-wrap;overflow-wrap:anywhere}
 .thesis small{display:block;opacity:.65;margin-top:3px;font-size:12px}
@@ -1896,7 +1897,11 @@ const TH_SEND='<svg viewBox="0 0 24 24" width="16" height="16" fill="none" strok
 function matView(kind,id,mat,edit,cmts,q){
   const files=mat.files||[],notes=mat.notes||[];const dt=x=>x?esc(fmtD(x)):"";
   const del=(w,i)=>edit?`<button class="link" data-act="matDel" data-k="${kind}" data-id="${esc(id)}" data-w="${w}" data-i="${esc(i)}" aria-label="удалить">✕</button>`:"";
-  const fRow=f=>`<div class="mat-row"><span class="mat-ic">${f.k==="img"&&f.img&&f.img.url?`<img src="${esc(f.img.url)}" alt="">`:f.k==="img"?IMG_IC:LINK_IC}</span><div class="mat-t"><b>${f.u?`<a href="${esc(f.u)}" data-act="openUrl" data-url="${esc(f.u)}" style="color:inherit">${esc(f.t||f.u)}</a>`:esc(f.t||"фото")}</b><span class="small muted">${f.k==="img"?"фото":"ссылка"}${f.d?" · "+dt(f.d):""}${f.by?" · "+esc(f.by):""}</span></div>${del("f",f.id)}</div>`;
+  const szW=n=>n>=1048576?(n/1048576).toFixed(1).replace(".",",")+" МБ":Math.max(1,Math.round(n/1024))+" КБ";
+  const extOf=t=>((String(t||"").match(/\.([a-z0-9]{1,5})$/i)||[])[1]||"").toLowerCase();
+  const fRow=f=>{const ic=f.k==="img"&&f.img&&f.img.url?`<img src="${esc(f.img.url)}" alt="">`:f.k==="img"&&f.u?`<img src="${esc(f.u)}" alt="" loading="lazy">`:f.k==="file"?(extOf(f.t)?`<span class="mat-ext">${esc(extOf(f.t))}</span>`:CLIP_IC):f.k==="img"?IMG_IC:LINK_IC;
+    const kindW=f.k==="img"?"фото":f.k==="file"?"файл":"ссылка";
+    return`<div class="mat-row">${f.u?`<button class="mat-ic" data-act="openUrl" data-url="${esc(f.u)}" aria-label="открыть">${ic}</button>`:`<span class="mat-ic">${ic}</span>`}<div class="mat-t"><b>${f.u?`<a href="${esc(f.u)}" data-act="openUrl" data-url="${esc(f.u)}" style="color:inherit">${esc(f.t||f.u)}</a>`:esc(f.t||"фото")}</b><span class="small muted">${kindW}${f.sz?" · "+szW(f.sz):""}${f.d?" · "+dt(f.d):""}${f.by?" · "+esc(f.by):""}</span></div>${del("f",f.id)}</div>`};
   const who=(u,nm)=>q?(tqMem(q,u)||(q.members||[]).find(m=>m.name===nm)||{uid:0,name:nm||"участник"}):null;
   const tm=ts=>{const x=new Date(ts);return esc(fmtD(x.toISOString().slice(0,10)))+", "+x.toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"})};
   const nRow=n=>{
@@ -1908,10 +1913,10 @@ function matView(kind,id,mat,edit,cmts,q){
     ${q?`<form class="th-in" data-form="noteRe" data-id="${esc(id)}" data-n="${esc(n.id)}"><input name="t" maxlength="600" placeholder="ответить" aria-label="ответить на тезис"><button class="th-send" type="submit" aria-label="отправить ответ">${TH_SEND}</button></form>`:""}</div>`};
   const cRow=c=>{if(q){const m=tqMem(q,c.uid)||{uid:c.uid,name:"бывший участник"};const w=new Date(c.ts);return`<div class="cmt">${avatar(m,28)}<div style="min-width:0"><div class="small"><b>${esc(m.name)}</b> <span class="muted">${esc(fmtD(w.toISOString().slice(0,10)))} в ${w.toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"})}</span></div><div class="tx">${esc(c.text)}</div></div></div>`}
     return`<div class="cmt"><div style="min-width:0;flex:1"><div class="small muted">${dt(c.d)}</div><div class="tx">${esc(c.t)}</div></div>${del("c",c.id)}</div>`};
-  const addFile=edit?`<details class="mat-add" style="margin-top:6px"><summary class="btn sm accent">${IC.plus} добавить</summary><form data-form="matFile" data-k="${kind}" data-id="${esc(id)}">
+  const addFile=edit?`<details class="mat-add" style="margin-top:6px"><summary class="btn sm accent">${IC.plus} добавить ссылку</summary><form data-form="matFile" data-k="${kind}" data-id="${esc(id)}">
     <div class="field" style="margin-top:6px"><label>название</label><input class="in-text" name="t" maxlength="120" placeholder="например, макет первого экрана"></div>
     <div class="field"><label>ссылка</label><input class="in-text" name="u" inputmode="url" maxlength="500" placeholder="https://"></div>
-    <div class="row" style="margin-top:10px"><button class="btn sm accent" type="submit">добавить ссылку</button>${kind==="p"?`<label class="btn sm ghost" for="matImg" style="cursor:pointer">загрузить фото</label><input type="file" id="matImg" accept="image/*" hidden data-id="${esc(id)}">`:""}</div></form></details>`:"";
+    <div class="row" style="margin-top:10px"><button class="btn sm accent" type="submit">добавить ссылку</button></div></form></details><div class="row" style="margin-top:8px;gap:8px"><label class="btn sm ghost" for="matUp" style="cursor:pointer">${CLIP_IC} загрузить файл или фото</label><input type="file" id="matUp" hidden data-k="${kind}" data-id="${esc(id)}"></div><div class="small muted" style="margin-top:4px">до 20 МБ: картинки, pdf, html, документы</div>`:"";
   const cmts2=cmts||[];
   return`<div class="card" style="margin-top:12px"><div class="row" style="justify-content:space-between"><b>файлы и ссылки${files.length?" · "+files.length:""}</b></div>
   ${files.length?files.map(fRow).join(""):`<p class="small muted" style="margin:6px 0 0">${kind==="p"?"добавь ссылку или фото: макет, референс, скриншот":"добавь ссылку: макет, референс, документ"}</p>`}${addFile}</div>
@@ -2863,8 +2868,9 @@ function hintSheet(k){const[h,t]=HELP[k];sheet(`<span class="pill">подска�
    как добавить новость: допиши объект в NEWS (приложение) или в news.json рядом с index.html (без выпуска приложения).
    kind: "update" | "news". acts: до двух кнопок {l:"посмотреть"|"протестировать", go:"..."}.
    куда ведёт go: tab:home|path|skills|quests|rewards · path:feed · hint:<ключ из HELP> · add:plan · add:done */
-const APP_V="v84";
+const APP_V="v85";
 const NEWS=[
+  {id:"u85-files",date:"2026-10-29",kind:"update",title:"в материалы квеста можно загружать файлы",text:"кроме ссылок теперь можно прикрепить картинку, pdf, html или документ до 20 МБ. у фото видно превью, любой файл открывается одним нажатием.",go:"tab:quests"},
   {id:"u84-whos",date:"2026-10-29",kind:"update",title:"у подзадачи может быть несколько ответственных",text:"нажми на кружок справа от подзадачи и отметь всех, кто за неё отвечает. на таймлайне у задачи теперь видны все ответственные, а не только первый.",go:"tab:quests"},
   {id:"u83-thesis-tg",date:"2026-10-29",kind:"update",title:"о новом тезисе команда узнает в телеграме",text:"когда кто-то добавляет тезис в материалы командного квеста, остальным участникам приходит сообщение с темой и текстом. кнопка «открыть тезис» ведёт прямо к нему.",go:"tab:quests"},
   {id:"u82-thesis",date:"2026-10-29",kind:"update",title:"у тезисов появились тема, правка и ответы",text:"в «материалах» квеста у тезиса можно указать тему, она выделится жирным. тезис можно изменить после отправки, а в командном квесте на него можно ответить: видно, кто и когда написал.",go:"tab:quests"},
@@ -4010,6 +4016,18 @@ document.addEventListener("submit",ev=>{
   g.steps=g.steps||[];g.steps.push({id:uid(),t,done:false});Store.saveProfile();toast("шаг добавлен");afterChange();
 });
 document.addEventListener("change",async ev=>{const el=ev.target;if(el&&el.id==="matImg"&&el.files&&el.files[0]){const c=S.profile.challenges.find(x=>x.id===el.dataset.id);if(!c)return;toast("загружаю фото…");try{const img=await pickImage(el.files[0]);c.mat=c.mat||{};c.mat.files=(c.mat.files||[]).concat({id:uid(),k:"img",t:"",img,d:today()});Store.saveProfile();render();questSheet(c.id);toast("фото добавлено")}catch(x){toast("не получилось загрузить фото, попробуй другое")}}});
+document.addEventListener("change",async ev=>{const el=ev.target;if(!el||el.id!=="matUp"||!el.files||!el.files[0])return;const f=el.files[0];el.value="";const k=el.dataset.k,id=el.dataset.id;
+  if(f.size>20*1024*1024){toast("файл больше 20 МБ, такой не загрузится");return}
+  const isImg=/^image\//.test(f.type);const tg=TG&&TG.initData;
+  if(k==="p"&&!tg){if(!isImg){toast("файлы загружаются, когда прокачка открыта в телеграме");return}const c=S.profile.challenges.find(x=>x.id===id);if(!c)return;try{const img=await pickImage(f);c.mat=c.mat||{};c.mat.files=(c.mat.files||[]).concat({id:uid(),k:"img",t:f.name||"",img,d:today()});Store.saveProfile();render();questSheet(c.id);toast("фото добавлено")}catch(x){toast("не получилось загрузить фото")}return}
+  if(!tg){toast("загрузка работает внутри телеграма");return}
+  toast("загружаю «"+(f.name||"файл")+"»…");
+  try{const fd=new FormData();fd.append("initData",TG.initData);fd.append("file",f,f.name||"файл");fd.append("name",f.name||"файл");if(k!=="p")fd.append("q",id);
+    const r=await fetch(BOT_API+"/upload",{method:"POST",body:fd});const j=await r.json().catch(()=>({}));if(!r.ok||!j.url)throw new Error(j.error||"http");
+    const it={id:uid(),k:isImg?"img":"file",t:j.name||f.name||"файл",u:j.url,sz:j.size||f.size,d:today(),by:""};
+    if(k==="p"){const c=S.profile.challenges.find(x=>x.id===id);if(!c)return;c.mat=c.mat||{};c.mat.files=(c.mat.files||[]).concat(it);Store.saveProfile();render();questSheet(c.id);toast("файл добавлен")}
+    else{const q=TQ.q(id);if(!q)return;const me=tqMem(q,TQ.me());it.by=me?me.name:"";await TQ.call("save",{quest:Object.assign({},q,{files:(q.files||[]).concat(it)})});tqSheet(q.id);toast("файл добавлен")}
+  }catch(x){toast(String(x.message)==="big"?"файл больше 20 МБ":"не получилось загрузить файл, проверь интернет")}});
 document.addEventListener("change",ev=>{if(ev.target.id==="thenDate"){S.thenDate=ev.target.value||null;render()}});
 /* навык подставляется сам: если такое дело уже записывала, берём навык и тип оттуда */
 document.addEventListener("input",ev=>{

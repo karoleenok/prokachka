@@ -1,7 +1,7 @@
 // бот прокачки: приветствие на /start, напоминания и синхронизация данных приложения между устройствами.
 // токен в секрете BOT_TOKEN, настройки напоминаний в KV USERS, данные приложения в базе D1 (привязка DB).
 const APP = "https://prokachka.pages.dev";
-const BOT_V = "v37"; // версия бота: видно по адресу /v, чтобы проверить, что выложилась свежая
+const BOT_V = "v38"; // версия бота: видно по адресу /v, чтобы проверить, что выложилась свежая
 const OWNER = 424765559; // telegram id владельца: ему приложение показывает статистику
 const HELLO = [
   "о, наконец-то ты тут! рад тебя видеть! скорее жми кнопку, давай превратим жизнь в игру",
@@ -702,7 +702,7 @@ const tqLog = (env, qid, uid, txt, tid, who) => env.DB.prepare("INSERT INTO tqe 
 const ymd = x => /^\d{4}-\d{2}-\d{2}$/.test(x || "") ? x : "";
 const cleanRe = a => (Array.isArray(a) ? a : []).slice(0, 60).filter(x => x && sid(x.id) && String(x.t || "").trim()).map(x => ({ id: x.id, t: cut(x.t, 600), ts: Number(x.ts) || 0, uid: Number(x.uid) || 0, by: cut(x.by || "", 60) }));
 const cleanNotes = a => (Array.isArray(a) ? a : []).slice(0, 40).filter(x => x && sid(x.id) && String(x.t || "").trim()).map(x => ({ id: x.id, h: cut(x.h || "", 120), t: cut(x.t, 1500), d: ymd(x.d), by: cut(x.by || "", 60), uid: Number(x.uid) || 0, ed: ymd(x.ed), eb: cut(x.eb || "", 60), re: cleanRe(x.re) }));
-const cleanFiles = a => (Array.isArray(a) ? a : []).slice(0, 40).filter(x => x && sid(x.id) && /^https?:\/\//i.test(String(x.u || ""))).map(x => ({ id: x.id, k: "link", t: cut(x.t || x.u, 120), u: String(x.u).slice(0, 500), d: ymd(x.d), by: cut(x.by || "", 60) }));
+const cleanFiles = a => (Array.isArray(a) ? a : []).slice(0, 60).filter(x => x && sid(x.id) && /^https?:\/\//i.test(String(x.u || ""))).map(x => ({ id: x.id, k: ["file", "img"].includes(x.k) ? x.k : "link", t: cut(x.t || x.u, 120), u: String(x.u).slice(0, 1500), sz: Number(x.sz) || 0, d: ymd(x.d), by: cut(x.by || "", 60) }));
 const cleanSubs = a => (Array.isArray(a) ? a : []).slice(0, 40).filter(x => x && sid(x.id) && String(x.t || "").trim()).map(x => { const whos = uniqIds(Array.isArray(x.whos) ? x.whos : (x.who ? [x.who] : [])).filter(v => v).slice(0, 10); return { id: x.id, t: cut(x.t, 160), done: !!x.done, whos, who: whos[0] || 0 }; });
 function cleanQuest(q, old) {
   const o = old || {};
@@ -1165,6 +1165,46 @@ export default {
       const date = url.searchParams.get("d") || "";
       if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return new Response("bad date", { status: 400 });
       return new Response(icsFile(cut(url.searchParams.get("t"), 200), date, String(url.searchParams.get("n") || "").slice(0, 1000)), { headers: { "content-type": "text/calendar; charset=utf-8", "content-disposition": "attachment; filename=\"prokachka-" + date + ".ics\"" } });
+    }
+    // файлы для материалов квеста: храним в телеграме (документ уходит самому человеку в чат с ботом), отдаём по подписанной ссылке
+    if (url.pathname === "/upload" && req.method === "POST") {
+      const fd = await req.formData().catch(() => null);
+      const u = fd ? await checkUser(env, String(fd.get("initData") || "")) : null;
+      if (!u) return J({ error: "bad" }, 401);
+      const f = fd.get("file"); const qid = String(fd.get("q") || "");
+      if (!f || typeof f === "string") return J({ error: "nofile" }, 400);
+      if (f.size > 20 * 1024 * 1024) return J({ error: "big" }, 413);
+      let qt = "";
+      if (qid) {
+        if (!sid(qid) || !env.DB || !await tqMember(env, qid, u.id)) return J({ error: "bad" }, 403);
+        const qr = await env.DB.prepare("SELECT data FROM tq WHERE id = ?1").bind(qid).first(); qt = (pj(qr && qr.data) || {}).title || "";
+      }
+      const name = cut(String(fd.get("name") || f.name || "файл"), 80) || "файл";
+      const out = new FormData();
+      out.append("chat_id", String(u.id)); out.append("document", f, name); out.append("disable_notification", "true");
+      out.append("caption", "📎 " + (qt ? "файл для квеста «" + qt + "»" : "файл для квеста") + "\nхранится здесь, чтобы открываться из прокачки. лучше не удаляй это сообщение");
+      const r = await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendDocument`, { method: "POST", body: out }).then(x => x.json()).catch(() => ({ ok: false }));
+      const res = r.ok && r.result;
+      const doc = res && (res.document || res.video || res.audio || res.animation || (res.photo && res.photo[res.photo.length - 1]));
+      if (!doc) return J({ error: "tg" }, 502);
+      const sig = hex(await hmac(env.BOT_TOKEN, "f:" + doc.file_id)).slice(0, 20);
+      return J({ url: url.origin + "/f/" + encodeURIComponent(doc.file_id) + "/" + sig + "/" + encodeURIComponent(name), name, size: f.size, mime: f.type || "" });
+    }
+    if (url.pathname.startsWith("/f/") && req.method === "GET") {
+      const m = url.pathname.match(/^\/f\/([^/]+)\/([0-9a-f]{20})\/(.*)$/);
+      const nf = t => new Response(t || "файл не найден", { status: 404, headers: { "content-type": "text/plain; charset=utf-8" } });
+      if (!m) return nf();
+      const fid = decodeURIComponent(m[1]);
+      if (hex(await hmac(env.BOT_TOKEN, "f:" + fid)).slice(0, 20) !== m[2]) return nf();
+      const g = await tg(env, "getFile", { file_id: fid });
+      if (!g.ok || !g.result || !g.result.file_path) return nf("файл больше недоступен: возможно, его удалили из чата с ботом");
+      const tr = await fetch(`https://api.telegram.org/file/bot${env.BOT_TOKEN}/${g.result.file_path}`);
+      if (!tr.ok) return nf();
+      let name = "файл"; try { name = decodeURIComponent(m[3] || "файл"); } catch (e) {}
+      const ext = (name.match(/\.([a-z0-9]{1,6})$/i) || [])[1] || "";
+      const MT = { html: "text/html; charset=utf-8", htm: "text/html; charset=utf-8", pdf: "application/pdf", png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", gif: "image/gif", webp: "image/webp", svg: "image/svg+xml", heic: "image/heic", txt: "text/plain; charset=utf-8", md: "text/plain; charset=utf-8", csv: "text/plain; charset=utf-8", json: "application/json", mp4: "video/mp4", mov: "video/quicktime", mp3: "audio/mpeg" };
+      const ct = MT[ext.toLowerCase()] || "application/octet-stream";
+      return new Response(tr.body, { headers: { "content-type": ct, "content-disposition": (ct === "application/octet-stream" ? "attachment" : "inline") + "; filename*=UTF-8''" + encodeURIComponent(name), "content-security-policy": "sandbox allow-scripts allow-popups allow-downloads", "x-content-type-options": "nosniff", "cache-control": "private, max-age=86400", "access-control-allow-origin": "*" } });
     }
     if (url.pathname === "/tq" && req.method === "POST") {
       if (!env.DB) return J({ error: "no db" }, 500);
