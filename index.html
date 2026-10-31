@@ -775,6 +775,7 @@ html.tt,html.tt *{transition:background-color .4s ease,color .4s ease,border-col
 .wh-o em{font-style:normal;font-weight:500;font-size:13px;color:#667385}
 .wh-o[aria-pressed="true"]{background:var(--accent);color:#fff}.wh-o[aria-pressed="true"] em{color:#E7EBFF}
 .wh-other{overflow:hidden}
+.dlb{background:none;border:0;padding:0;margin:0;font:inherit;color:inherit;cursor:pointer;text-align:left}
 .wh-other input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
 .wh-wk{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:12px}
 .wh-wk button{position:relative;border:0;border-radius:12px;background:#fff;color:#171C24;padding:8px 0 10px;text-align:center;font:inherit;cursor:pointer}
@@ -1721,6 +1722,19 @@ const CHAT_IC='<svg class="calic" viewBox="0 0 24 24" fill="none" stroke="curren
 const TEAM_IC='<svg class="calic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5M16 5.5a3 3 0 0 1 0 5.5M18 14.5c1.7.6 3 2.2 3 4.5"/></svg>';
 const plannedOf=(kind,a,b)=>live().find(e=>e.planned&&(kind==="s"?(e.qref&&e.qref.c===a&&e.qref.s===b):(e.tref&&e.tref.q===a&&e.tref.t===b)));
 const calBtn=(attrs,pl)=>pl?`<button class="cal-b set" ${attrs} aria-label="в плане: ${esc(dayWord(pl.date))}. изменить день">${esc(dayWord(pl.date))}</button>`:`<button class="cal-b" ${attrs} aria-label="выбрать день">${CAL_IC}</button>`;
+/* выбор дедлайна: быстрые варианты, календарь, убрать */
+function dlSheet(o){
+  const t=today();const opts=(o.opts||[]).concat([["завтра",addDays(t,1)],["через неделю",addDays(t,7)],endOfMonth(t)>addDays(t,1)?["конец месяца",endOfMonth(t)]:["конец месяца",endOfMonth(addDays(endOfMonth(t),1))]]).filter((x,i,a)=>a.findIndex(y=>y[1]===x[1])===i);
+  sheet(`<div class="sheet-h">${o.back?`<button class="iconbtn" data-dlback aria-label="назад">←</button>`:""}<h2 style="flex:1;${o.back?"margin-left:8px":""}">дедлайн</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
+  <div class="small muted" style="margin:-4px 0 4px;overflow-wrap:anywhere">${esc(o.title)}</div>
+  ${o.cur?`<div class="small" style="margin:6px 0 2px">сейчас: ${dlChip(o.cur,false)}</div>`:""}
+  ${opts.map(([l,d])=>`<button class="wh-o" data-dd="${d}" aria-pressed="${o.cur===d}"><span>${esc(l)}</span><em>${esc(dayFull(d))}</em></button>`).join("")}
+  <label class="wh-o wh-other"><span class="row" style="gap:8px;flex-wrap:nowrap">${CAL_IC}другая дата</span><em>календарь</em><input type="date" value="${esc(o.cur||"")}" aria-label="выбрать дату дедлайна"></label>
+  ${o.cur&&o.clear!==false?`<button class="link" style="margin-top:12px;color:var(--muted)" data-dd="">убрать дедлайн</button>`:""}`,el=>{
+    el.addEventListener("click",ev=>{if(ev.target.closest("[data-dlback]")){o.back();return}const b=ev.target.closest("[data-dd]");if(!b)return;o.onPick(b.dataset.dd)});
+    const inp=el.querySelector('input[type="date"]');if(inp)inp.addEventListener("change",()=>{if(inp.value)o.onPick(inp.value)});
+  });
+}
 function whenSheet(o){
   const t=today();const days=Array.from({length:7},(_,i)=>addDays(t,i));const tm=addDays(t,1);
   const busy={};live().filter(e=>e.planned).forEach(e=>{busy[e.date]=1});
@@ -1800,6 +1814,7 @@ const CHEST='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-w
 const QNAME={day:"квест дня",week:"квест недели",month:"квест месяца"};
 function timeLeft(c){const n=diffDays(today(),c.due);if(n<0)return"просрочен на "+(-n)+" "+plural(-n,"день","дня","дней");if(n===0)return"последний день";return"осталось "+n+" "+plural(n,"день","дня","дней")}
 function questPips(c){
+  if(c.dueSet){const s0=c.created&&c.created<c.due?c.created:addDays(c.due,-1);const len=Math.max(1,diffDays(s0,c.due));const passed=clamp(diffDays(s0,today()),0,len);return`<div class="tbar" aria-hidden="true"><i style="width:${Math.round(passed/len*100)}%"></i></div>`}
   if(c.period==="day")return"";
   const len=c.period==="week"?7:diffDays(addDays(c.due.slice(0,8)+"01",0),c.due)+1;const start=addDays(c.due,-(len-1));const passed=clamp(diffDays(start,today()),0,len);
   if(c.period==="week")return`<div class="pips" aria-label="${timeLeft(c)}">${Array.from({length:7},(_,i)=>`<i class="${i<passed?"gone":i===passed?"now":""}"></i>`).join("")}</div>`;
@@ -1829,6 +1844,7 @@ function questSheet(id){
     <div class="field"><label for="qaE">в чём суть</label><textarea class="in-text" id="qaE" name="e" style="min-height:60px">${esc(c.about&&c.about.essence||"")}</textarea></div>
     <div class="field"><label for="qaB">чем это полезно</label><textarea class="in-text" id="qaB" name="b" style="min-height:60px">${esc(c.about&&c.about.benefit||"")}</textarea></div>
     <button class="btn sm" type="submit" style="margin-top:8px">сохранить пояснение</button></form></details>`:""}
+  ${c.status==="active"&&c.due?`<div class="card row" style="margin-top:10px;justify-content:space-between;gap:10px"><span class="small">дедлайн: ${dlChip(c.due,false)} <span class="muted">${esc(timeLeft(c))}</span></span><button class="link" data-act="qMove" data-id="${c.id}" data-from="info">изменить</button></div>`:""}
   <div class="sec"><div class="sec-l"><span class="sel">этапы</span></div><span class="small muted">${sk?esc(sk.name):""}</span></div>
   <div class="card" style="margin-top:12px">${(c.steps||[]).length?(c.steps||[]).map(x=>`<div class="goal-step"><button class="check ${x.done?"on":""}" data-act="qStep" data-id="${c.id}" data-s="${x.id}" aria-pressed="${!!x.done}">${x.done?IC.check:""}</button><span style="flex:1;min-width:0;${x.done?"text-decoration:line-through;opacity:.6":""}">${esc(x.t)}</span>${x.done||c.status!=="active"?"":calBtn(`data-act="qStepWhen" data-id="${c.id}" data-s="${x.id}"`,plannedOf("s",c.id,x.id))}<button class="link" data-act="qStepDel" data-id="${c.id}" data-s="${x.id}" aria-label="удалить этап">✕</button></div>`).join(""):`<p class="small muted" style="margin:0">этапов пока нет</p>`}
   ${c.status==="active"?`<form class="row" data-form="qstep" data-id="${c.id}" style="margin-top:8px;flex-wrap:nowrap"><input class="in-text" name="t" placeholder="новый этап" style="padding:9px 10px" aria-label="новый этап"><button class="btn sm" type="submit">добавить</button></form>`:""}</div>
@@ -2507,12 +2523,12 @@ function tqSheet(qid,keep){
   const p=tqProgress(q);const st=q.stages||[];
   const tasks=(q.tasks||[]).slice().sort((a,b)=>((a.deadline||"9999")<(b.deadline||"9999")?-1:(a.deadline||"9999")>(b.deadline||"9999")?1:(a.created||0)-(b.created||0)));
   const group=sid=>tasks.filter(t=>(t.stage||"")===sid&&(sid===""||st.some(x=>x.id===sid))||(sid===""&&t.stage&&!st.some(x=>x.id===t.stage)));
-  const stBlock=x=>{const ts=group(x.id);return`<div class="tq-stage"><span>${x.done?IC.check+" ":""}${esc(x.title)} ${dlChip(x.deadline,x.done)}</span><span class="row" style="gap:12px;flex-wrap:nowrap">${x.deadline?`<button class="link" data-act="calPick" data-q="${esc(q.id)}" data-t="${esc("этап «"+x.title+"» · "+q.title)}" data-d="${esc(x.deadline)}">в календарь</button>`:""}<button class="link" data-act="tqStage" data-q="${esc(q.id)}" data-id="${esc(x.id)}">${x.done?"открыть":"закрыть"}</button></span></div>${ts.map(t=>tqTaskRow(q,t)).join("")||`<div class="small muted" style="padding:6px 0">в этапе пока нет задач</div>`}`};
+  const stBlock=x=>{const ts=group(x.id);return`<div class="tq-stage"><span>${x.done?IC.check+" ":""}${esc(x.title)} <button class="dlb" data-act="tqStDl" data-q="${esc(q.id)}" data-id="${esc(x.id)}" aria-label="изменить дедлайн этапа">${x.deadline?dlChip(x.deadline,x.done):`<span class="small muted">+ дедлайн</span>`}</button></span><span class="row" style="gap:12px;flex-wrap:nowrap">${x.deadline?`<button class="link" data-act="calPick" data-q="${esc(q.id)}" data-t="${esc("этап «"+x.title+"» · "+q.title)}" data-d="${esc(x.deadline)}">в календарь</button>`:""}<button class="link" data-act="tqStage" data-q="${esc(q.id)}" data-id="${esc(x.id)}">${x.done?"открыть":"закрыть"}</button></span></div>${ts.map(t=>tqTaskRow(q,t)).join("")||`<div class="small muted" style="padding:6px 0">в этапе пока нет задач</div>`}`};
   const free=group("");
   sheet(`<div class="sheet-h"><h2 style="overflow-wrap:anywhere">${esc(q.title)}</h2><button class="iconbtn" data-act="close" aria-label="закрыть">✕</button></div>
   ${q.about?`<p style="margin:0 0 10px;white-space:pre-wrap">${esc(q.about)}</p>`:""}
   ${(()=>{const k=skillById((S.profile.tqSkill||{})[q.id]);return`<button class="tq-sk" data-act="tqSkPick" data-q="${esc(q.id)}">${k?`${sphIc(sphereOf(k),15)}<span>мой навык в квесте: <b>${esc(k.name)}</b> · ${esc(sphereById(sphereOf(k)).n)}</span><span class="link" style="margin-left:auto">изменить</span>`:`${sphIc("work",15)}<span>выбери свой навык: опыт за твои задачи пойдёт в него и в портрет героя</span><span class="link" style="margin-left:auto">выбрать</span>`}</button>`})()}
-  <div class="card"><div class="row" style="justify-content:space-between"><span class="small muted">${p.all?`готово ${p.dn} из ${p.all}`:"задач пока нет"}</span>${q.deadline?`<span class="small">дедлайн квеста: ${dlChip(q.deadline,p.all&&p.dn===p.all)}</span>`:""}</div>
+  <div class="card"><div class="row" style="justify-content:space-between"><span class="small muted">${p.all?`готово ${p.dn} из ${p.all}`:"задач пока нет"}</span><button class="dlb small" data-act="tqDl" data-q="${esc(q.id)}" aria-label="изменить дедлайн квеста">${q.deadline?`дедлайн квеста: ${dlChip(q.deadline,p.all&&p.dn===p.all)}`:`<span class="link">+ дедлайн квеста</span>`}</button></div>
   <div class="prog" style="margin-top:8px"><i style="width:${p.pr}%"></i></div>${q.deadline?`<div style="margin-top:8px">${calLinks("квест: "+q.title,q.deadline,q.about)}</div>`:""}</div>
   <div class="card" style="margin-top:10px"><div class="row" style="justify-content:space-between"><b>команда · ${(q.members||[]).filter(m=>!m.bot).length}</b><button class="btn sm accent" data-act="tqInvite" data-q="${esc(q.id)}">позвать</button></div>
   ${(q.members||[]).map(m=>`<div class="mem">${avatar(m,32)}<span>${esc(m.name)}${m.uid===TQ.me()?' <span class="muted small">это ты</span>':m.bot?' <span class="muted small">помощник</span>':""}</span></div>`).join("")}</div>
@@ -2703,8 +2719,9 @@ function hintSheet(k){const[h,t]=HELP[k];sheet(`<span class="pill">подска�
    как добавить новость: допиши объект в NEWS (приложение) или в news.json рядом с index.html (без выпуска приложения).
    kind: "update" | "news". acts: до двух кнопок {l:"посмотреть"|"протестировать", go:"..."}.
    куда ведёт go: tab:home|path|skills|quests|rewards · path:feed · hint:<ключ из HELP> · add:plan · add:done */
-const APP_V="v78";
+const APP_V="v79";
 const NEWS=[
+  {id:"u79-deadline",date:"2026-10-31",kind:"update",title:"дедлайн квеста теперь можно поменять",text:"в своём квесте нажми «перенести»: выбери завтра, через неделю, конец месяца или любой день в календаре. в командном квесте нажми на дедлайн квеста или этапа: его можно поменять, поставить или убрать. дедлайн задачи меняется в самой задаче.",acts:[{l:"протестировать",go:"tab:quests"}]},
   {id:"u76-nudge",date:"2026-10-23",kind:"update",title:"можно напомнить о задаче в телеграме",text:"открой задачу в командном квесте и нажми «напомнить в телеграме»: ответственным или всей команде придёт сообщение с квестом, сутью задачи и дедлайном.",go:"tab:quests"},
   {id:"u70-events",date:"2026-10-23",kind:"update",title:"бот покажет, что случилось за 48 часов",text:"напиши боту /events или нажми «события за 48 часов» в /menu: можно посмотреть, что менялось в конкретном командном квесте, что было по твоим задачам и какие вышли обновления. ещё у клода в участниках теперь своя аватарка.",go:"tab:quests"},
   {id:"u69-whos",date:"2026-10-23",kind:"update",title:"у задачи может быть несколько ответственных",text:"в командном квесте в задаче теперь отмечаются сразу несколько человек: нажимай на имена, чтобы добавить или снять. в команде появился клод: на него тоже можно ставить задачи. уведомления в боте приходят тем, кто связан с задачей, и стали понятнее: квест, суть, кто поставил, дедлайн и ответственные. если новых задач набралось больше трёх, бот соберёт их в одно сообщение со списком.",acts:[{l:"посмотреть",go:"tab:quests"}]},
@@ -3700,7 +3717,11 @@ document.addEventListener("click",ev=>{
       const inSheet=!!b.closest(".sheet");if(c.steps.every(x=>x.done)){toast(c.period==="month"?"все этапы квеста месяца пройдены! нажми «пройден», чтобы забрать награду":"все этапы пройдены, забирай награду");}else if(st.done)toast("этап пройден");
       if(inSheet){render();questSheet(id)}else render();break}
     case"qStepDel":{const c=P.challenges.find(x=>x.id===id);if(!c)break;c.steps=(c.steps||[]).filter(x=>x.id!==b.dataset.s);Store.saveProfile();render();questSheet(id);break}
-    case"qMove":{const c=P.challenges.find(x=>x.id===id);if(!c)break;c.moved=(c.moved||0)+1;c.due=c.period==="day"?addDays(today(),1):c.period==="week"?endOfWeek(addDays(today(),7)):endOfMonth(addDays(endOfMonth(today()),1));Store.saveProfile();toast("перенесено до "+fmtD(c.due));render();break}
+    case"qMove":{const c=P.challenges.find(x=>x.id===id);if(!c)break;const fromInfo=b.dataset.from==="info";
+      const nx=c.period==="day"?addDays(today(),1):c.period==="week"?endOfWeek(addDays(today(),7)):endOfMonth(addDays(endOfMonth(today()),1));
+      dlSheet({title:c.title,cur:c.due,clear:false,opts:[[c.period==="day"?"на завтра":c.period==="week"?"на следующую неделю":"на следующий месяц",nx]],back:fromInfo?()=>questSheet(c.id):null,onPick:d=>{if(!d)return;
+        if(d>c.due)c.moved=(c.moved||0)+1;c.due=d;c.dueSet=!(c.period==="week"&&d===endOfWeek(d)||c.period==="month"&&d===endOfMonth(d)||c.period==="day");
+        Store.saveProfile();render();if(fromInfo)questSheet(c.id);else closeSheet();toast("дедлайн: "+fmtD(d))}});break}
     case"qDel":{const c=P.challenges.find(x=>x.id===id);if(!c)break;closeSheet();confirmSheet("удалить квест?","«"+c.title+"»","удалить",()=>{markGone(id);P.challenges=P.challenges.filter(x=>x.id!==id);Store.saveProfile();afterChange()});break}
     case"qReview":{const c=P.challenges.find(x=>x.id===id);if(!c)break;
       sheet(`<h2>разбор квеста</h2><p class="small">«${esc(c.title)}»</p><div class="field"><label for="rvTxt">что помешало и что {поняла|понял}? за честный разбор +10 xp</label><textarea class="in-text" id="rvTxt"></textarea></div><div class="row" style="margin-top:14px"><button class="btn accent" id="rvSave">закрыть разбором</button><button class="btn ghost" data-act="close">отмена</button></div>`,el=>{
@@ -3782,6 +3803,8 @@ document.addEventListener("click",ev=>{
     case"tqDone":tqToggle(b.dataset.q,b.dataset.id);break;
     case"tqInvite":tqInvite(b.dataset.q);break;
     case"openUrl":{const u=b.dataset.url;try{if(TG&&TG.openTelegramLink&&/^https:\/\/t\.me\//.test(u))TG.openTelegramLink(u);else if(TG&&TG.openLink)TG.openLink(u);else window.open(u,"_blank")}catch(x){window.open(u,"_blank")}break}
+    case"tqDl":{const q=TQ.q(b.dataset.q);if(!q)break;dlSheet({title:"квест «"+q.title+"»",cur:q.deadline||"",back:()=>tqSheet(q.id),onPick:d=>{TQ.call("save",{quest:{id:q.id,title:q.title,about:q.about,deadline:d,stages:q.stages||[]}}).then(()=>{tqRepaint();tqSheet(q.id);toast(d?"дедлайн квеста: "+fmtD(d):"дедлайн убран")}).catch(()=>toast("не получилось, проверь интернет"))}});break}
+    case"tqStDl":{const q=TQ.q(b.dataset.q);if(!q)break;const sg=(q.stages||[]).find(x=>x.id===b.dataset.id);if(!sg)break;dlSheet({title:"этап «"+sg.title+"» · "+q.title,cur:sg.deadline||"",back:()=>tqSheet(q.id),onPick:d=>{const stages=(q.stages||[]).map(x=>x.id===sg.id?Object.assign({},x,{deadline:d}):x);TQ.call("save",{quest:Object.assign({},q,{stages})}).then(()=>{tqRepaint();tqSheet(q.id);toast(d?"дедлайн этапа: "+fmtD(d):"дедлайн этапа убран")}).catch(()=>toast("не получилось, проверь интернет"))}});break}
     case"tqStage":{const q=TQ.q(b.dataset.q);if(!q)break;const stages=(q.stages||[]).map(x=>x.id===b.dataset.id?Object.assign({},x,{done:!x.done}):x);TQ.call("save",{quest:Object.assign({},q,{stages})}).then(()=>tqRepaint()).catch(()=>toast("не получилось, проверь интернет"));break}
     case"tqNudge":tqNudgeSheet(b.dataset.q,b.dataset.id);break;
     case"tqTaskDel":{const q=TQ.q(b.dataset.q);const t=q&&(q.tasks||[]).find(x=>x.id===b.dataset.id);if(!t)break;confirmSheet("удалить задачу?","«"+t.title+"» пропадёт у всей команды.","удалить",()=>{TQ.call("task",{qid:q.id,task:Object.assign({},t,{del:true,upd:Date.now()})}).then(()=>{tqSheet(q.id);toast("задача удалена")}).catch(()=>toast("не получилось, проверь интернет"))});break}
